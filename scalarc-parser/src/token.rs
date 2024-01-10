@@ -9,9 +9,16 @@ use std::ops::Range;
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
-  Identifier,
+  Ident(Ident),
 
   Literal(Literal),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Ident {
+  Plain,
+  Operator,
+  Backtick,
 }
 
 #[derive(Debug, PartialEq)]
@@ -170,7 +177,7 @@ impl<'a> Lexer<'a> {
           self.tok.eat().unwrap();
         }
 
-        self.ok(start, Token::Identifier)
+        self.ok(start, Token::Ident(Ident::Plain))
       }
 
       // Operator identifier.
@@ -183,7 +190,7 @@ impl<'a> Lexer<'a> {
           self.tok.eat().unwrap();
         }
 
-        self.ok(start, Token::Identifier)
+        self.ok(start, Token::Ident(Ident::Operator))
       }
 
       // Backtick identifier.
@@ -196,7 +203,7 @@ impl<'a> Lexer<'a> {
           }
         }
 
-        self.ok(start, Token::Identifier)
+        self.ok(start, Token::Ident(Ident::Backtick))
       }
 
       // Numbers.
@@ -228,49 +235,49 @@ mod tests {
   #[test]
   fn plain_ident() {
     let mut lexer = Lexer::new("abc");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "abc");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     let mut lexer = Lexer::new("abc_foo");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "abc_foo");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     let mut lexer = Lexer::new("abc_++");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "abc_++");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     let mut lexer = Lexer::new("abc++");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "abc");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
     assert_eq!(lexer.slice(), "++");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     let mut lexer = Lexer::new("abc_def_+");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "abc_def_+");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     let mut lexer = Lexer::new("abc_+_def");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "abc_+");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "_def");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     // This looks broken but it matches scala's behavior, so ah well.
     let mut lexer = Lexer::new("_+");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "_");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
     assert_eq!(lexer.slice(), "+");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     let mut lexer = Lexer::new("__+");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "__+");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
@@ -278,21 +285,21 @@ mod tests {
   #[test]
   fn operator_identifier() {
     let mut lexer = Lexer::new("++");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
     assert_eq!(lexer.slice(), "++");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     let mut lexer = Lexer::new("+++a");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
     assert_eq!(lexer.slice(), "+++");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "a");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     let mut lexer = Lexer::new("_ _");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "_");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "_");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
@@ -300,14 +307,14 @@ mod tests {
   #[test]
   fn backtick_identifier() {
     let mut lexer = Lexer::new("`hello world`");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Backtick)));
     assert_eq!(lexer.slice(), "`hello world`");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     let mut lexer = Lexer::new("`hello world`aa__");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Backtick)));
     assert_eq!(lexer.slice(), "`hello world`");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "aa__");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
@@ -317,7 +324,7 @@ mod tests {
     let mut lexer = Lexer::new("123foo");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
     assert_eq!(lexer.slice(), "123");
-    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "foo");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
