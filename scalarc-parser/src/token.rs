@@ -45,6 +45,7 @@ pub enum LexError {
 #[derive(Clone, Debug, PartialEq)]
 enum InnerToken {
   Whitespace,
+  Newline,
 
   Underscore,
   Letter,
@@ -98,7 +99,8 @@ impl<'a> Tokenizer<'a> {
 
   pub fn eat(&mut self) -> Result<InnerToken> {
     let t = match self.source[self.index..].chars().next() {
-      Some('\u{0020}' | '\u{0009}' | '\u{000d}' | '\u{000a}') => InnerToken::Whitespace,
+      Some('\u{0020}' | '\u{0009}' | '\u{000d}') => InnerToken::Whitespace,
+      Some('\n') => InnerToken::Newline,
 
       Some('(') => InnerToken::Group(Group::OpenParen),
       Some(')') => InnerToken::Group(Group::CloseParen),
