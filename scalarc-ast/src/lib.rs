@@ -90,8 +90,18 @@ pub enum SimplePattern {
   // TODO: Paren patterns
 }
 
-pub enum Literal {
-  // TODO: Fill this in
+pub struct Literal {
+  pub span:  Span,
+  pub value: LiteralValue,
+}
+
+pub enum LiteralValue {
+  Boolean(bool),
+  Char(char),
+  String(String),
+  Int(i64),
+  Float(f64),
+  Null,
 }
 
 pub struct Annotation {
