@@ -92,7 +92,7 @@ impl<'a> Tokenizer<'a> {
       Some(',') => InnerToken::Delimiter(Delimiter::Comma),
 
       Some('_') => InnerToken::Underscore,
-      Some('a'..='z' | 'A'..='Z' | '$') => InnerToken::Letter,
+      Some('a'..='z' | 'A'..='Z') => InnerToken::Letter,
       Some('0'..='9') => InnerToken::Digit,
       Some('\u{0020}'..='\u{007e}') => InnerToken::Operator,
 
@@ -242,11 +242,11 @@ mod tests {
     assert_eq!(lexer.slice(), "++");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
-    let mut lexer = Lexer::new("+++$");
+    let mut lexer = Lexer::new("+++a");
     assert_eq!(lexer.next(), Ok(Token::Identifier));
     assert_eq!(lexer.slice(), "+++");
     assert_eq!(lexer.next(), Ok(Token::Identifier));
-    assert_eq!(lexer.slice(), "$");
+    assert_eq!(lexer.slice(), "a");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
@@ -257,11 +257,11 @@ mod tests {
     assert_eq!(lexer.slice(), "`hello world`");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
-    let mut lexer = Lexer::new("`hello world`$$__");
+    let mut lexer = Lexer::new("`hello world`aa__");
     assert_eq!(lexer.next(), Ok(Token::Identifier));
     assert_eq!(lexer.slice(), "`hello world`");
     assert_eq!(lexer.next(), Ok(Token::Identifier));
-    assert_eq!(lexer.slice(), "$$__");
+    assert_eq!(lexer.slice(), "aa__");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 }
