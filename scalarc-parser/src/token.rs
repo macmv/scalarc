@@ -12,6 +12,9 @@ pub enum Token {
   Ident(Ident),
 
   Literal(Literal),
+
+  Group(Group),
+  Delimiter(Delimiter),
 }
 
 #[derive(Debug, PartialEq)]
@@ -53,7 +56,7 @@ enum InnerToken {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-enum Group {
+pub enum Group {
   OpenParen,
   CloseParen,
 
@@ -65,7 +68,7 @@ enum Group {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-enum Delimiter {
+pub enum Delimiter {
   Backtick,
   SingleQuote,
   Dot,
@@ -221,6 +224,9 @@ impl<'a> Lexer<'a> {
         self.ok(start, Token::Literal(if is_float { Literal::Float } else { Literal::Integer }))
       }
 
+      InnerToken::Delimiter(d) => self.ok(start, Token::Delimiter(d)),
+      InnerToken::Group(g) => self.ok(start, Token::Group(g)),
+
       _ => unreachable!(),
     }
   }
@@ -334,6 +340,44 @@ mod tests {
     let mut lexer = Lexer::new("2.345");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
     assert_eq!(lexer.slice(), "2.345");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+  }
+
+  #[test]
+  fn whole_file() {
+    let mut lexer = Lexer::new(
+      "class Foo {
+        def bar(): Int = 2 + 3
+      }",
+    );
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "class");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "Foo");
+    assert_eq!(lexer.next(), Ok(Token::Group(Group::OpenBrace)));
+    assert_eq!(lexer.slice(), "{");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "def");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "bar");
+    assert_eq!(lexer.next(), Ok(Token::Group(Group::OpenParen)));
+    assert_eq!(lexer.slice(), "(");
+    assert_eq!(lexer.next(), Ok(Token::Group(Group::CloseParen)));
+    assert_eq!(lexer.slice(), ")");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
+    assert_eq!(lexer.slice(), ":");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "Int");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
+    assert_eq!(lexer.slice(), "=");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "2");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
+    assert_eq!(lexer.slice(), "+");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "3");
+    assert_eq!(lexer.next(), Ok(Token::Group(Group::CloseBrace)));
+    assert_eq!(lexer.slice(), "}");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 }
