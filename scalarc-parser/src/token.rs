@@ -10,6 +10,15 @@ use std::ops::Range;
 #[derive(Debug, PartialEq)]
 pub enum Token {
   Identifier,
+
+  Literal(Literal),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Literal {
+  Integer,
+  Float,
+  String,
 }
 
 pub type Result<T> = std::result::Result<T, LexError>;
@@ -173,6 +182,21 @@ impl<'a> Lexer<'a> {
         self.ok(start, Token::Identifier)
       }
 
+      // Numbers.
+      InnerToken::Digit => {
+        let mut is_float = false;
+        loop {
+          match self.tok.peek()? {
+            Some(InnerToken::Digit) => {}
+            Some(InnerToken::Delimiter(Delimiter::Dot)) if !is_float => is_float = true,
+            Some(_) | None => break,
+          }
+          self.tok.eat().unwrap();
+        }
+
+        self.ok(start, Token::Literal(if is_float { Literal::Float } else { Literal::Integer }))
+      }
+
       _ => unreachable!(),
     }
   }
@@ -261,6 +285,24 @@ mod tests {
     assert_eq!(lexer.slice(), "`hello world`");
     assert_eq!(lexer.next(), Ok(Token::Identifier));
     assert_eq!(lexer.slice(), "aa__");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+  }
+
+  #[test]
+  fn integers() {
+    let mut lexer = Lexer::new("123foo");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "123");
+    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.slice(), "foo");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+  }
+
+  #[test]
+  fn floats() {
+    let mut lexer = Lexer::new("2.345");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
+    assert_eq!(lexer.slice(), "2.345");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 }
