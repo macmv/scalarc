@@ -25,7 +25,6 @@ pub enum LexError {
 
 #[derive(Clone, Debug, PartialEq)]
 enum InnerToken {
-  Whitespace,
   Underscore,
   Letter,
   Digit,
