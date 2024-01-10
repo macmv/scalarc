@@ -15,6 +15,7 @@ pub enum Token {
 
   Group(Group),
   Delimiter(Delimiter),
+  Newline,
 }
 
 #[derive(Debug, PartialEq)]
@@ -228,6 +229,7 @@ impl<'a> Lexer<'a> {
 
       InnerToken::Delimiter(d) => self.ok(start, Token::Delimiter(d)),
       InnerToken::Group(g) => self.ok(start, Token::Group(g)),
+      InnerToken::Newline => self.ok(start, Token::Newline),
 
       _ => unreachable!(),
     }
@@ -358,6 +360,7 @@ mod tests {
     assert_eq!(lexer.slice(), "Foo");
     assert_eq!(lexer.next(), Ok(Token::Group(Group::OpenBrace)));
     assert_eq!(lexer.slice(), "{");
+    assert_eq!(lexer.next(), Ok(Token::Newline));
     assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "def");
     assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
@@ -378,6 +381,7 @@ mod tests {
     assert_eq!(lexer.slice(), "+");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
     assert_eq!(lexer.slice(), "3");
+    assert_eq!(lexer.next(), Ok(Token::Newline));
     assert_eq!(lexer.next(), Ok(Token::Group(Group::CloseBrace)));
     assert_eq!(lexer.slice(), "}");
     assert_eq!(lexer.next(), Err(LexError::EOF));
