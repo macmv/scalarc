@@ -34,6 +34,8 @@ pub enum LexError {
 
 #[derive(Clone, Debug, PartialEq)]
 enum InnerToken {
+  Whitespace,
+
   Underscore,
   Letter,
   Digit,
@@ -86,6 +88,8 @@ impl<'a> Tokenizer<'a> {
 
   pub fn eat(&mut self) -> Result<InnerToken> {
     let t = match self.source[self.index..].chars().next() {
+      Some('\u{0020}' | '\u{0009}' | '\u{000d}' | '\u{000a}') => InnerToken::Whitespace,
+
       Some('(') => InnerToken::Group(Group::OpenParen),
       Some(')') => InnerToken::Group(Group::CloseParen),
       Some('[') => InnerToken::Group(Group::OpenBracket),
@@ -128,7 +132,20 @@ impl<'a> Lexer<'a> {
     Ok(tok)
   }
 
+  fn eat_whitespace(&mut self) -> Result<()> {
+    loop {
+      match self.tok.peek()? {
+        Some(InnerToken::Whitespace) => {}
+        Some(_) | None => break,
+      }
+      self.tok.eat().unwrap();
+    }
+    Ok(())
+  }
+
   pub fn next(&mut self) -> Result<Token> {
+    self.eat_whitespace()?;
+
     let start = self.tok.pos();
     let first = self.tok.eat()?;
     match first {
@@ -270,6 +287,13 @@ mod tests {
     assert_eq!(lexer.slice(), "+++");
     assert_eq!(lexer.next(), Ok(Token::Identifier));
     assert_eq!(lexer.slice(), "a");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("_ _");
+    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.slice(), "_");
+    assert_eq!(lexer.next(), Ok(Token::Identifier));
+    assert_eq!(lexer.slice(), "_");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
