@@ -1,5 +1,8 @@
 use std::ops::Range;
 
+use scalarc_ast::Span;
+use thiserror::Error;
+
 // Scala's grammar is quite finicky. We expose a `Token` enum that is a
 // parser-usable version of a token. It contains high level concepts like
 // "Identifiers" and "Numbers".
@@ -16,6 +19,8 @@ pub enum Token {
   Group(Group),
   Delimiter(Delimiter),
   Newline,
+
+  Invalid,
 }
 
 #[derive(Debug, PartialEq)]
@@ -34,10 +39,12 @@ pub enum Literal {
 
 pub type Result<T> = std::result::Result<T, LexError>;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Error, PartialEq)]
 pub enum LexError {
+  #[error("invalid character")]
   InvalidChar,
 
+  #[error("end of file reached")]
   EOF,
 }
 
@@ -235,6 +242,7 @@ impl<'a> Lexer<'a> {
     }
   }
 
+  pub fn span(&self) -> Span { self.span.clone().into() }
   pub fn slice(&self) -> &'a str { &self.tok.source[self.span.clone()] }
 }
 

@@ -8,3 +8,5 @@ edition = "2021"
 [lib]
 
 [dependencies]
+scalarc-ast = { path = "../scalarc-ast" }
+thiserror = "1.0.56"

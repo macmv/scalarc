@@ -1,8 +1,14 @@
 // See https://www.scala-lang.org/files/archive/spec/2.13/13-syntax-summary.html
 
+use std::ops::Range;
+
 pub struct Span {
   pub start: usize,
   pub end:   usize,
+}
+
+impl From<Range<usize>> for Span {
+  fn from(range: Range<usize>) -> Self { Span { start: range.start, end: range.end } }
 }
 
 pub struct Ident {
