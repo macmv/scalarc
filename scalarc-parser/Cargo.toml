@@ -8,5 +8,6 @@ edition = "2021"
 [lib]
 
 [dependencies]
+rowan = "0.15.15"
 scalarc-ast = { path = "../scalarc-ast" }
 thiserror = "1.0.56"

@@ -1,6 +1,7 @@
 use scalarc_ast::LiteralValue;
 use thiserror::Error;
 
+mod syntax;
 pub mod token;
 
 use token::{LexError, Lexer, Token};
