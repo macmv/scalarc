@@ -74,7 +74,7 @@ use rowan::GreenNodeBuilder;
 
 /// The parse results are stored as a "green tree".
 /// We'll discuss working with the results later
-struct Parse {
+pub struct Parse {
   green_node: GreenNode,
   #[allow(unused)]
   errors:     Vec<String>,
@@ -84,7 +84,7 @@ struct Parse {
 /// Note that `parse` does not return a `Result`:
 /// by design, syntax tree can be built even for
 /// completely invalid source code.
-fn parse(text: &str) -> Parse {
+pub fn parse(text: &str) -> Parse {
   struct Parser {
     /// input tokens, including whitespace,
     /// in *reverse* order.
