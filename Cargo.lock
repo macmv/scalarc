@@ -108,6 +108,18 @@ name = "scalarc-ast"
 version = "0.1.0"
 
 [[package]]
+name = "scalarc-build"
+version = "0.1.0"
+dependencies = [
+ "expect-test",
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "ungrammar",
+ "xshell",
+]
+
+[[package]]
 name = "scalarc-lsp"
 version = "0.1.0"
 
@@ -124,14 +136,9 @@ dependencies = [
 name = "scalarc-syntax"
 version = "0.1.0"
 dependencies = [
- "expect-test",
- "itertools",
- "proc-macro2",
- "quote",
  "rowan",
+ "scalarc-build",
  "thiserror",
- "ungrammar",
- "xshell",
 ]
 
 [[package]]

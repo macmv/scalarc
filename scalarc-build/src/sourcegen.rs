@@ -51,16 +51,10 @@ pub fn ensure_file_contents(file: &Path, contents: &str) {
     }
   }
 
-  let display_path = file.strip_prefix(project_root()).unwrap_or(file);
-  eprintln!("\n\x1b[31;1merror\x1b[0m: {} was not up-to-date, updating\n", display_path.display());
-  if std::env::var("CI").is_ok() {
-    eprintln!("    NOTE: run `cargo test` locally and commit the updated files\n");
-  }
   if let Some(parent) = file.parent() {
     let _ = fs::create_dir_all(parent);
   }
   fs::write(file, contents).unwrap();
-  panic!("some file was not up to date and has been updated, simply re-run the tests");
 }
 
 fn normalize_newlines(s: &str) -> String { s.replace("\r\n", "\n") }

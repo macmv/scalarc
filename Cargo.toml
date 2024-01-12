@@ -2,8 +2,12 @@
 resolver = "2"
 members = [
   "scalarc-ast",
+  "scalarc-build",
   "scalarc-syntax",
   "scalarc-parser",
   "scalarc-typer",
   "scalarc-lsp",
 ]
+
+[workspace.dependencies]
+scalarc-build = { path = "scalarc-build" }

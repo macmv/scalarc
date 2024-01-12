@@ -1,4 +1,6 @@
-//! This module generates AST datatype used by scalarc. It is _heavily_ inspired from rust-analyzer's: https://github.com/rust-lang/rust-analyzer/blob/e4344f5fce3b4ca12d51bf27b9a0bd29297be3ea/crates/syntax/src/tests/sourcegen_ast.rs.
+//! This module generates AST datatype used by scalarc. It is _heavily_ inspired
+//! from rust-analyzer's:
+//! https://github.com/rust-lang/rust-analyzer/blob/e4344f5fce3b4ca12d51bf27b9a0bd29297be3ea/crates/syntax/src/tests/sourcegen_ast.rs.
 //!
 //! Specifically, it generates the `SyntaxKind` enum and a number of newtype
 //! wrappers around `SyntaxNode` which implement `syntax::AstNode`.
@@ -18,8 +20,7 @@ use super::{
   sourcegen,
 };
 
-#[test]
-fn sourcegen_ast() {
+pub fn sourcegen_ast() {
   let syntax_kinds = generate_syntax_kinds(KINDS_SRC);
   let syntax_kinds_file =
     sourcegen::project_root().join("scalarc-parser/src/syntax_kind/generated.rs");
