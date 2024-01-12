@@ -510,6 +510,12 @@ impl Field {
     match self {
       Field::Token(name) => {
         let name = match name.as_str() {
+          "-" => "minus",
+          "+" => "plus",
+          "<-" => "thin_left_arrow",
+          ">:" => "greater_colon",
+          "<:" => "less_colon",
+
           ";" => "semicolon",
           "->" => "thin_arrow",
           "'{'" => "l_curly",
@@ -632,16 +638,15 @@ fn lower_rule(acc: &mut Vec<Field>, grammar: &Grammar, label: Option<&String>, r
         acc.push(field);
       }
     }
-    Rule::Rep(inner) => {
-      if let Rule::Node(node) = &**inner {
-        let ty = grammar[*node].name.clone();
+    Rule::Rep(inner) => match **inner {
+      Rule::Node(node) => {
+        let ty = grammar[node].name.clone();
         let name = label.cloned().unwrap_or_else(|| pluralize(&to_lower_snake_case(&ty)));
         let field = Field::Node { name, ty, cardinality: Cardinality::Many };
         acc.push(field);
-        return;
       }
-      panic!("unhandled rule: {:?}", rule)
-    }
+      _ => println!("unhandled rep: {:?}", rule),
+    },
     Rule::Labeled { label: l, rule } => {
       assert!(label.is_none());
       let manually_implemented = matches!(
