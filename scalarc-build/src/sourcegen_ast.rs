@@ -295,8 +295,14 @@ fn generate_nodes(kinds: KindsSrc<'_>, grammar: &AstSrc) -> String {
 
   let ast = quote! {
       #![allow(non_snake_case)]
-      use crate::{ast::AstToken, node::SyntaxToken};
-      use scalarc_parser::SyntaxKind::{self, *};
+      use crate::{
+        ast::{support, AstChildren, AstNode},
+        node::{SyntaxNode, SyntaxToken},
+      };
+      use scalarc_parser::{
+        SyntaxKind::{self, *},
+        T,
+      };
 
       #(#node_defs)*
       #(#enum_defs)*
