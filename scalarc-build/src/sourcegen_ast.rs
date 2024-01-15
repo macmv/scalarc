@@ -509,11 +509,13 @@ impl Field {
         Some(quote! { T![#token] })
       }
       Field::Node { name, .. } if TOKEN_SHORTHANDS.contains(&name.as_str()) => {
-        if name == "semi" {
-          Some(quote! { T![;] })
-        } else {
-          let token: proc_macro2::TokenStream = name.parse().unwrap();
-          Some(quote! { T![#token] })
+        match name.as_str() {
+          "semi" => Some(quote! { T![;] }),
+          "id" => Some(quote! { T![ident] }),
+          _ => {
+            let token: proc_macro2::TokenStream = name.parse().unwrap();
+            Some(quote! { T![#token] })
+          }
         }
       }
       _ => None,
@@ -582,7 +584,7 @@ impl Field {
 }
 
 // These types are short, and its easier to write "nl" than "'nl'".
-const TOKEN_SHORTHANDS: &[&str] = &["nl", "semi", "ident"];
+const TOKEN_SHORTHANDS: &[&str] = &["nl", "semi", "ident", "id"];
 
 fn lower(grammar: &Grammar) -> AstSrc {
   let mut res = AstSrc {
@@ -597,6 +599,11 @@ fn lower(grammar: &Grammar) -> AstSrc {
 
   for &node in &nodes {
     let name = grammar[node].name.clone();
+
+    if TOKEN_SHORTHANDS.contains(&name.as_str()) {
+      continue;
+    }
+
     let rule = &grammar[node].rule;
     match lower_enum(grammar, rule) {
       Some(variants) => {
