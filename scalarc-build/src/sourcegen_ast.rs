@@ -67,7 +67,9 @@ fn generate_tokens(grammar: &AstSrc) -> String {
     "sourcegen_ast",
     sourcegen::reformat(
       quote! {
-        use crate::{SyntaxKind::{self, *}, SyntaxToken, ast::AstToken};
+        use crate::{ast::AstToken, node::SyntaxToken};
+        use scalarc_parser::SyntaxKind::{self, *};
+
         #(#tokens)*
       }
       .to_string(),
@@ -293,11 +295,8 @@ fn generate_nodes(kinds: KindsSrc<'_>, grammar: &AstSrc) -> String {
 
   let ast = quote! {
       #![allow(non_snake_case)]
-      use crate::{
-        SyntaxNode, SyntaxToken, SyntaxKind::{self, *},
-        ast::{self, AstNode, AstChildren, support},
-        T,
-      };
+      use crate::{ast::AstToken, node::SyntaxToken};
+      use scalarc_parser::SyntaxKind::{self, *};
 
       #(#node_defs)*
       #(#enum_defs)*
