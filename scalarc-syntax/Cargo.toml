@@ -10,6 +10,7 @@ edition = "2021"
 [dependencies]
 rowan = "0.15.15"
 thiserror = "1.0.56"
+scalarc-parser.workspace = true
 
 [build-dependencies]
 scalarc-build.workspace = true
