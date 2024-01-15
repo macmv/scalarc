@@ -5,13 +5,10 @@
 //! Specifically, it generates the `SyntaxKind` enum and a number of newtype
 //! wrappers around `SyntaxNode` which implement `syntax::AstNode`.
 
-use std::{
-  collections::{BTreeSet, HashSet},
-  fmt::Write,
-};
+use std::{collections::BTreeSet, fmt::Write};
 
 use itertools::Itertools;
-use proc_macro2::{Punct, Spacing};
+use proc_macro2::{Ident, Punct, Spacing, Span};
 use quote::{format_ident, quote};
 use ungrammar::{Grammar, Rule};
 
@@ -21,7 +18,10 @@ use super::{
 };
 
 pub fn sourcegen_kinds() {
-  let syntax_kinds = generate_syntax_kinds(KINDS_SRC);
+  let grammar: Grammar =
+    include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/scala.ungram")).parse().unwrap();
+
+  let syntax_kinds = generate_syntax_kinds(KINDS_SRC, &grammar);
   let syntax_kinds_file =
     sourcegen::project_root().join("scalarc-parser/src/syntax_kind/generated.rs");
   sourcegen::ensure_file_contents(syntax_kinds_file.as_path(), &syntax_kinds);
@@ -36,7 +36,7 @@ pub fn sourcegen_ast() {
     sourcegen::project_root().join("scalarc-syntax/src/ast/generated/tokens.rs");
   sourcegen::ensure_file_contents(ast_tokens_file.as_path(), &ast_tokens);
 
-  let ast_nodes = generate_nodes(KINDS_SRC, &ast);
+  let ast_nodes = generate_nodes(&ast);
   let ast_nodes_file = sourcegen::project_root().join("scalarc-syntax/src/ast/generated/nodes.rs");
   sourcegen::ensure_file_contents(ast_nodes_file.as_path(), &ast_nodes);
 }
@@ -80,7 +80,7 @@ fn generate_tokens(grammar: &AstSrc) -> String {
   .replace("#[derive", "\n#[derive")
 }
 
-fn generate_nodes(kinds: KindsSrc<'_>, grammar: &AstSrc) -> String {
+fn generate_nodes(grammar: &AstSrc) -> String {
   let (node_defs, node_boilerplate_impls): (Vec<_>, Vec<_>) = grammar
     .nodes
     .iter()
@@ -282,19 +282,6 @@ fn generate_nodes(kinds: KindsSrc<'_>, grammar: &AstSrc) -> String {
       }
     });
 
-  let defined_nodes: HashSet<_> = node_names.collect();
-
-  for node in kinds
-    .nodes
-    .iter()
-    .map(|kind| to_pascal_case(kind))
-    .filter(|name| !defined_nodes.iter().any(|&it| it == name))
-  {
-    drop(node)
-    // FIXME: restore this
-    // eprintln!("Warning: node {} not defined in ast source", node);
-  }
-
   let ast = quote! {
       #![allow(non_snake_case)]
       use crate::{
@@ -339,15 +326,15 @@ fn write_doc_comment(contents: &[String], dest: &mut String) {
   }
 }
 
-fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> String {
-  let (single_byte_tokens_values, single_byte_tokens): (Vec<_>, Vec<_>) = grammar
+fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
+  let (single_byte_tokens_values, single_byte_tokens): (Vec<_>, Vec<_>) = kinds
     .punct
     .iter()
     .filter(|(token, _name)| token.len() == 1)
     .map(|(token, name)| (token.chars().next().unwrap(), format_ident!("{}", name)))
     .unzip();
 
-  let punctuation_values = grammar.punct.iter().map(|(token, _name)| {
+  let punctuation_values = kinds.punct.iter().map(|(token, _name)| {
     if "{}[]()".contains(token) {
       let c = token.chars().next().unwrap();
       quote! { #c }
@@ -357,28 +344,36 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> String {
     }
   });
   let punctuation =
-    grammar.punct.iter().map(|(_token, name)| format_ident!("{}", name)).collect::<Vec<_>>();
+    kinds.punct.iter().map(|(_token, name)| format_ident!("{}", name)).collect::<Vec<_>>();
 
   let x = |&name| match name {
     "Self" => format_ident!("SELF_TYPE_KW"),
     name => format_ident!("{}_KW", to_upper_snake_case(name)),
   };
-  let full_keywords_values = grammar.keywords;
+  let full_keywords_values = kinds.keywords;
   let full_keywords = full_keywords_values.iter().map(x);
 
-  let contextual_keywords_values = &grammar.contextual_keywords;
+  let contextual_keywords_values = &kinds.contextual_keywords;
   let contextual_keywords = contextual_keywords_values.iter().map(x);
 
   let all_keywords_values =
-    grammar.keywords.iter().chain(grammar.contextual_keywords.iter()).copied().collect::<Vec<_>>();
+    kinds.keywords.iter().chain(kinds.contextual_keywords.iter()).copied().collect::<Vec<_>>();
   let all_keywords_idents = all_keywords_values.iter().map(|kw| format_ident!("{}", kw));
   let all_keywords = all_keywords_values.iter().map(x).collect::<Vec<_>>();
 
-  let literals = grammar.literals.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
+  let literals = kinds.literals.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
 
-  let tokens = grammar.tokens.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
+  let tokens = kinds.tokens.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
 
-  let nodes = grammar.nodes.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
+  let mut nodes: Vec<Ident> = vec![];
+  for node in grammar.iter() {
+    let name = &grammar[node].name;
+    if TOKEN_SHORTHANDS.contains(&name.as_str()) {
+      continue;
+    }
+
+    nodes.push(Ident::new(&to_upper_snake_case(name), Span::call_site()));
+  }
 
   let ast = quote! {
     #![allow(bad_style, missing_docs, unreachable_pub)]
