@@ -20,12 +20,14 @@ use super::{
   sourcegen,
 };
 
-pub fn sourcegen_ast() {
+pub fn sourcegen_kinds() {
   let syntax_kinds = generate_syntax_kinds(KINDS_SRC);
   let syntax_kinds_file =
     sourcegen::project_root().join("scalarc-parser/src/syntax_kind/generated.rs");
   sourcegen::ensure_file_contents(syntax_kinds_file.as_path(), &syntax_kinds);
+}
 
+pub fn sourcegen_ast() {
   let grammar = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/scala.ungram")).parse().unwrap();
   let ast = lower(&grammar);
 

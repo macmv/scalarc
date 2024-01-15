@@ -11,3 +11,6 @@ edition = "2021"
 rowan = "0.15.15"
 scalarc-ast = { path = "../scalarc-ast" }
 thiserror = "1.0.56"
+
+[build-dependencies]
+scalarc-build.workspace = true
