@@ -656,13 +656,11 @@ fn lower_rule(acc: &mut Vec<Field>, grammar: &Grammar, label: Option<&String>, r
     Rule::Token(token) => {
       assert!(label.is_none());
       let mut name = grammar[*token].name.clone();
-      if TOKEN_SHORTHANDS.contains(&name.as_str()) {
-        if "[]{}()".contains(&name) {
-          name = format!("'{}'", name);
-        }
-        let field = Field::Token(name);
-        acc.push(field);
+      if "[]{}()".contains(&name) {
+        name = format!("'{}'", name);
       }
+      let field = Field::Token(name);
+      acc.push(field);
     }
     Rule::Rep(inner) => match **inner {
       Rule::Node(node) => {
