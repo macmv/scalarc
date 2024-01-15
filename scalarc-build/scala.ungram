@@ -62,43 +62,70 @@ Refinement = (nl)? '{' RefineStat (semi RefineStat)* '}'
 RefineStat = Dec | TypeDef
 TypePat    = Type
 
-Ascription = ':' InfixType
-           | ':' Annotation (Annotation)*
-           | ':' '_' '*'
+Ascription = AscriptionType | AscriptionAnnotation | AscriptionSpread
+
+AscriptionType       = ':' InfixType
+AscriptionAnnotation = ':' Annotation (Annotation)*
+AscriptionSpread     = ':' '_' '*'
 
 Expr  = (Bindings | ('implicit')? (id | '_')) '=>' Expr | ExprInner
-ExprInner = 'if' '(' Expr ')' (nl)* Expr ((semi)? 'else' Expr)?
-      | 'while' '(' Expr ')' (nl)* Expr
-      | 'try' Expr ('catch' Expr)? ('finally' Expr)?
-      | 'do' Expr (semi)? 'while' '(' Expr ')'
-      | 'for' ('(' Enumerators ')' | '{' Enumerators '}') (nl)* ('yield')? Expr
-      | 'throw' Expr
-      | 'return' (Expr)?
-      | (SimpleExpr '.')? id '=' Expr
-      | PrefixOperator SimpleExpr '=' Expr
-      | SimpleExprInner ArgumentExprs '=' Expr
-      | PostfixExpr
-      | PostfixExpr Ascription
-      | PostfixExpr 'match' '{' CaseClauses '}'
 
-PostfixExpr    = InfixExpr (id (nl)?)?
-InfixExpr      = PrefixExpr | InfixExpr id (nl)? InfixExpr
-PrefixExpr     = (PrefixOperator)? SimpleExpr
+ExprInner = IfExpr
+          | WhileExpr
+          | TryExpr
+          | DoWhileExpr
+          | ForExpr
+          | ThrowExpr
+          | ReturnExpr
+          | AssignPrefixExpr
+          | AssignDotExpr
+          | AssignCallExpr
+          | PostfixExpr
+          | PostfixExprAscription
+          | MatchExpr
+IfExpr      = 'if' '(' Expr ')' (nl)* Expr ((semi)? 'else' Expr)?
+WhileExpr   = 'while' '(' Expr ')' (nl)* Expr
+TryExpr     = 'try' Expr ('catch' Expr)? ('finally' Expr)?
+DoWhileExpr = 'do' Expr (semi)? 'while' '(' Expr ')'
+ForExpr     = 'for' ('(' Enumerators ')' | '{' Enumerators '}') (nl)* ('yield')? Expr
+ThrowExpr   = 'throw' Expr
+ReturnExpr  = 'return' Expr?
+
+AssignPrefixExpr = PrefixOperator SimpleExpr '=' Expr
+AssignDotExpr    = (SimpleExpr '.')? id '=' Expr
+AssignCallExpr   = SimpleExprInner ArgumentExprList '=' Expr
+
+PostfixExprAscription = PostfixExpr Ascription
+MatchExpr             = PostfixExpr 'match' '{' CaseClauses '}'
+
+PostfixExpr    = InfixExpr (id nl?)?
+InfixExpr      = PrefixExpr | InfixExpr id nl? InfixExpr
+PrefixExpr     = PrefixOperator? SimpleExpr
 PrefixOperator = '-' | '+' | '~' | '!'
-SimpleExpr     = 'new' (ClassTemplate | TemplateBody)
-               | BlockExpr
-               | SimpleExprInner ('_')?
-SimpleExprInner    = Literal
-               | Path
-               | '_'
-               | '(' Exprs? ')'
-               | SimpleExpr '.' id
-               | SimpleExpr TypeArgs
-               | SimpleExprInner ArgumentExprs
-Exprs          = Expr (',' Expr)*
-ArgumentExprs  = '(' Exprs? ')'
-               | '(' (Exprs ',')? PostfixExpr ':' '_' '*' ')'
-               | (nl)? BlockExpr
+
+SimpleExpr = NewExpr
+           | BlockExpr
+           | SimpleExprInnerUnderscore
+NewExpr                   = 'new' (ClassTemplate | TemplateBody)
+SimpleExprInnerUnderscore = SimpleExprInner ('_')?
+
+SimpleExprInner = Literal
+                | Path
+                | UnderscoreExpr
+                | TupleExpr
+                | FieldExpr
+                | CallExpr
+UnderscoreExpr = '_'
+TupleExpr      = '(' (Expr (',' Expr)*)? ')'
+FieldExpr      = SimpleExpr '.' id
+TypedExpr      = SimpleExpr TypeArgs
+CallExpr       = SimpleExprInner ArgumentExprList
+
+ArgumentExprList = ParenArguments | SpreadArguments | BlockArguments
+ParenArguments  = '(' (Expr (',' Expr)*)? ')'
+SpreadArguments = '(' (Expr (',' Expr)*)? PostfixExpr ':' '_' '*' ')'
+BlockArguments  = nl? BlockExpr
+
 BlockExpr      = '{' CaseClauses '}' | '{' Block '}'
 Block          = BlockStat (semi BlockStat)* (ResultExpr)?
 BlockStat      = Import
@@ -169,8 +196,8 @@ LocalModifier = 'abstract'
 AccessModifier    =  ('private' | 'protected') (AccessQualifier)?
 AccessQualifier   =  '[' (id | 'this') ']'
 
-Annotation        =  '@' SimpleType ArgumentExprs*
-ConstrAnnotation  =  '@' SimpleType ArgumentExprs
+Annotation        =  '@' SimpleType ArgumentExprList*
+ConstrAnnotation  =  '@' SimpleType ArgumentExprList
 
 TemplateBody      =  (nl)? '{' (SelfType)? TemplateStat (semi TemplateStat)* '}'
 TemplateStat      =  Import
@@ -231,13 +258,13 @@ ClassTemplate    = EarlyDefs? ClassParents TemplateBody?
 TraitTemplate    = EarlyDefs? TraitParents TemplateBody?
 ClassParents     = Constr ('with' AnnotType)*
 TraitParents     = AnnotType ('with' AnnotType)*
-Constr           = AnnotType ArgumentExprs*
+Constr           = AnnotType ArgumentExprList*
 EarlyDefs        = '{' (EarlyDef (semi EarlyDef)*)? '}' 'with'
 EarlyDef         = (Annotation (nl)?)* (Modifier)* PatVarDef
 
 ConstrExpr     = SelfInvocation | ConstrBlock
 ConstrBlock    = '{' SelfInvocation (semi BlockStat)* '}'
-SelfInvocation = 'this' ArgumentExprs (ArgumentExprs)*
+SelfInvocation = 'this' ArgumentExprList (ArgumentExprList)*
 
 TopStatSeq     = TopStat (semi TopStat)*
 TopStat        = (Annotation (nl)?)* (Modifier)* TmplDef

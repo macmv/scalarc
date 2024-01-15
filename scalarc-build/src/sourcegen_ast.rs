@@ -680,7 +680,7 @@ fn lower_rule(acc: &mut Vec<Field>, grammar: &Grammar, label: Option<&String>, r
   }
 }
 
-// (T (',' T)* ','?)
+// (T (',' T)*)
 fn lower_comma_list(
   acc: &mut Vec<Field>,
   grammar: &Grammar,
@@ -691,20 +691,10 @@ fn lower_comma_list(
     Rule::Seq(it) => it,
     _ => return false,
   };
-  let (node, repeat, trailing_comma) = match rule.as_slice() {
-    [Rule::Node(node), Rule::Rep(repeat), Rule::Opt(trailing_comma)] => {
-      (node, repeat, trailing_comma)
-    }
+  let node = match rule.as_slice() {
+    [Rule::Node(node), Rule::Rep(_)] => node,
     _ => return false,
   };
-  let repeat = match &**repeat {
-    Rule::Seq(it) => it,
-    _ => return false,
-  };
-  match repeat.as_slice() {
-    [comma, Rule::Node(n)] if comma == &**trailing_comma && n == node => (),
-    _ => return false,
-  }
   let ty = grammar[*node].name.clone();
   let name = label.cloned().unwrap_or_else(|| pluralize(&to_lower_snake_case(&ty)));
   let field = Field::Node { name, ty, cardinality: Cardinality::Many };
