@@ -527,40 +527,32 @@ impl Field {
         let name = match name.as_str() {
           "-" => "minus",
           "+" => "plus",
+          "'{'" => "open_curly",
+          "'}'" => "close_curly",
+          "'('" => "open_paren",
+          "')'" => "close_paren",
+          "'['" => "open_bracket",
+          "']'" => "close_bracket",
           "<-" => "thin_left_arrow",
           ">:" => "greater_colon",
           "<:" => "less_colon",
-
-          ";" => "semicolon",
-          "->" => "thin_arrow",
-          "'{'" => "l_curly",
-          "'}'" => "r_curly",
-          "'('" => "l_paren",
-          "')'" => "r_paren",
-          "'['" => "l_brack",
-          "']'" => "r_brack",
-          "<" => "l_angle",
-          ">" => "r_angle",
           "=" => "eq",
-          "!" => "excl",
+          "!" => "bang",
           "*" => "star",
-          "&" => "amp",
-          "_" => "underscore",
           "." => "dot",
-          ".." => "dotdot",
-          "..." => "dotdotdot",
-          "..=" => "dotdoteq",
           "=>" => "fat_arrow",
           "@" => "at",
           ":" => "colon",
-          "::" => "coloncolon",
           "#" => "pound",
-          "?" => "question_mark",
           "," => "comma",
-          "|" => "pipe",
           "~" => "tilde",
-          _ => name,
+          "_" => "underscore",
+          _ if name.chars().all(|c| c.is_ascii_lowercase() || c == '_') => name,
+          _ => panic!("unknown token {name}"),
         };
+        format_ident!("{}_token", name)
+      }
+      Field::Node { name, .. } if TOKEN_SHORTHANDS.contains(&name.as_str()) => {
         format_ident!("{}_token", name)
       }
       Field::Node { name, .. } => {

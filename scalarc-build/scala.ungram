@@ -45,7 +45,9 @@ ClassQualifier = '[' id ']'
 
 Type              = FunctionArgTypes '=>' Type | InfixType (ExistentialClause)?
 FunctionArgTypes  = InfixType | '(' ( ParamType (',' ParamType)* )? ')'
-ExistentialClause = 'forSome' '{' ExistentialDec (semi ExistentialDec)? '}'
+// No idea what 'forSome' is, going to comment out for now.
+// ExistentialClause = 'forSome' '{' ExistentialDec (semi ExistentialDec)? '}'
+ExistentialClause = 'for' '{' ExistentialDec (semi ExistentialDec)? '}'
 ExistentialDec    = 'type' TypeDec | 'val' ValDec
 InfixType         = CompoundType (id (nl)? CompoundType)*
 CompoundType      = AnnotType ('with' AnnotType)* (Refinement)? | Refinement
