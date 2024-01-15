@@ -29,7 +29,7 @@ Literal = ('-')? 'int_lit'
 
 id = 'ident'
 semi = 'semi'
-nl = 'newline'
+nl = 'nl'
 
 varid = id
 boundvarid = id

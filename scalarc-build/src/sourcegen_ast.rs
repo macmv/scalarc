@@ -503,6 +503,10 @@ impl Field {
         let token: proc_macro2::TokenStream = token.parse().unwrap();
         Some(quote! { T![#token] })
       }
+      Field::Node { name, .. } if TOKEN_SHORTHANDS.contains(&name.as_str()) => {
+        let token: proc_macro2::TokenStream = name.parse().unwrap();
+        Some(quote! { T![#token] })
+      }
       _ => None,
     }
   }
@@ -560,10 +564,16 @@ impl Field {
   fn ty(&self) -> proc_macro2::Ident {
     match self {
       Field::Token(_) => format_ident!("SyntaxToken"),
+      Field::Node { name, .. } if TOKEN_SHORTHANDS.contains(&name.as_str()) => {
+        format_ident!("SyntaxToken")
+      }
       Field::Node { ty, .. } => format_ident!("{}", ty),
     }
   }
 }
+
+// These types are short, and its easier to write "nl" than "'nl'".
+const TOKEN_SHORTHANDS: &[&str] = &["nl", "semi", "ident"];
 
 fn lower(grammar: &Grammar) -> AstSrc {
   let mut res = AstSrc {
@@ -630,7 +640,7 @@ fn lower_rule(acc: &mut Vec<Field>, grammar: &Grammar, label: Option<&String>, r
     Rule::Token(token) => {
       assert!(label.is_none());
       let mut name = grammar[*token].name.clone();
-      if name != "int_number" && name != "string" {
+      if TOKEN_SHORTHANDS.contains(&name.as_str()) {
         if "[]{}()".contains(&name) {
           name = format!("'{}'", name);
         }
