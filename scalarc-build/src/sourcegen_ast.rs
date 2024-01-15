@@ -509,8 +509,12 @@ impl Field {
         Some(quote! { T![#token] })
       }
       Field::Node { name, .. } if TOKEN_SHORTHANDS.contains(&name.as_str()) => {
-        let token: proc_macro2::TokenStream = name.parse().unwrap();
-        Some(quote! { T![#token] })
+        if name == "semi" {
+          Some(quote! { T![;] })
+        } else {
+          let token: proc_macro2::TokenStream = name.parse().unwrap();
+          Some(quote! { T![#token] })
+        }
       }
       _ => None,
     }
