@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::{EntryPoint, Event, Lexer};
+use crate::{EntryPoint, Event, Lexer, SyntaxKind};
 
 mod inline;
 
@@ -18,6 +18,10 @@ impl fmt::Display for Events<'_> {
     for e in self.0 {
       match e {
         Event::Start { kind } => {
+          // Ignore tombstones
+          if kind == &SyntaxKind::TOMBSTONE {
+            continue;
+          }
           writeln!(f, "{}{:?}", "  ".repeat(indent), kind)?;
           indent += 1;
         }

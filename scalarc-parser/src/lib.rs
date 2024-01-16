@@ -131,7 +131,7 @@ impl Parser<'_> {
 
   pub fn start(&mut self) -> Marker {
     let i = self.events.len();
-    self.events.push(Event::Start { kind: SyntaxKind::__LAST });
+    self.events.push(Event::Start { kind: SyntaxKind::TOMBSTONE });
     Marker { index: i }
   }
   pub fn at(&mut self, t: SyntaxKind) -> bool { self.current() == t }
@@ -157,6 +157,17 @@ impl Parser<'_> {
     }
   }
 
+  fn recover_until(&mut self, t: SyntaxKind) {
+    while self.current() != t && self.current() != SyntaxKind::EOF {
+      self.bump();
+    }
+    self.bump();
+  }
+
+  pub fn error_bump(&mut self, msg: impl Into<String>) {
+    self.error(msg);
+    self.bump();
+  }
   pub fn error(&mut self, msg: impl Into<String>) {
     self.events.push(Event::Error { msg: msg.into() })
   }
@@ -170,5 +181,10 @@ impl Marker {
     }
     parser.events.push(Event::Finish);
   }
-  pub fn abandon(self, parser: &mut Parser) { parser.bump(); }
+  pub fn abandon(self, parser: &mut Parser) {
+    match &mut parser.events[self.index] {
+      Event::Start { kind: SyntaxKind::TOMBSTONE, .. } => (),
+      _ => unreachable!(),
+    }
+  }
 }

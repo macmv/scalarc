@@ -25,6 +25,7 @@ fn item(p: &mut Parser) {
     T![static] if (la == IDENT || la == T![_] || la == T![mut]) => consts::static_(p, m),
     */
     _ => {
+      p.error_bump(format!("expected item, got {:?}", p.current()));
       m.abandon(p);
     }
   };
@@ -63,7 +64,19 @@ fn import_item(p: &mut Parser, m: Marker) {
         m.complete(p, IMPORT);
         return;
       }
+
+      // test
+      // ---
+      // import 3
+      // ---
+      // SOURCE_FILE
+      //   IMPORT_KW
+      //   error: expected ident, got LITERAL
+      //   LITERAL
+      //   NL_KW
       _ => {
+        p.error(format!("expected ident, got {:?}", p.current()));
+        p.recover_until(T![nl]);
         m.abandon(p);
         return;
       }
