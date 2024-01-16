@@ -8,6 +8,7 @@ edition = "2021"
 [lib]
 
 [dependencies]
+drop_bomb = "0.1.5"
 rowan = "0.15.15"
 scalarc-ast = { path = "../scalarc-ast" }
 thiserror = "1.0.56"

@@ -4,6 +4,7 @@ mod syntax_kind;
 mod tests;
 mod token;
 
+use drop_bomb::DropBomb;
 pub use syntax_kind::SyntaxKind;
 pub use token::Lexer;
 use token::{LexError, Token};
@@ -124,6 +125,7 @@ impl<'a> Parser<'a> {
 
 struct Marker {
   index: usize,
+  bomb:  DropBomb,
 }
 
 impl Parser<'_> {
@@ -132,7 +134,7 @@ impl Parser<'_> {
   pub fn start(&mut self) -> Marker {
     let i = self.events.len();
     self.events.push(Event::Start { kind: SyntaxKind::TOMBSTONE });
-    Marker { index: i }
+    Marker { index: i, bomb: DropBomb::new("Marker must be either completed or abandoned") }
   }
   pub fn at(&mut self, t: SyntaxKind) -> bool { self.current() == t }
   pub fn current(&self) -> SyntaxKind { self.current }
@@ -174,14 +176,16 @@ impl Parser<'_> {
 }
 
 impl Marker {
-  pub fn complete(self, parser: &mut Parser, kind: SyntaxKind) {
+  pub fn complete(mut self, parser: &mut Parser, kind: SyntaxKind) {
+    self.bomb.defuse();
     match &mut parser.events[self.index] {
       Event::Start { kind: k, .. } => *k = kind,
       _ => unreachable!(),
     }
     parser.events.push(Event::Finish);
   }
-  pub fn abandon(self, parser: &mut Parser) {
+  pub fn abandon(mut self, parser: &mut Parser) {
+    self.bomb.defuse();
     match &mut parser.events[self.index] {
       Event::Start { kind: SyntaxKind::TOMBSTONE, .. } => (),
       _ => unreachable!(),
