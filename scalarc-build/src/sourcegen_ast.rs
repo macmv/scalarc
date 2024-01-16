@@ -346,6 +346,7 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
   let punctuation =
     kinds.punct.iter().map(|(_token, name)| format_ident!("{}", name)).collect::<Vec<_>>();
 
+  /*
   let x = |&name| match name {
     "Self" => format_ident!("SELF_TYPE_KW"),
     name => format_ident!("{}_KW", to_upper_snake_case(name)),
@@ -360,10 +361,32 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
     kinds.keywords.iter().chain(kinds.contextual_keywords.iter()).copied().collect::<Vec<_>>();
   let all_keywords_idents = all_keywords_values.iter().map(|kw| format_ident!("{}", kw));
   let all_keywords = all_keywords_values.iter().map(x).collect::<Vec<_>>();
+  */
 
   let literals = kinds.literals.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
 
-  let tokens = kinds.tokens.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
+  let mut keywords: Vec<Ident> = vec![];
+  let mut punctuation: Vec<Ident> = vec![];
+  for tok in grammar.tokens() {
+    let name = &grammar[tok].name;
+
+    if name != "_" && name.chars().all(|c| c.is_ascii_lowercase() || c == '_') {
+      let name = format!("{}_KW", to_upper_snake_case(name));
+      let ident = Ident::new(&name, Span::call_site());
+      keywords.push(ident);
+    } else {
+      let name = token_name(name);
+      let ident = Ident::new(&to_upper_snake_case(name), Span::call_site());
+      punctuation.push(ident);
+    }
+  }
+
+  // TODO: Need to line these up with the actual grammar
+  let mut tokens: Vec<Ident> = vec![];
+  for tok in &["WHITESPACE", "COMMENT", "IDENT"] {
+    let ident = Ident::new(&tok, Span::call_site());
+    tokens.push(ident);
+  }
 
   let mut nodes: Vec<Ident> = vec![];
   for node in grammar.iter() {
@@ -387,10 +410,15 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
       TOMBSTONE,
       #[doc(hidden)]
       EOF,
+      #[comment_separator]
       #(#punctuation,)*
-      #(#all_keywords,)*
-      #(#literals,)*
+      #[comment_separator]
       #(#tokens,)*
+      #[comment_separator]
+      #(#keywords,)*
+      #[comment_separator]
+      #(#literals,)*
+      #[comment_separator]
       #(#nodes,)*
 
       // Technical kind so that we can cast from u16 safely
@@ -401,7 +429,7 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
 
     impl SyntaxKind {
       pub fn is_keyword(self) -> bool {
-        matches!(self, #(#all_keywords)|*)
+        matches!(self, #(#keywords)|*)
       }
 
       pub fn is_punct(self) -> bool {
@@ -412,6 +440,7 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
         matches!(self, #(#literals)|*)
       }
 
+      /*
       pub fn from_keyword(ident: &str) -> Option<SyntaxKind> {
         let kw = match ident {
           #(#full_keywords_values => #full_keywords,)*
@@ -435,12 +464,14 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
         };
         Some(tok)
       }
+      */
     }
 
+    // TODO: Fix this macro
     #[macro_export]
     macro_rules! T {
-      #([#punctuation_values] => { $crate::SyntaxKind::#punctuation };)*
-      #([#all_keywords_idents] => { $crate::SyntaxKind::#all_keywords };)*
+      // #([#punctuation_values] => { $crate::SyntaxKind::#punctuation };)*
+      // #([#all_keywords_idents] => { $crate::SyntaxKind::#all_keywords };)*
       [lifetime_ident] => { $crate::SyntaxKind::LIFETIME_IDENT };
       [ident] => { $crate::SyntaxKind::IDENT };
       [shebang] => { $crate::SyntaxKind::SHEBANG };
@@ -449,6 +480,7 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
   };
 
   sourcegen::add_preamble("sourcegen_ast", sourcegen::reformat(ast.to_string()))
+    .replace("#[comment_separator]", "// ---")
 }
 
 fn to_upper_snake_case(s: &str) -> String {
@@ -497,6 +529,39 @@ fn to_pascal_case(s: &str) -> String {
 
 fn pluralize(s: &str) -> String { format!("{}s", s) }
 
+fn token_name(name: &str) -> &str {
+  match name {
+    "(" | "'('" => "open_paren",
+    ")" | "')'" => "close_paren",
+    "[" | "'['" => "open_bracket",
+    "]" | "']'" => "close_bracket",
+    "}" | "'}'" => "close_curly",
+    "{" | "'{'" => "open_curly",
+
+    "-" => "minus",
+    "+" => "plus",
+    "|" => "pipe",
+    "<-" => "thin_left_arrow",
+    ">:" => "greater_colon",
+    "<:" => "less_colon",
+    "<%" => "less_percent",
+    "=" => "eq",
+    "!" => "bang",
+    "*" => "star",
+    "." => "dot",
+    "=>" => "fat_arrow",
+    "@" => "at",
+    ":" => "colon",
+    "#" => "pound",
+    "," => "comma",
+    "~" => "tilde",
+    "_" => "underscore",
+
+    _ if name.chars().all(|c| c.is_ascii_lowercase() || c == '_') => name,
+    _ => panic!("unknown token {name}"),
+  }
+}
+
 impl Field {
   fn is_many(&self) -> bool { matches!(self, Field::Node { cardinality: Cardinality::Many, .. }) }
   fn token_kind(&self) -> Option<proc_macro2::TokenStream> {
@@ -521,32 +586,7 @@ impl Field {
   fn method_name(&self) -> proc_macro2::Ident {
     match self {
       Field::Token(name) => {
-        let name = match name.as_str() {
-          "-" => "minus",
-          "+" => "plus",
-          "'{'" => "open_curly",
-          "'}'" => "close_curly",
-          "'('" => "open_paren",
-          "')'" => "close_paren",
-          "'['" => "open_bracket",
-          "']'" => "close_bracket",
-          "<-" => "thin_left_arrow",
-          ">:" => "greater_colon",
-          "<:" => "less_colon",
-          "=" => "eq",
-          "!" => "bang",
-          "*" => "star",
-          "." => "dot",
-          "=>" => "fat_arrow",
-          "@" => "at",
-          ":" => "colon",
-          "#" => "pound",
-          "," => "comma",
-          "~" => "tilde",
-          "_" => "underscore",
-          _ if name.chars().all(|c| c.is_ascii_lowercase() || c == '_') => name,
-          _ => panic!("unknown token {name}"),
-        };
+        let name = token_name(name);
         format_ident!("{}_token", name)
       }
       Field::Node { name, .. } if TOKEN_SHORTHANDS.contains(&name.as_str()) => {
