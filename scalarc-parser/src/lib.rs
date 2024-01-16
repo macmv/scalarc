@@ -34,7 +34,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       ":" => T![:],
       _ => T![ident],
     },
-    Token::Literal(_) => SyntaxKind::LITERAL,
+    Token::Literal(token::Literal::Integer) => SyntaxKind::INT_LIT_KW,
     Token::Newline => T![nl],
     Token::Delimiter(token::Delimiter::Dot) => T![.],
     Token::Delimiter(token::Delimiter::Comma) => T![,],

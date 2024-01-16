@@ -9,11 +9,11 @@ pub fn expr(p: &mut Parser) {
     T![ident] => {
       p.eat(T![ident]);
       expr(p);
-      m.complete(p, EXPR);
+      m.complete(p, INFIX_EXPR);
     }
 
     T![nl] => {
-      m.complete(p, EXPR);
+      m.abandon(p);
       p.eat(T![nl]);
     }
 
@@ -29,9 +29,9 @@ fn simple_expr(p: &mut Parser) {
   let m = p.start();
 
   match p.current() {
-    LITERAL => {
-      p.eat(LITERAL);
-      m.complete(p, SIMPLE_EXPR);
+    INT_LIT_KW => {
+      p.eat(INT_LIT_KW);
+      m.complete(p, LITERAL);
     }
 
     _ => {
@@ -67,5 +67,38 @@ mod tests {
               LITERAL
           NL_KW",
     );
+  }
+
+  #[test]
+  fn complex_op() {
+    check_expr(
+      "2 + 2",
+      r"INFIX_EXPR
+          LITERAL
+            INT_LIT_KW
+          IDENT
+          LITERAL
+            INT_LIT_KW
+          NL_KW",
+    );
+    /*
+    check_expr(
+      "2 + 2 == 5",
+      r"INFIX_EXPR
+          INFIX_EXPR
+            LITERAL
+              INT_NUMBER '2'
+            WHITESPACE ' '
+            IDENT '+'
+            WHITESPACE ' '
+            LITERAL
+              INT_NUMBER '2'
+          WHITESPACE ' '
+          EQ2 '=='
+          WHITESPACE ' '
+          LITERAL
+            INT_NUMBER '5'",
+    );
+    */
   }
 }
