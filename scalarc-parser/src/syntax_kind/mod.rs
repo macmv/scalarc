@@ -1,6 +1,6 @@
 mod generated;
 
-pub use generated::SyntaxKind;
+pub use generated::{SyntaxKind, T};
 
 impl From<u16> for SyntaxKind {
   #[inline]

@@ -1,3 +1,4 @@
+mod grammar;
 mod syntax_kind;
 mod token;
 
@@ -87,12 +88,9 @@ pub enum Event {
 
 impl EntryPoint {
   pub fn parse<'a>(&'a self, lexer: &'a mut Lexer<'a>) -> Vec<Event> {
-    let parser = Parser::new(lexer);
+    let mut parser = Parser::new(lexer);
     match self {
-      EntryPoint::SourceFile => {
-        // grammar::entry_point::source_file(parser)
-        todo!()
-      }
+      EntryPoint::SourceFile => grammar::entry_point::source_file(&mut parser),
     }
     parser.finish()
   }
@@ -102,6 +100,19 @@ impl<'a> Parser<'a> {
   pub fn new(lexer: &'a mut Lexer<'a>) -> Self { Parser { lexer, events: Vec::new() } }
 }
 
+struct Marker {}
+
 impl Parser<'_> {
   pub fn finish(self) -> Vec<Event> { self.events }
+
+  pub fn start(&mut self) -> Marker { todo!() }
+  pub fn at(&mut self, kind: SyntaxKind) -> bool { todo!() }
+  pub fn current(&self) -> SyntaxKind { todo!() }
+  pub fn eat(&self, t: SyntaxKind) { todo!() }
+  pub fn expect(&self, t: SyntaxKind) { todo!() }
+}
+
+impl Marker {
+  pub fn complete(self, parser: &mut Parser, kind: SyntaxKind) { todo!() }
+  pub fn abandon(self, parser: &mut Parser) { todo!() }
 }
