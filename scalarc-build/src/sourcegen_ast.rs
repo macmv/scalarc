@@ -622,7 +622,7 @@ impl Field {
   fn ty(&self) -> proc_macro2::Ident {
     match self {
       Field::Token(_) => format_ident!("SyntaxToken"),
-      Field::Node { name, .. } if TOKEN_SHORTHANDS.contains(&name.as_str()) => {
+      Field::Node { ty, .. } if TOKEN_SHORTHANDS.contains(&ty.as_str()) => {
         format_ident!("SyntaxToken")
       }
       Field::Node { ty, .. } => format_ident!("{}", ty),
