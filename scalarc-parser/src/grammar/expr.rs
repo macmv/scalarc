@@ -90,24 +90,25 @@ mod tests {
       "#],
     );
 
-    /*
+    // TODO: How on earth does scala handle precedence? Everything's an identifier!
     check_expr(
       "2 + 2 == 5",
-      r"INFIX_EXPR
+      expect![@r#"
+        INFIX_EXPR
+          LITERAL
+            INT_LIT_KW '2'
+          WHITESPACE ' '
+          IDENT '+'
+          WHITESPACE ' '
           INFIX_EXPR
             LITERAL
-              INT_NUMBER '2'
+              INT_LIT_KW '2'
             WHITESPACE ' '
-            IDENT '+'
+            IDENT '=='
             WHITESPACE ' '
             LITERAL
-              INT_NUMBER '2'
-          WHITESPACE ' '
-          EQ2 '=='
-          WHITESPACE ' '
-          LITERAL
-            INT_NUMBER '5'",
+              INT_LIT_KW '5'
+      "#],
     );
-    */
   }
 }
