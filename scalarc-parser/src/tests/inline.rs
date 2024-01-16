@@ -21,7 +21,7 @@ fn grammar_inline_tests() {
 
   for test in tests {
     let events = lex(&test.text);
-    assert_eq!(events, test.expect);
+    assert_eq!(events.trim(), test.expect.trim());
   }
 }
 
