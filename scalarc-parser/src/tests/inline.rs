@@ -3,7 +3,7 @@
 
 use super::lex;
 use std::{
-  fs, iter,
+  fs,
   path::{Path, PathBuf},
 };
 
@@ -21,30 +21,35 @@ fn grammar_inline_tests() {
 
   for test in tests {
     let events = lex(&test.text);
-    dbg!(&events);
+    assert_eq!(events, test.expect);
   }
-  panic!();
 }
 
 #[derive(Debug)]
 struct Test {
-  text: String,
-  ok:   bool,
+  text:   String,
+  expect: String,
 }
 
 fn collect_tests(s: &str) -> Vec<Test> {
   let mut tests = vec![];
-  let mut in_test = None;
+  let mut in_test = false;
   let mut test_lines = vec![];
   for line in s.lines() {
     let line = line.trim();
 
-    if let Some(ok) = in_test {
+    if in_test {
       if let Some(l) = line.strip_prefix("// ") {
         test_lines.push(l);
       } else {
-        tests.push(Test { text: test_lines.join("\n"), ok });
-        in_test = None;
+        let src = test_lines.join("\n");
+        let mut split = src.splitn(3, "---");
+        let _ = split.next().unwrap();
+        let text = split.next().unwrap().trim().into();
+        let expect = split.next().unwrap().trim().into();
+
+        tests.push(Test { text, expect });
+        in_test = false;
         test_lines.clear();
       }
       continue;
@@ -54,12 +59,7 @@ fn collect_tests(s: &str) -> Vec<Test> {
       continue;
     }
 
-    let kind = line.split(' ').nth(2).unwrap();
-    match kind {
-      "ok" => in_test = Some(true),
-      "err" => in_test = Some(false),
-      _ => panic!("invalid test kind {kind}"),
-    }
+    in_test = true;
   }
 
   tests
