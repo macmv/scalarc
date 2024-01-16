@@ -1,4 +1,4 @@
-use rowan::TextRange;
+use rowan::{TextRange, TextSize};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SyntaxError {
@@ -9,5 +9,9 @@ pub struct SyntaxError {
 impl SyntaxError {
   pub fn new(message: impl Into<String>, range: TextRange) -> Self {
     SyntaxError { message: message.into(), range }
+  }
+
+  pub fn new_at_offset(error: impl Into<String>, offset: TextSize) -> Self {
+    Self::new(error, TextRange::empty(offset))
   }
 }

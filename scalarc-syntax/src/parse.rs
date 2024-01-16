@@ -1,44 +1,72 @@
 //! Some high level functions to wrap `scalarc_parser`.
 
-use crate::SyntaxError;
-use rowan::{GreenNode, TextRange};
+use crate::{node::Scala, SyntaxError};
+use rowan::{GreenNode, GreenNodeBuilder, Language, TextRange, TextSize};
+use scalarc_parser::{Event, SyntaxKind};
 
-pub fn parse_text(text: &str) -> (GreenNode, Vec<SyntaxError>) { todo!() }
-
-/*
 pub fn parse_text(text: &str) -> (GreenNode, Vec<SyntaxError>) {
-  let lexed = scalarc_parser::LexedStr::new(text);
-  let parser_input = lexed.to_input();
+  let mut lexer = scalarc_parser::Lexer::new(text);
 
-  let parser_output = scalarc_parser::TopEntryPoint::SourceFile.parse(&parser_input);
-  let (node, errors, _eof) = build_tree(lexed, parser_output);
-
-  (node, errors)
+  let events = scalarc_parser::EntryPoint::SourceFile.parse(&mut lexer);
+  build_tree(events)
 }
 
-fn build_tree(
-  lexed: scalarc_parser::LexedStr<'_>,
-  parser_output: scalarc_parser::Output,
-) -> (GreenNode, Vec<SyntaxError>, bool) {
-  let mut builder = SyntaxTreeBuilder::default();
+fn build_tree(events: Vec<scalarc_parser::Event>) -> (GreenNode, Vec<SyntaxError>) {
+  let mut builder = SyntaxTreeBuilder::new();
 
-  let is_eof = lexed.intersperse_trivia(&parser_output, &mut |step| match step {
-    scalarc_parser::StrStep::Token { kind, text } => builder.token(kind, text),
-    scalarc_parser::StrStep::Enter { kind } => builder.start_node(kind),
-    scalarc_parser::StrStep::Exit => builder.finish_node(),
-    scalarc_parser::StrStep::Error { msg, pos } => {
-      builder.error(msg.to_string(), pos.try_into().unwrap())
+  for event in events {
+    // TODO: hrm
+    /*
+    match event {
+      Event::Token { kind } => {
+        builder.token(kind, text);
+      }
+      Event::Start { kind, .. } => builder.start_node(kind),
+      Event::Finish => builder.finish_node(),
+      Event::Error { msg, pos } => builder.error(msg.to_string(), pos.try_into().unwrap()),
     }
-  });
+    */
+  }
 
   let (node, mut errors) = builder.finish_raw();
-  for (i, err) in lexed.errors() {
-    let text_range = lexed.text_range(i);
+  // TODO: Collect lexer errors
+  /*
+  for (i, err) in lexer.errors() {
+    let text_range = lexer.text_range(i);
     let text_range =
       TextRange::new(text_range.start.try_into().unwrap(), text_range.end.try_into().unwrap());
     errors.push(SyntaxError::new(err, text_range))
   }
+  */
 
-  (node, errors, is_eof)
+  (node, errors)
 }
-*/
+
+struct SyntaxTreeBuilder {
+  errors:  Vec<SyntaxError>,
+  builder: GreenNodeBuilder<'static>,
+}
+impl SyntaxTreeBuilder {
+  pub fn new() -> Self { SyntaxTreeBuilder { errors: vec![], builder: GreenNodeBuilder::new() } }
+
+  pub fn finish_raw(self) -> (GreenNode, Vec<SyntaxError>) {
+    let green = self.builder.finish();
+    (green, self.errors)
+  }
+
+  pub fn token(&mut self, kind: SyntaxKind, text: &str) {
+    let kind = Scala::kind_to_raw(kind);
+    self.builder.token(kind, text);
+  }
+
+  pub fn start_node(&mut self, kind: SyntaxKind) {
+    let kind = Scala::kind_to_raw(kind);
+    self.builder.start_node(kind);
+  }
+
+  pub fn finish_node(&mut self) { self.builder.finish_node(); }
+
+  pub fn error(&mut self, error: String, text_pos: TextSize) {
+    self.errors.push(SyntaxError::new_at_offset(error, text_pos));
+  }
+}
