@@ -146,7 +146,7 @@ mod tests {
   fn imports() {
     check(
       "import foo.bar.baz",
-      expect![[r#"
+      expect![@r#"
         SOURCE_FILE
           IMPORT
             IMPORT_KW 'import'
@@ -157,12 +157,12 @@ mod tests {
             DOT '.'
             IDENT 'baz'
             NL_KW '\n'
-      "#]],
+      "#],
     );
 
     check(
       "import foo.{ bar, baz }",
-      expect![[r#"
+      expect![@r#"
         SOURCE_FILE
           IMPORT
             IMPORT_KW 'import'
@@ -179,7 +179,7 @@ mod tests {
               WHITESPACE ' '
               CLOSE_CURLY '}'
             NL_KW '\n'
-      "#]],
+      "#],
     );
   }
 
@@ -187,7 +187,7 @@ mod tests {
   fn fun_dec() {
     check(
       "def foo = 3",
-      expect![[r#"
+      expect![@r#"
         SOURCE_FILE
           FUN_DEC
             DEF_KW 'def'
@@ -199,12 +199,12 @@ mod tests {
             LITERAL
               INT_LIT_KW '3'
             NL_KW '\n'
-      "#]],
+      "#],
     );
 
     check(
       "def foo(a:) = 3",
-      expect![[r#"
+      expect![@r#"
         SOURCE_FILE
           FUN_DEC
             DEF_KW 'def'
@@ -223,12 +223,12 @@ mod tests {
             LITERAL
               INT_LIT_KW '3'
             NL_KW '\n'
-      "#]],
+      "#],
     );
 
     check(
       "def foo(a: Int) = 3",
-      expect![[r#"
+      expect![@r#"
         SOURCE_FILE
           FUN_DEC
             DEF_KW 'def'
@@ -248,12 +248,12 @@ mod tests {
             LITERAL
               INT_LIT_KW '3'
             NL_KW '\n'
-      "#]],
+      "#],
     );
 
     check(
       "def foo(a: Int, b: String) = 3",
-      expect![[r#"
+      expect![@r#"
         SOURCE_FILE
           FUN_DEC
             DEF_KW 'def'
@@ -280,7 +280,7 @@ mod tests {
             LITERAL
               INT_LIT_KW '3'
             NL_KW '\n'
-      "#]],
+      "#],
     );
   }
 }

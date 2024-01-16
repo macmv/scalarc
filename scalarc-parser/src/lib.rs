@@ -15,7 +15,7 @@ extern crate pretty_assertions;
 
 #[cfg(test)]
 #[macro_use]
-extern crate expect_test;
+extern crate scalarc_test;
 
 pub enum EntryPoint {
   SourceFile,

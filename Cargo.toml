@@ -13,3 +13,4 @@ members = [
 [workspace.dependencies]
 scalarc-parser = { path = "scalarc-parser" }
 scalarc-build = { path = "scalarc-build" }
+scalarc-test = { path = "scalarc-test" }

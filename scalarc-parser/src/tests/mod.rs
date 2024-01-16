@@ -1,6 +1,6 @@
 use core::fmt;
 
-use expect_test::Expect;
+use scalarc_test::Expect;
 
 use crate::{EntryPoint, Event, Lexer, SyntaxKind};
 

@@ -18,5 +18,5 @@ thiserror = "1.0.56"
 scalarc-build.workspace = true
 
 [dev-dependencies]
-expect-test = "1.4.1"
+scalarc-test.workspace = true
 pretty_assertions = "1.4.0"

@@ -215,6 +215,7 @@ dependencies = [
  "rowan",
  "scalarc-ast",
  "scalarc-build",
+ "scalarc-test",
  "thiserror",
 ]
 

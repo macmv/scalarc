@@ -47,10 +47,10 @@ mod tests {
   fn literals() {
     check_expr(
       "2",
-      expect![[r#"
+      expect![@r#"
         LITERAL
           INT_LIT_KW '2'
-      "#]],
+      "#],
     );
 
     // TODO
@@ -61,7 +61,7 @@ mod tests {
   fn binary_op() {
     check_expr(
       "1 + 2",
-      expect![[r#"
+      expect![@r#"
         INFIX_EXPR
           LITERAL
             INT_LIT_KW '1'
@@ -70,7 +70,7 @@ mod tests {
           WHITESPACE ' '
           LITERAL
             INT_LIT_KW '2'
-      "#]],
+      "#],
     );
   }
 
@@ -78,7 +78,7 @@ mod tests {
   fn complex_op() {
     check_expr(
       "2 + 2",
-      expect![[r#"
+      expect![@r#"
         INFIX_EXPR
           LITERAL
             INT_LIT_KW '2'
@@ -87,7 +87,7 @@ mod tests {
           WHITESPACE ' '
           LITERAL
             INT_LIT_KW '2'
-      "#]],
+      "#],
     );
 
     /*
