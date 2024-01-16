@@ -372,7 +372,11 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
   for tok in grammar.tokens() {
     let name = &grammar[tok].name;
 
-    if name != "_" && name.chars().all(|c| c.is_ascii_lowercase() || c == '_') {
+    if name == "semi" {
+      punctuation_values.push(quote!(;));
+      let ident = Ident::new(&to_upper_snake_case(name), Span::call_site());
+      punctuation.push(ident);
+    } else if name != "_" && name.chars().all(|c| c.is_ascii_lowercase() || c == '_') {
       let ident = Ident::new(&name, Span::call_site());
       keyword_idents.push(ident);
 
@@ -565,6 +569,7 @@ fn token_name(name: &str) -> &str {
     "=>" => "fat_arrow",
     "@" => "at",
     ":" => "colon",
+    ";" => "semi", // note: unused currently, because of some hacks
     "#" => "pound",
     "," => "comma",
     "~" => "tilde",
