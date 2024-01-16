@@ -48,7 +48,12 @@ mod tests {
 
   #[test]
   fn literals() {
-    check_expr("2", r"LITERAL");
+    check_expr(
+      "2",
+      r"LITERAL
+          INT_LIT_KW '2'
+        NL_KW '\n'",
+    );
 
     // TODO
     // check_expr("\"hi\"", r"LITERAL");
@@ -58,14 +63,15 @@ mod tests {
   fn binary_op() {
     check_expr(
       "1 + 2",
-      r"EXPR
-          SIMPLE_EXPR
-            LITERAL
-          IDENT
-          EXPR
-            SIMPLE_EXPR
-              LITERAL
-          NL_KW",
+      r"INFIX_EXPR
+          LITERAL
+            INT_LIT_KW '1'
+          WHITESPACE ' '
+          IDENT '+'
+          WHITESPACE ' '
+          LITERAL
+            INT_LIT_KW '2'
+          NL_KW '\n'",
     );
   }
 
