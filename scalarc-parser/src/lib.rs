@@ -19,9 +19,10 @@ pub enum EntryPoint {
 }
 
 struct Parser<'a> {
-  lexer:   &'a mut Lexer<'a>,
-  current: SyntaxKind,
-  events:  Vec<Event>,
+  lexer:              &'a mut Lexer<'a>,
+  current:            SyntaxKind,
+  pending_whitespace: usize,
+  events:             Vec<Event>,
 }
 
 fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
@@ -132,7 +133,7 @@ impl<'a> Parser<'a> {
   pub fn new(lexer: &'a mut Lexer<'a>) -> Self {
     let first = token_to_kind(lexer.next().unwrap(), lexer.slice());
 
-    Parser { lexer, current: first, events: Vec::new() }
+    Parser { lexer, current: first, events: Vec::new(), pending_whitespace: 0 }
   }
 }
 
@@ -144,7 +145,16 @@ struct Marker {
 impl Parser<'_> {
   pub fn finish(self) -> Vec<Event> { self.events }
 
+  fn eat_trivia(&mut self) {
+    while self.pending_whitespace > 0 {
+      self.events.push(Event::Token { kind: SyntaxKind::WHITESPACE });
+      self.pending_whitespace -= 1;
+    }
+  }
+
   pub fn start(&mut self) -> Marker {
+    self.eat_trivia();
+
     let i = self.events.len();
     self.events.push(Event::Start { kind: SyntaxKind::TOMBSTONE });
     Marker { index: i, bomb: DropBomb::new("Marker must be either completed or abandoned") }
@@ -157,6 +167,7 @@ impl Parser<'_> {
     self.bump();
   }
   pub fn bump(&mut self) -> SyntaxKind {
+    self.eat_trivia();
     self.events.push(Event::Token { kind: self.current });
 
     loop {
@@ -164,7 +175,9 @@ impl Parser<'_> {
         // Ignore whitespace tokens here, because we usually don't care about them when parsing. We
         // record that they got skipped, so that we can recover them later if we need a concrete
         // tree.
-        Ok(Token::Whitespace) => {}
+        Ok(Token::Whitespace) => {
+          self.pending_whitespace += self.lexer.slice().len();
+        }
         Ok(t) => {
           self.current = token_to_kind(t, self.lexer.slice());
           break;

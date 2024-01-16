@@ -153,7 +153,7 @@ impl<'a> Lexer<'a> {
     Ok(tok)
   }
 
-  fn eat_whitespace(&mut self) -> Result<Option<Token>> {
+  pub fn eat_whitespace(&mut self) -> Result<Option<Token>> {
     loop {
       match self.tok.peek()? {
         Some(InnerToken::Whitespace) => {
