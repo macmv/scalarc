@@ -21,7 +21,7 @@ fn op_bp(ident: &str) -> (u8, u8) {
     // Right-associative
     (precedence, precedence)
   } else {
-    // Left-ascociative
+    // Left-associative
     (precedence, precedence + 1)
   }
 }
@@ -175,6 +175,50 @@ mod tests {
             WHITESPACE ' '
             LITERAL
               INT_LIT_KW '5'
+      "#],
+    );
+  }
+
+  #[test]
+  fn associativity() {
+    check_expr(
+      "2 + 3 + 4",
+      expect![@r#"
+        INFIX_EXPR
+          INFIX_EXPR
+            LITERAL
+              INT_LIT_KW '2'
+            WHITESPACE ' '
+            IDENT '+'
+            WHITESPACE ' '
+            LITERAL
+              INT_LIT_KW '3'
+          WHITESPACE ' '
+          IDENT '+'
+          WHITESPACE ' '
+          LITERAL
+            INT_LIT_KW '4'
+      "#],
+    );
+
+    // All ops ending in `:` are right-associative
+    check_expr(
+      "2 +: 3 +: 4",
+      expect![@r#"
+        INFIX_EXPR
+          LITERAL
+            INT_LIT_KW '2'
+          WHITESPACE ' '
+          IDENT '+:'
+          WHITESPACE ' '
+          INFIX_EXPR
+            LITERAL
+              INT_LIT_KW '3'
+            WHITESPACE ' '
+            IDENT '+:'
+            WHITESPACE ' '
+            LITERAL
+              INT_LIT_KW '4'
       "#],
     );
   }
