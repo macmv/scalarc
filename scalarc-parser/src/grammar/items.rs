@@ -187,6 +187,35 @@ mod tests {
   #[test]
   fn fun_dec() {
     check(
+      "def foo = 3",
+      r"SOURCE_FILE
+          FUN_DEC
+            DEF_KW
+            IDENT
+            EQ
+            LITERAL
+            NL_KW",
+    );
+
+    check(
+      "def foo(a:) = 3",
+      r"SOURCE_FILE
+          FUN_DEC
+            DEF_KW
+            IDENT
+            FUN_PARAMS
+              OPEN_PAREN
+              FUN_PARAM
+                IDENT
+                COLON
+                error: expected IDENT
+              CLOSE_PAREN
+            EQ
+            LITERAL
+            NL_KW",
+    );
+
+    check(
       "def foo(a: Int) = 3",
       r"SOURCE_FILE
           FUN_DEC
