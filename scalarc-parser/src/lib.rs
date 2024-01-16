@@ -4,14 +4,25 @@ mod token;
 
 pub use syntax_kind::SyntaxKind;
 pub use token::Lexer;
+use token::Token;
 
 pub enum EntryPoint {
   SourceFile,
 }
 
 struct Parser<'a> {
-  lexer:  &'a mut Lexer<'a>,
-  events: Vec<Event>,
+  lexer:   &'a mut Lexer<'a>,
+  current: SyntaxKind,
+  events:  Vec<Event>,
+}
+
+fn token_to_kind(token: Token) -> SyntaxKind {
+  match token {
+    Token::Ident(_) => SyntaxKind::IDENT,
+    Token::Literal(_) => SyntaxKind::LITERAL,
+    Token::Newline => T![nl],
+    _ => todo!("token {token:?}"),
+  }
 }
 
 /// `Parser` produces a flat list of `Event`s.
@@ -97,7 +108,11 @@ impl EntryPoint {
 }
 
 impl<'a> Parser<'a> {
-  pub fn new(lexer: &'a mut Lexer<'a>) -> Self { Parser { lexer, events: Vec::new() } }
+  pub fn new(lexer: &'a mut Lexer<'a>) -> Self {
+    let first = token_to_kind(lexer.next().unwrap());
+
+    Parser { lexer, current: first, events: Vec::new() }
+  }
 }
 
 struct Marker {}
@@ -106,10 +121,27 @@ impl Parser<'_> {
   pub fn finish(self) -> Vec<Event> { self.events }
 
   pub fn start(&mut self) -> Marker { todo!() }
-  pub fn at(&mut self, kind: SyntaxKind) -> bool { todo!() }
-  pub fn current(&self) -> SyntaxKind { todo!() }
-  pub fn eat(&self, t: SyntaxKind) { todo!() }
-  pub fn expect(&self, t: SyntaxKind) { todo!() }
+  pub fn at(&mut self, t: SyntaxKind) -> bool { self.current() == t }
+  pub fn current(&self) -> SyntaxKind { self.current }
+  pub fn eat(&mut self, t: SyntaxKind) {
+    assert_eq!(self.bump(), t);
+  }
+  pub fn bump(&mut self) -> SyntaxKind {
+    match self.lexer.next() {
+      Ok(t) => self.current = token_to_kind(t),
+      Err(e) => self.error(e.to_string()),
+    }
+    self.current
+  }
+  pub fn expect(&mut self, t: SyntaxKind) {
+    if self.bump() != t {
+      self.error(format!("expected {t:?}"));
+    }
+  }
+
+  pub fn error(&mut self, msg: impl Into<String>) {
+    self.events.push(Event::Error { msg: msg.into() })
+  }
 }
 
 impl Marker {

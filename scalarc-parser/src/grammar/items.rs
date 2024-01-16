@@ -1,7 +1,7 @@
 use super::*;
 
 pub fn mod_items(p: &mut Parser) {
-  while !(p.at(EOF)) {
+  while !p.at(EOF) {
     item(p);
   }
 }
