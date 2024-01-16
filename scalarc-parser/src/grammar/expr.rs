@@ -1,40 +1,88 @@
+use crate::CompletedMarker;
+
 use super::*;
 
-pub fn expr(p: &mut Parser) {
+fn op_bp(ident: &str) -> (u8, u8) {
+  // See https://www.scala-lang.org/files/archive/spec/2.13/06-expressions.html
+  let precedence = match ident {
+    s if s.chars().all(|c| c.is_ascii_alphabetic() || c == '_') => 10,
+    "|" => 9,
+    "^" => 8,
+    "&" => 7,
+    "=" | "!" => 6,
+    "<" | ">" => 5,
+    ":" => 4,
+    "+" | "-" => 3,
+    "*" | "/" | "%" => 2,
+    _ => 1,
+  };
+
+  if ident.ends_with(":") {
+    // Right-associative
+    (precedence, precedence)
+  } else {
+    // Left-ascociative
+    (precedence, precedence + 1)
+  }
+}
+
+pub fn expr(p: &mut Parser) { expr_bp(p, 0); }
+
+fn expr_bp(p: &mut Parser, min_bp: u8) {
   let m = p.start();
 
-  simple_expr(p);
+  let Some(mut lhs) = simple_expr(p) else {
+    m.abandon(p);
+    return;
+  };
 
-  match p.current() {
-    T![ident] => {
-      p.eat(T![ident]);
-      expr(p);
-      m.complete(p, INFIX_EXPR);
-    }
+  loop {
+    match p.current() {
+      T![ident] => {
+        let op = p.slice();
+        let (l_bp, r_bp) = op_bp(op);
+        dbg!(l_bp, r_bp, op);
+        if l_bp < min_bp {
+          println!("l_bp < min_bp, abandoning");
+          m.abandon(p);
+          return;
+        }
 
-    T![nl] => m.abandon(p),
+        let m = lhs.precede(p);
+        p.eat(T![ident]);
+        expr_bp(p, r_bp);
+        lhs = m.complete(p, INFIX_EXPR);
+      }
 
-    _ => {
-      m.abandon(p);
-      p.error(format!("expected expression, got {:?}", p.current()));
-      p.recover_until(T![nl]);
+      T![nl] => {
+        m.abandon(p);
+        return;
+      }
+
+      _ => {
+        m.abandon(p);
+        p.error(format!("expected expression, got {:?}", p.current()));
+        p.recover_until(T![nl]);
+        return;
+      }
     }
   }
 }
 
-fn simple_expr(p: &mut Parser) {
+fn simple_expr(p: &mut Parser) -> Option<CompletedMarker> {
   let m = p.start();
 
   match p.current() {
     INT_LIT_KW => {
       p.eat(INT_LIT_KW);
-      m.complete(p, LITERAL);
+      Some(m.complete(p, LITERAL))
     }
 
     _ => {
       m.abandon(p);
       p.error(format!("expected expression, got {:?}", p.current()));
       p.recover_until(T![nl]);
+      None
     }
   }
 }
@@ -90,24 +138,23 @@ mod tests {
       "#],
     );
 
-    // TODO: How on earth does scala handle precedence? Everything's an identifier!
     check_expr(
       "2 + 2 == 5",
       expect![@r#"
         INFIX_EXPR
-          LITERAL
-            INT_LIT_KW '2'
-          WHITESPACE ' '
-          IDENT '+'
-          WHITESPACE ' '
           INFIX_EXPR
             LITERAL
               INT_LIT_KW '2'
             WHITESPACE ' '
-            IDENT '=='
+            IDENT '+'
             WHITESPACE ' '
             LITERAL
-              INT_LIT_KW '5'
+              INT_LIT_KW '2'
+          WHITESPACE ' '
+          IDENT '=='
+          WHITESPACE ' '
+          LITERAL
+            INT_LIT_KW '5'
       "#],
     );
   }

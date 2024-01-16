@@ -250,6 +250,9 @@ impl<'a> Lexer<'a> {
 
   pub fn span(&self) -> Span { self.span.clone().into() }
   pub fn slice(&self) -> &'a str { &self.tok.source[self.span.clone()] }
+
+  pub fn range(&self) -> Range<usize> { self.span.clone() }
+  pub fn view(&self, range: Range<usize>) -> &'a str { &self.tok.source[range] }
 }
 
 #[cfg(test)]

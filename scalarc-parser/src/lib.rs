@@ -4,6 +4,8 @@ mod syntax_kind;
 mod tests;
 mod token;
 
+use std::ops::Range;
+
 use drop_bomb::DropBomb;
 pub use syntax_kind::SyntaxKind;
 pub use token::Lexer;
@@ -25,6 +27,7 @@ pub enum EntryPoint {
 struct Parser<'a> {
   lexer:              &'a mut Lexer<'a>,
   current:            SyntaxKind,
+  current_range:      Range<usize>,
   pending_whitespace: usize,
   events:             Vec<Event>,
 }
@@ -100,7 +103,8 @@ pub enum Event {
   ///
   /// See also `CompletedMarker::precede`.
   Start {
-    kind: SyntaxKind,
+    kind:           SyntaxKind,
+    forward_parent: Option<u32>,
   },
 
   /// Complete the previous `Start` event
@@ -122,6 +126,9 @@ pub enum Event {
     msg: String,
   },
 }
+impl Event {
+  pub fn tombstone() -> Self { Event::Token { kind: SyntaxKind::TOMBSTONE, len: 0 } }
+}
 
 impl EntryPoint {
   pub fn parse<'a>(&'a self, lexer: &'a mut Lexer<'a>) -> Vec<Event> {
@@ -138,13 +145,23 @@ impl<'a> Parser<'a> {
   pub fn new(lexer: &'a mut Lexer<'a>) -> Self {
     let first = token_to_kind(lexer.next().unwrap(), lexer.slice());
 
-    Parser { lexer, current: first, events: Vec::new(), pending_whitespace: 0 }
+    Parser {
+      current_range: lexer.range(),
+      lexer,
+      current: first,
+      events: Vec::new(),
+      pending_whitespace: 0,
+    }
   }
 }
 
 struct Marker {
-  index: usize,
-  bomb:  DropBomb,
+  pos:  u32,
+  bomb: DropBomb,
+}
+
+struct CompletedMarker {
+  pos: u32,
 }
 
 impl Parser<'_> {
@@ -162,12 +179,13 @@ impl Parser<'_> {
   pub fn start(&mut self) -> Marker {
     self.eat_trivia();
 
-    let i = self.events.len();
-    self.events.push(Event::Start { kind: SyntaxKind::TOMBSTONE });
-    Marker { index: i, bomb: DropBomb::new("Marker must be either completed or abandoned") }
+    let i = self.events.len() as u32;
+    self.events.push(Event::Start { kind: SyntaxKind::TOMBSTONE, forward_parent: None });
+    Marker { pos: i, bomb: DropBomb::new("Marker must be either completed or abandoned") }
   }
   pub fn at(&mut self, t: SyntaxKind) -> bool { self.current() == t }
   pub fn current(&self) -> SyntaxKind { self.current }
+  pub fn slice(&self) -> &str { &self.lexer.view(self.current_range.clone()) }
   #[track_caller]
   pub fn eat(&mut self, t: SyntaxKind) {
     assert_eq!(self.current(), t);
@@ -187,10 +205,12 @@ impl Parser<'_> {
         }
         Ok(t) => {
           self.current = token_to_kind(t, self.lexer.slice());
+          self.current_range = self.lexer.range();
           break;
         }
         Err(LexError::EOF) => {
           self.current = SyntaxKind::EOF;
+          self.current_range = self.lexer.range();
           break;
         }
         Err(e) => {
@@ -225,19 +245,34 @@ impl Parser<'_> {
 }
 
 impl Marker {
-  pub fn complete(mut self, parser: &mut Parser, kind: SyntaxKind) {
+  pub fn complete(mut self, parser: &mut Parser, kind: SyntaxKind) -> CompletedMarker {
     self.bomb.defuse();
-    match &mut parser.events[self.index] {
+    match &mut parser.events[self.pos as usize] {
       Event::Start { kind: k, .. } => *k = kind,
       _ => unreachable!(),
     }
     parser.events.push(Event::Finish);
+    CompletedMarker { pos: self.pos }
   }
   pub fn abandon(mut self, parser: &mut Parser) {
     self.bomb.defuse();
-    match &mut parser.events[self.index] {
+    match &mut parser.events[self.pos as usize] {
       Event::Start { kind: SyntaxKind::TOMBSTONE, .. } => (),
       _ => unreachable!(),
     }
+  }
+}
+
+impl CompletedMarker {
+  fn precede(self, p: &mut Parser) -> Marker {
+    let new_pos = p.start();
+    let idx = self.pos as usize;
+    match &mut p.events[idx] {
+      Event::Start { forward_parent, .. } => {
+        *forward_parent = Some(new_pos.pos - self.pos);
+      }
+      _ => unreachable!(),
+    }
+    new_pos
   }
 }
