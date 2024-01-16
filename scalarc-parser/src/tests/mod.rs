@@ -76,7 +76,6 @@ fn process_events(events: &mut [Event]) -> Vec<Event> {
           out.push(Event::Token { kind, len });
         }
       }
-      Event::FloatSplitHack { .. } => todo!(),
       Event::Error { msg } => out.push(Event::Error { msg }),
     }
   }
@@ -114,7 +113,6 @@ impl fmt::Display for Events<'_> {
         Event::Error { msg } => {
           writeln!(f, "{}error: {}", "  ".repeat(indent), msg)?;
         }
-        _ => todo!("event {e:?}"),
       }
     }
     Ok(())

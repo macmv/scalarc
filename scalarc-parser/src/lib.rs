@@ -112,13 +112,7 @@ pub enum Event {
     kind: SyntaxKind,
     len:  usize,
   },
-  /// When we parse `foo.0.0` or `foo. 0. 0` the lexer will hand us a float
-  /// literal instead of an integer literal followed by a dot as the lexer has
-  /// no contextual knowledge. This event instructs whatever consumes the
-  /// events to split the float literal into the corresponding parts.
-  FloatSplitHack {
-    ends_in_dot: bool,
-  },
+
   Error {
     msg: String,
   },
