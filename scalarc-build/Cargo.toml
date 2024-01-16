@@ -9,7 +9,6 @@ edition = "2021"
 
 [dependencies]
 itertools = "0.12.0"
-expect-test = "1.4.0"
 proc-macro2 = "1.0.47"
 quote = "1.0.20"
 ungrammar = "1.16.1"

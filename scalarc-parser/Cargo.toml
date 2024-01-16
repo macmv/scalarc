@@ -9,7 +9,6 @@ edition = "2021"
 
 [dependencies]
 drop_bomb = "0.1.5"
-expect-test = "1.4.1"
 rowan = "0.15.15"
 scalarc-ast = { path = "../scalarc-ast" }
 thiserror = "1.0.56"
