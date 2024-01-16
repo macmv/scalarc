@@ -68,9 +68,6 @@ pub enum Event {
   /// All tokens between a `Start` and a `Finish` would
   /// become the children of the respective node.
   ///
-  /// The below is all docs about `forward_parent`. I don't see a reason to add
-  /// this, but I'll probably come accross it later, so I'm leaving it here.
-  ///
   /// For left-recursive syntactic constructs, the parser produces
   /// a child node before it sees a parent. `forward_parent`
   /// saves the position of current event's parent.
