@@ -32,19 +32,8 @@ fn item(p: &mut Parser) {
   };
 }
 
-// test
-// ---
+// test ok
 // import foo.bar.baz
-// ---
-// SOURCE_FILE
-//   IMPORT
-//     IMPORT_KW
-//     IDENT
-//     DOT
-//     IDENT
-//     DOT
-//     IDENT
-//     NL_KW
 fn import_item(p: &mut Parser, m: Marker) {
   p.eat(T![import]);
   loop {
@@ -66,15 +55,8 @@ fn import_item(p: &mut Parser, m: Marker) {
         return;
       }
 
-      // test
-      // ---
+      // test err
       // import 3
-      // ---
-      // SOURCE_FILE
-      //   IMPORT_KW
-      //   error: expected ident, got LITERAL
-      //   LITERAL
-      //   NL_KW
       _ => {
         p.error(format!("expected ident, got {:?}", p.current()));
         p.recover_until(T![nl]);
@@ -85,22 +67,8 @@ fn import_item(p: &mut Parser, m: Marker) {
   }
 }
 
-// test
-// ---
+// test ok
 // import foo.{ bar, baz }
-// ---
-// SOURCE_FILE
-//   IMPORT
-//     IMPORT_KW
-//     IDENT
-//     DOT
-//     IMPORT_SELECTORS
-//       OPEN_CURLY
-//       IDENT
-//       COMMA
-//       IDENT
-//       CLOSE_CURLY
-//     NL_KW
 fn import_list(p: &mut Parser) {
   let m = p.start();
   p.eat(T!['{']);
@@ -121,17 +89,8 @@ fn import_list(p: &mut Parser) {
   m.complete(p, IMPORT_SELECTORS);
 }
 
-// test
-// ---
+// test ok
 // def foo = 3
-// ---
-// SOURCE_FILE
-//   FUN_DEC
-//     DEF_KW
-//     IDENT
-//     EQ
-//     LITERAL
-//     NL_KW
 fn fun_dec(p: &mut Parser, m: Marker) {
   p.eat(T![def]);
   fun_sig(p);
@@ -151,29 +110,13 @@ fn fun_sig(p: &mut Parser) {
   expr(p);
 }
 
-// test
-// ---
-// def foo(a: Int) = 3
-// ---
-// SOURCE_FILE
-//   FUN_DEC
-//     DEF_KW
-//     IDENT
-//     FUN_PARAMS
-//       OPEN_PAREN
-//       FUN_PARAM
-//         IDENT
-//         COLON
-//         IDENT
-//       CLOSE_PAREN
-//     EQ
-//     LITERAL
-//     NL_KW
 fn fun_params(p: &mut Parser) {
   let m = p.start();
   p.eat(T!['(']);
   loop {
     fun_param(p);
+    // test ok
+    // def foo(a: Int, b: String) = 3
     if p.current() == T![,] {
       p.eat(T![,]);
     } else {
@@ -202,5 +145,86 @@ fn expr(p: &mut Parser) {
       p.error(format!("expected ident, got {:?}", p.current()));
       p.recover_until(T![nl]);
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::tests::check;
+
+  #[test]
+  fn imports() {
+    check(
+      "import foo.bar.baz",
+      r"SOURCE_FILE
+          IMPORT
+            IMPORT_KW
+            IDENT
+            DOT
+            IDENT
+            DOT
+            IDENT
+            NL_KW",
+    );
+
+    check(
+      "import foo.{ bar, baz }",
+      r"SOURCE_FILE
+          IMPORT
+            IMPORT_KW
+            IDENT
+            DOT
+            IMPORT_SELECTORS
+              OPEN_CURLY
+              IDENT
+              COMMA
+              IDENT
+              CLOSE_CURLY
+            NL_KW",
+    );
+  }
+
+  #[test]
+  fn fun_dec() {
+    check(
+      "def foo(a: Int) = 3",
+      r"SOURCE_FILE
+          FUN_DEC
+            DEF_KW
+            IDENT
+            FUN_PARAMS
+              OPEN_PAREN
+              FUN_PARAM
+                IDENT
+                COLON
+                IDENT
+              CLOSE_PAREN
+            EQ
+            LITERAL
+            NL_KW",
+    );
+
+    check(
+      "def foo(a: Int, b: String) = 3",
+      r"SOURCE_FILE
+          FUN_DEC
+            DEF_KW
+            IDENT
+            FUN_PARAMS
+              OPEN_PAREN
+              FUN_PARAM
+                IDENT
+                COLON
+                IDENT
+              COMMA
+              FUN_PARAM
+                IDENT
+                COLON
+                IDENT
+              CLOSE_PAREN
+            EQ
+            LITERAL
+            NL_KW",
+    );
   }
 }

@@ -4,6 +4,18 @@ use crate::{EntryPoint, Event, Lexer, SyntaxKind};
 
 mod inline;
 
+pub fn check(text: &str, expected_tree: &str) {
+  let actual_tree = lex(&format!("{}\n", text));
+  let expected_tree = expected_tree
+    .lines()
+    .map(|l| l.strip_prefix("        ").unwrap_or(l))
+    .collect::<Vec<_>>()
+    .join("\n");
+  if actual_tree.trim() != expected_tree.trim() {
+    pretty_assertions::assert_eq!(expected_tree.trim(), actual_tree.trim());
+  }
+}
+
 pub fn lex(text: &str) -> String { format_events(&lex_events(text)) }
 
 pub fn lex_events(text: &str) -> Vec<Event> { EntryPoint::SourceFile.parse(&mut Lexer::new(text)) }

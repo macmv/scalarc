@@ -1,7 +1,9 @@
 //! This module greps parser's code for specially formatted comments and turns
 //! them into tests.
 
-use super::lex;
+use crate::Event;
+
+use super::lex_events;
 use std::{
   fs,
   path::{Path, PathBuf},
@@ -20,16 +22,30 @@ fn grammar_inline_tests() {
   let tests = tests_from_dir(&grammar_dir);
 
   for test in tests {
-    let events = lex(&test.text);
-    pretty_assertions::assert_eq!(test.expect.trim(), events.trim(), "at {}", test.location);
+    let mut found_error = None;
+    for event in lex_events(&format!("{}\n", test.src)) {
+      match event {
+        Event::Error { msg } => found_error = Some(msg),
+        _ => {}
+      }
+    }
+    match (found_error, test.ok) {
+      (Some(err), true) => {
+        panic!("test failed to parse: {} {err}", test.location);
+      }
+      (None, false) => {
+        panic!("test parsed ok but was expected to fail: {}", test.location);
+      }
+      _ => {}
+    }
   }
 }
 
 #[derive(Debug)]
 struct Test {
   location: String,
-  text:     String,
-  expect:   String,
+  src:      String,
+  ok:       bool,
 }
 
 fn collect_tests(s: &str, location: &Path) -> Vec<Test> {
@@ -39,17 +55,15 @@ fn collect_tests(s: &str, location: &Path) -> Vec<Test> {
   for (i, line) in s.lines().enumerate() {
     let line = line.trim();
 
-    if let Some(line_num) = in_test {
+    if let Some((line_num, ok)) = in_test {
       if let Some(l) = line.strip_prefix("// ") {
         test_lines.push(l);
       } else {
-        let src = test_lines.join("\n");
-        let mut split = src.splitn(3, "---");
-        let _ = split.next().unwrap();
-        let text = format!("{}\n", split.next().unwrap().trim());
-        let expect = split.next().unwrap().trim().into();
-
-        tests.push(Test { location: format!("{}:{}", location.display(), line_num), text, expect });
+        tests.push(Test {
+          location: format!("{}:{}", location.display(), line_num),
+          src: test_lines.join("\n"),
+          ok,
+        });
         in_test = None;
         test_lines.clear();
       }
@@ -60,7 +74,13 @@ fn collect_tests(s: &str, location: &Path) -> Vec<Test> {
       continue;
     }
 
-    in_test = Some(i + 1);
+    let ok = match line.split(" ").nth(2).unwrap_or("") {
+      "ok" => true,
+      "err" => false,
+      other => panic!("invalid test annotation: {}", other),
+    };
+
+    in_test = Some((i + 1, ok));
   }
 
   tests

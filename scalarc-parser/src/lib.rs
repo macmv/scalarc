@@ -9,6 +9,10 @@ pub use syntax_kind::SyntaxKind;
 pub use token::Lexer;
 use token::{LexError, Token};
 
+#[cfg(test)]
+#[macro_use]
+extern crate pretty_assertions;
+
 pub enum EntryPoint {
   SourceFile,
 }
