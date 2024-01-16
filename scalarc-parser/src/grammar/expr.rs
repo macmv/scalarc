@@ -75,10 +75,10 @@ mod tests {
       "2 + 2",
       r"INFIX_EXPR
           LITERAL
-            INT_LIT_KW
-          IDENT
+            INT_LIT_KW '2'
+          IDENT '+'
           LITERAL
-            INT_LIT_KW
+            INT_LIT_KW '2'
           NL_KW",
     );
     /*

@@ -24,20 +24,21 @@ fn check_inner(entry_point: EntryPoint, text: &str, expected_tree: &str) {
 }
 
 pub fn lex(entry_point: EntryPoint, text: &str) -> String {
-  format_events(&lex_events(entry_point, text))
+  format_events(&lex_events(entry_point, text), text)
 }
 
 pub fn lex_events(entry_point: EntryPoint, text: &str) -> Vec<Event> {
   entry_point.parse(&mut Lexer::new(text))
 }
 
-pub fn format_events(events: &[Event]) -> String { Events(events).to_string() }
+pub fn format_events(events: &[Event], text: &str) -> String { Events(events, text).to_string() }
 
-struct Events<'a>(&'a [Event]);
+struct Events<'a>(&'a [Event], &'a str);
 
 impl fmt::Display for Events<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let mut indent = 0;
+    let mut index = 0;
     for e in self.0 {
       match e {
         Event::Start { kind } => {
@@ -50,7 +51,8 @@ impl fmt::Display for Events<'_> {
         }
         Event::Finish => indent -= 1,
         Event::Token { kind } => {
-          writeln!(f, "{}{:?}", "  ".repeat(indent), kind)?;
+          writeln!(f, "{}{:?} '{}'", "  ".repeat(indent), kind, &self.1[index..index + 1])?;
+          index += 1;
         }
         Event::Error { msg } => {
           writeln!(f, "{}error: {}", "  ".repeat(indent), msg)?;
