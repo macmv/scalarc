@@ -256,9 +256,19 @@ impl Marker {
   }
   pub fn abandon(mut self, parser: &mut Parser) {
     self.bomb.defuse();
-    match &mut parser.events[self.pos as usize] {
-      Event::Start { kind: SyntaxKind::TOMBSTONE, .. } => (),
+
+    #[cfg(debug_assertions)]
+    match parser.events[self.pos as usize] {
+      Event::Start { kind: SyntaxKind::TOMBSTONE, forward_parent: None } => (),
       _ => unreachable!(),
+    }
+
+    if self.pos as usize == parser.events.len() - 1 {
+      match parser.events.pop() {
+        // Sanity check
+        Some(Event::Start { kind: SyntaxKind::TOMBSTONE, forward_parent: None }) => (),
+        _ => unreachable!(),
+      }
     }
   }
 }
