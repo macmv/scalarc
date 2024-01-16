@@ -4,7 +4,7 @@ mod token;
 
 pub use syntax_kind::SyntaxKind;
 pub use token::Lexer;
-use token::Token;
+use token::{LexError, Token};
 
 pub enum EntryPoint {
   SourceFile,
@@ -129,6 +129,7 @@ impl Parser<'_> {
   pub fn bump(&mut self) -> SyntaxKind {
     match self.lexer.next() {
       Ok(t) => self.current = token_to_kind(t),
+      Err(LexError::EOF) => self.current = SyntaxKind::EOF,
       Err(e) => self.error(e.to_string()),
     }
     self.current
