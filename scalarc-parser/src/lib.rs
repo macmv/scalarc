@@ -22,13 +22,19 @@ struct Parser<'a> {
 fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
   match token {
     Token::Ident(_) => match s {
+      // TODO: Keywords should be defined somewhere else.
       "import" => T![import],
+      "def" => T![def],
+      "=" => T![=],
+      ":" => T![:],
       _ => T![ident],
     },
     Token::Literal(_) => SyntaxKind::LITERAL,
     Token::Newline => T![nl],
     Token::Delimiter(token::Delimiter::Dot) => T![.],
     Token::Delimiter(token::Delimiter::Comma) => T![,],
+    Token::Group(token::Group::OpenParen) => T!['('],
+    Token::Group(token::Group::CloseParen) => T![')'],
     Token::Group(token::Group::OpenBrace) => T!['{'],
     Token::Group(token::Group::CloseBrace) => T!['}'],
     _ => todo!("token {token:?}"),
@@ -154,8 +160,10 @@ impl Parser<'_> {
     self.current
   }
   pub fn expect(&mut self, t: SyntaxKind) {
-    if self.bump() != t {
+    if self.current() != t {
       self.error(format!("expected {t:?}"));
+    } else {
+      self.bump();
     }
   }
 

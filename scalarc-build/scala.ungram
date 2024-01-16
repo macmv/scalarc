@@ -171,15 +171,14 @@ FunTypeParamClause = '[' TypeParam (',' TypeParam)* ']'
 VariantTypeParam   = (Annotation)* ('+' | '-')? TypeParam
 TypeParam          = (id | '_') (TypeParamClause)? ('>:' Type)? ('<:' Type)?
                      ('<%' Type)* (':' Type)*
-ParamClauses      = (ParamClause)* ((nl)? '(' 'implicit' Params ')')?
-ParamClause       = (nl)? '(' (Params)? ')'
-Params            = Param (',' Param)*
-Param             = (Annotation)* id (':' ParamType)? ('=' Expr)?
+FunParams         = ParamClause* ((nl)? '(' 'implicit' FunParam (',' FunParam)* ')')?
+ParamClause       = nl? '(' (FunParam (',' FunParam)*)? ')'
+FunParam          = Annotation* id (':' ParamType)? ('=' Expr)?
 ParamType         = Type
                   | '=>' Type
                   | Type '*'
 
-ClassParamClauses = (ClassParamClause)* ((nl)? '(' 'implicit' ClassParams ')')?
+ClassFunParams = (ClassParamClause)* ((nl)? '(' 'implicit' ClassParams ')')?
 ClassParamClause  = (nl)? '(' (ClassParams)? ')'
 ClassParams       = ClassParam (',' ClassParam)*
 ClassParam        = (Annotation)* (Modifier)* ('val' | 'var')?
@@ -222,7 +221,7 @@ Dec               = 'val' ValDec
 ValDec            = ids ':' Type
 VarDec            = ids ':' Type
 FunDec            = FunSig (':' Type)?
-FunSig            = id (FunTypeParamClause)? ParamClauses
+FunSig            = id (FunTypeParamClause)? FunParams
 TypeDec           = id (TypeParamClause)? ('>:' Type)? ('<:' Type)?
 
 // Definitions
@@ -246,12 +245,12 @@ PatDef      = PatternAt (',' PatternAt)* (':' Type)? '=' Expr
 VarDef      = ids ':' Type '=' '_'
 FunEqDef    = FunSig (':' Type)? '=' Expr
 FunBlockDef = FunSig (nl)? '{' Block '}'
-FunThisDef  = 'this' ParamClause ParamClauses ('=' ConstrExpr | (nl)? ConstrBlock)
+FunThisDef  = 'this' FunParams ('=' ConstrExpr | (nl)? ConstrBlock)
 
 TypeDef     = 'type' id TypeParamClause? '=' Type
 
 TmplDef          = ClassDef | TraitDef | ObjectDef
-ClassDef         = 'case'? 'class' id TypeParamClause? (ConstrAnnotation)* (AccessModifier)? ClassParamClauses ClassTemplateOpt
+ClassDef         = 'case'? 'class' id TypeParamClause? (ConstrAnnotation)* (AccessModifier)? ClassFunParams ClassTemplateOpt
 TraitDef         = 'trait' id TypeParamClause? TraitTemplateOpt
 ObjectDef        = 'case'? 'object' id ClassTemplateOpt
 ClassTemplateOpt = 'extends' ClassTemplate | ('extends'? TemplateBody)?

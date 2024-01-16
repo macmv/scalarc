@@ -11,6 +11,7 @@ fn item(p: &mut Parser) {
 
   match p.current() {
     T![import] => import_item(p, m),
+    T![def] => fun_dec(p, m),
 
     /*
     T![type] => type_alias(p, m),
@@ -118,4 +119,88 @@ fn import_list(p: &mut Parser) {
   }
 
   m.complete(p, IMPORT_SELECTORS);
+}
+
+// test
+// ---
+// def foo = 3
+// ---
+// SOURCE_FILE
+//   FUN_DEC
+//     DEF_KW
+//     IDENT
+//     EQ
+//     LITERAL
+//     NL_KW
+fn fun_dec(p: &mut Parser, m: Marker) {
+  p.eat(T![def]);
+  fun_sig(p);
+
+  p.expect(T![nl]);
+  m.complete(p, FUN_DEC);
+}
+
+fn fun_sig(p: &mut Parser) {
+  p.expect(T![ident]);
+
+  if p.current() == T!['('] {
+    fun_params(p);
+  }
+
+  p.expect(T![=]);
+  expr(p);
+}
+
+// test
+// ---
+// def foo(a: Int) = 3
+// ---
+// SOURCE_FILE
+//   FUN_DEC
+//     DEF_KW
+//     IDENT
+//     FUN_PARAMS
+//       OPEN_PAREN
+//       FUN_PARAM
+//         IDENT
+//         COLON
+//         IDENT
+//       CLOSE_PAREN
+//     EQ
+//     LITERAL
+//     NL_KW
+fn fun_params(p: &mut Parser) {
+  let m = p.start();
+  p.eat(T!['(']);
+  loop {
+    fun_param(p);
+    if p.current() == T![,] {
+      p.eat(T![,]);
+    } else {
+      p.expect(T![')']);
+      m.complete(p, FUN_PARAMS);
+      break;
+    }
+  }
+}
+
+fn fun_param(p: &mut Parser) {
+  let m = p.start();
+  p.expect(T![ident]);
+  if p.current() == T![:] {
+    p.eat(T![:]);
+    p.expect(T![ident]);
+  }
+  m.complete(p, FUN_PARAM);
+}
+
+fn expr(p: &mut Parser) {
+  match p.current() {
+    T![ident] => p.eat(T![ident]),
+    LITERAL => p.eat(LITERAL),
+    _ => {
+      p.error(format!("expected ident, got {:?}", p.current()));
+      p.recover_until(T![nl]);
+    }
+  }
 }
