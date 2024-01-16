@@ -47,6 +47,9 @@ pub enum Event {
   /// All tokens between a `Start` and a `Finish` would
   /// become the children of the respective node.
   ///
+  /// The below is all docs about `forward_parent`. I don't see a reason to add
+  /// this, but I'll probably come accross it later, so I'm leaving it here.
+  ///
   /// For left-recursive syntactic constructs, the parser produces
   /// a child node before it sees a parent. `forward_parent`
   /// saves the position of current event's parent.
@@ -79,8 +82,7 @@ pub enum Event {
   ///
   /// See also `CompletedMarker::precede`.
   Start {
-    kind:           SyntaxKind,
-    forward_parent: Option<u32>,
+    kind: SyntaxKind,
   },
 
   /// Complete the previous `Start` event
@@ -129,7 +131,7 @@ impl Parser<'_> {
 
   pub fn start(&mut self) -> Marker {
     let i = self.events.len();
-    self.events.push(Event::Start { kind: SyntaxKind::__LAST, forward_parent: None });
+    self.events.push(Event::Start { kind: SyntaxKind::__LAST });
     Marker { index: i }
   }
   pub fn at(&mut self, t: SyntaxKind) -> bool { self.current() == t }
@@ -162,13 +164,8 @@ impl Parser<'_> {
 
 impl Marker {
   pub fn complete(self, parser: &mut Parser, kind: SyntaxKind) {
-    let i = parser.events.len() as u32;
     match &mut parser.events[self.index] {
-      Event::Start { kind: k, forward_parent } => {
-        *k = kind;
-        // I think this is wrong but ah well. Something to figure out later.
-        *forward_parent = Some(i);
-      }
+      Event::Start { kind: k, .. } => *k = kind,
       _ => unreachable!(),
     }
     parser.events.push(Event::Finish);
