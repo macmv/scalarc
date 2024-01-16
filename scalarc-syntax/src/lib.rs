@@ -1,2 +1,2 @@
-mod ast;
-mod node;
+pub mod ast;
+pub mod node;
