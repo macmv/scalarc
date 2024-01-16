@@ -2,7 +2,7 @@ mod generated;
 
 use std::marker::PhantomData;
 
-use crate::node::{SyntaxNode, SyntaxNodeChildren, SyntaxToken};
+use crate::node::{SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxToken};
 use scalarc_parser::SyntaxKind;
 
 /// The main trait to go from untyped `SyntaxNode`  to a typed ast. The
@@ -64,8 +64,36 @@ impl<N: AstNode> Iterator for AstChildren<N> {
   fn next(&mut self) -> Option<N> { self.inner.find_map(N::cast) }
 }
 
+/// An iterator over `SyntaxToken` children of a particular AST type.
+#[derive(Debug, Clone)]
+pub struct AstTokenChildren {
+  inner: SyntaxElementChildren,
+  kind:  SyntaxKind,
+}
+
+impl AstTokenChildren {
+  fn new(parent: &SyntaxNode, kind: SyntaxKind) -> Self {
+    AstTokenChildren { inner: parent.children_with_tokens(), kind }
+  }
+}
+
+impl Iterator for AstTokenChildren {
+  type Item = SyntaxToken;
+  fn next(&mut self) -> Option<SyntaxToken> {
+    loop {
+      let it = self.inner.next()?;
+      if it.kind() == self.kind {
+        match it.into_token() {
+          Some(t) => return Some(t),
+          _ => {}
+        }
+      }
+    }
+  }
+}
+
 mod support {
-  use super::{AstChildren, AstNode, SyntaxKind, SyntaxNode, SyntaxToken};
+  use super::{AstChildren, AstNode, AstTokenChildren, SyntaxKind, SyntaxNode, SyntaxToken};
 
   pub(super) fn child<N: AstNode>(parent: &SyntaxNode) -> Option<N> {
     parent.children().find_map(N::cast)
@@ -77,5 +105,9 @@ mod support {
 
   pub(super) fn token(parent: &SyntaxNode, kind: SyntaxKind) -> Option<SyntaxToken> {
     parent.children_with_tokens().filter_map(|it| it.into_token()).find(|it| it.kind() == kind)
+  }
+
+  pub(super) fn token_children(parent: &SyntaxNode, kind: SyntaxKind) -> AstTokenChildren {
+    AstTokenChildren::new(parent, kind)
   }
 }

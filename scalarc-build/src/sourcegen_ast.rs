@@ -103,22 +103,32 @@ fn generate_nodes(grammar: &AstSrc) -> String {
         let method_name = field.method_name();
         let ty = field.ty();
 
-        if field.is_many() {
-          quote! {
-            pub fn #method_name(&self) -> AstChildren<#ty> {
-              support::children(&self.syntax)
+        if let Some(token_kind) = field.token_kind() {
+          if field.is_many() {
+            quote! {
+              pub fn #method_name(&self) -> AstTokenChildren {
+                support::token_children(&self.syntax, #token_kind)
+              }
             }
-          }
-        } else if let Some(token_kind) = field.token_kind() {
-          quote! {
-            pub fn #method_name(&self) -> Option<#ty> {
-              support::token(&self.syntax, #token_kind)
+          } else {
+            quote! {
+              pub fn #method_name(&self) -> Option<#ty> {
+                support::token(&self.syntax, #token_kind)
+              }
             }
           }
         } else {
-          quote! {
-            pub fn #method_name(&self) -> Option<#ty> {
-              support::child(&self.syntax)
+          if field.is_many() {
+            quote! {
+              pub fn #method_name(&self) -> AstChildren<#ty> {
+                support::children(&self.syntax)
+              }
+            }
+          } else {
+            quote! {
+              pub fn #method_name(&self) -> Option<#ty> {
+                support::child(&self.syntax)
+              }
             }
           }
         }
@@ -283,23 +293,23 @@ fn generate_nodes(grammar: &AstSrc) -> String {
     });
 
   let ast = quote! {
-      #![allow(non_snake_case)]
-      use crate::{
-        ast::{support, AstChildren, AstNode},
-        node::{SyntaxNode, SyntaxToken},
-      };
-      use scalarc_parser::{
-        SyntaxKind::{self, *},
-        T,
-      };
+    #![allow(non_snake_case)]
+    use crate::{
+      ast::{support, AstChildren, AstTokenChildren, AstNode},
+      node::{SyntaxNode, SyntaxToken},
+    };
+    use scalarc_parser::{
+      SyntaxKind::{self, *},
+      T,
+    };
 
-      #(#node_defs)*
-      #(#enum_defs)*
-      #(#any_node_defs)*
-      #(#node_boilerplate_impls)*
-      #(#enum_boilerplate_impls)*
-      #(#any_node_boilerplate_impls)*
-      #(#display_impls)*
+    #(#node_defs)*
+    #(#enum_defs)*
+    #(#any_node_defs)*
+    #(#node_boilerplate_impls)*
+    #(#enum_boilerplate_impls)*
+    #(#any_node_boilerplate_impls)*
+    #(#display_impls)*
   };
 
   let ast = ast.to_string().replace("T ! [", "T![");
@@ -552,16 +562,14 @@ impl Field {
         let token: proc_macro2::TokenStream = token.parse().unwrap();
         Some(quote! { T![#token] })
       }
-      Field::Node { name, .. } if TOKEN_SHORTHANDS.contains(&name.as_str()) => {
-        match name.as_str() {
-          "semi" => Some(quote! { T![;] }),
-          "id" => Some(quote! { T![ident] }),
-          _ => {
-            let token: proc_macro2::TokenStream = name.parse().unwrap();
-            Some(quote! { T![#token] })
-          }
+      Field::Node { ty, .. } if TOKEN_SHORTHANDS.contains(&ty.as_str()) => match ty.as_str() {
+        "semi" => Some(quote! { T![;] }),
+        "id" => Some(quote! { T![ident] }),
+        _ => {
+          let token: proc_macro2::TokenStream = ty.parse().unwrap();
+          Some(quote! { T![#token] })
         }
-      }
+      },
       _ => None,
     }
   }
