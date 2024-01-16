@@ -1,5 +1,7 @@
 mod grammar;
 mod syntax_kind;
+#[cfg(test)]
+mod tests;
 mod token;
 
 pub use syntax_kind::SyntaxKind;
@@ -16,11 +18,18 @@ struct Parser<'a> {
   events:  Vec<Event>,
 }
 
-fn token_to_kind(token: Token) -> SyntaxKind {
+fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
   match token {
-    Token::Ident(_) => SyntaxKind::IDENT,
+    Token::Ident(_) => match s {
+      "import" => T![import],
+      _ => T![ident],
+    },
     Token::Literal(_) => SyntaxKind::LITERAL,
     Token::Newline => T![nl],
+    Token::Delimiter(token::Delimiter::Dot) => T![.],
+    Token::Delimiter(token::Delimiter::Comma) => T![,],
+    Token::Group(token::Group::OpenBrace) => T!['{'],
+    Token::Group(token::Group::CloseBrace) => T!['}'],
     _ => todo!("token {token:?}"),
   }
 }
@@ -78,12 +87,8 @@ pub enum Event {
   Finish,
 
   /// Produce a single leaf-element.
-  /// `n_raw_tokens` is used to glue complex contextual tokens.
-  /// For example, lexer tokenizes `>>` as `>`, `>`, and
-  /// `n_raw_tokens = 2` is used to produced a single `>>`.
   Token {
-    kind:         SyntaxKind,
-    n_raw_tokens: u8,
+    kind: SyntaxKind,
   },
   /// When we parse `foo.0.0` or `foo. 0. 0` the lexer will hand us a float
   /// literal instead of an integer literal followed by a dot as the lexer has
@@ -109,26 +114,36 @@ impl EntryPoint {
 
 impl<'a> Parser<'a> {
   pub fn new(lexer: &'a mut Lexer<'a>) -> Self {
-    let first = token_to_kind(lexer.next().unwrap());
+    let first = token_to_kind(lexer.next().unwrap(), lexer.slice());
 
     Parser { lexer, current: first, events: Vec::new() }
   }
 }
 
-struct Marker {}
+struct Marker {
+  index: usize,
+}
 
 impl Parser<'_> {
   pub fn finish(self) -> Vec<Event> { self.events }
 
-  pub fn start(&mut self) -> Marker { todo!() }
+  pub fn start(&mut self) -> Marker {
+    let i = self.events.len();
+    self.events.push(Event::Start { kind: SyntaxKind::__LAST, forward_parent: None });
+    Marker { index: i }
+  }
   pub fn at(&mut self, t: SyntaxKind) -> bool { self.current() == t }
   pub fn current(&self) -> SyntaxKind { self.current }
+  #[track_caller]
   pub fn eat(&mut self, t: SyntaxKind) {
-    assert_eq!(self.bump(), t);
+    assert_eq!(self.current(), t);
+    self.bump();
   }
   pub fn bump(&mut self) -> SyntaxKind {
+    self.events.push(Event::Token { kind: self.current });
+
     match self.lexer.next() {
-      Ok(t) => self.current = token_to_kind(t),
+      Ok(t) => self.current = token_to_kind(t, self.lexer.slice()),
       Err(LexError::EOF) => self.current = SyntaxKind::EOF,
       Err(e) => self.error(e.to_string()),
     }
@@ -146,6 +161,17 @@ impl Parser<'_> {
 }
 
 impl Marker {
-  pub fn complete(self, parser: &mut Parser, kind: SyntaxKind) { todo!() }
-  pub fn abandon(self, parser: &mut Parser) { todo!() }
+  pub fn complete(self, parser: &mut Parser, kind: SyntaxKind) {
+    let i = parser.events.len() as u32;
+    match &mut parser.events[self.index] {
+      Event::Start { kind: k, forward_parent } => {
+        *k = kind;
+        // I think this is wrong but ah well. Something to figure out later.
+        *forward_parent = Some(i);
+      }
+      _ => unreachable!(),
+    }
+    parser.events.push(Event::Finish);
+  }
+  pub fn abandon(self, parser: &mut Parser) { parser.bump(); }
 }

@@ -30,9 +30,49 @@ fn item(p: &mut Parser) {
   };
 }
 
+// test ok
+// import foo.bar.baz
 fn import_item(p: &mut Parser, m: Marker) {
   p.eat(T![import]);
-  // TODO: Parse the tree
+  loop {
+    match p.current() {
+      T![ident] => {
+        p.bump();
+      }
+
+      T![.] => {
+        p.bump();
+        continue;
+      }
+
+      T!['{'] => import_list(p),
+
+      _ => break,
+    }
+  }
+
   p.expect(T![nl]);
   m.complete(p, IMPORT);
+}
+
+// test ok
+// import foo.{ bar, baz }
+fn import_list(p: &mut Parser) {
+  let m = p.start();
+  p.eat(T!['{']);
+  loop {
+    match p.current() {
+      T![ident] => p.eat(T![ident]),
+      T![,] => p.eat(T![,]),
+
+      T!['}'] => {
+        p.eat(T!['}']);
+        break;
+      }
+
+      _ => break,
+    }
+  }
+
+  m.complete(p, IMPORT_SELECTORS);
 }
