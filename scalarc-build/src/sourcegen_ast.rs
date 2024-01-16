@@ -8,7 +8,7 @@
 use std::{collections::BTreeSet, fmt::Write};
 
 use itertools::Itertools;
-use proc_macro2::{Ident, Punct, Spacing, Span};
+use proc_macro2::{Ident, Punct, Spacing, Span, TokenStream};
 use quote::{format_ident, quote};
 use ungrammar::{Grammar, Rule};
 
@@ -367,6 +367,7 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
 
   let mut keywords: Vec<Ident> = vec![];
   let mut punctuation: Vec<Ident> = vec![];
+  let mut punctuation_values: Vec<TokenStream> = vec![];
   for tok in grammar.tokens() {
     let name = &grammar[tok].name;
 
@@ -375,7 +376,16 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
       let ident = Ident::new(&name, Span::call_site());
       keywords.push(ident);
     } else {
+      let token = name;
       let name = token_name(name);
+
+      if "{}[]()".contains(token) {
+        let c = token.chars().next().unwrap();
+        punctuation_values.push(quote!(#c));
+      } else {
+        let cs = token.chars().map(|c| Punct::new(c, Spacing::Joint));
+        punctuation_values.push(quote!(#(#cs)*));
+      }
       let ident = Ident::new(&to_upper_snake_case(name), Span::call_site());
       punctuation.push(ident);
     }
@@ -470,7 +480,7 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
     // TODO: Fix this macro
     #[macro_export]
     macro_rules! T {
-      // #([#punctuation_values] => { $crate::SyntaxKind::#punctuation };)*
+      #([#punctuation_values] => { $crate::SyntaxKind::#punctuation };)*
       // #([#all_keywords_idents] => { $crate::SyntaxKind::#all_keywords };)*
       [lifetime_ident] => { $crate::SyntaxKind::LIFETIME_IDENT };
       [ident] => { $crate::SyntaxKind::IDENT };
