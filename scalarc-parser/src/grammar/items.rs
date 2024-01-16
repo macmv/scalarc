@@ -37,11 +37,11 @@ fn item(p: &mut Parser) {
 // SOURCE_FILE
 //   IMPORT
 //     IMPORT_KW
-//     IDENT_KW
+//     IDENT
 //     DOT
-//     IDENT_KW
+//     IDENT
 //     DOT
-//     IDENT_KW
+//     IDENT
 //     NL_KW
 fn import_item(p: &mut Parser, m: Marker) {
   p.eat(T![import]);
@@ -78,13 +78,13 @@ fn import_item(p: &mut Parser, m: Marker) {
 // SOURCE_FILE
 //   IMPORT
 //     IMPORT_KW
-//     IDENT_KW
+//     IDENT
 //     DOT
 //     IMPORT_SELECTORS
 //       OPEN_CURLY
-//       IDENT_KW
+//       IDENT
 //       COMMA
-//       IDENT_KW
+//       IDENT
 //       CLOSE_CURLY
 //     NL_KW
 fn import_list(p: &mut Parser) {
