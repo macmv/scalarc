@@ -92,11 +92,7 @@ impl fmt::Display for Events<'_> {
     let mut index = 0;
     for e in self.0 {
       match e {
-        Event::Start { kind, forward_parent } => {
-          // Ignore tombstones
-          if kind == &SyntaxKind::TOMBSTONE {
-            continue;
-          }
+        Event::Start { kind, .. } => {
           writeln!(f, "{}{:?}", "  ".repeat(indent), kind)?;
           indent += 1;
         }
