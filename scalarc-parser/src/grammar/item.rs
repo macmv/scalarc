@@ -146,31 +146,40 @@ mod tests {
   fn imports() {
     check(
       "import foo.bar.baz",
-      r"SOURCE_FILE
+      expect![[r#"
+        SOURCE_FILE
           IMPORT
-            IMPORT_KW
-            IDENT
-            DOT
-            IDENT
-            DOT
-            IDENT
-            NL_KW",
+            IMPORT_KW 'import'
+            WHITESPACE ' '
+            IDENT 'foo'
+            DOT '.'
+            IDENT 'bar'
+            DOT '.'
+            IDENT 'baz'
+            NL_KW '\n'
+      "#]],
     );
 
     check(
       "import foo.{ bar, baz }",
-      r"SOURCE_FILE
+      expect![[r#"
+        SOURCE_FILE
           IMPORT
-            IMPORT_KW
-            IDENT
-            DOT
+            IMPORT_KW 'import'
+            WHITESPACE ' '
+            IDENT 'foo'
+            DOT '.'
             IMPORT_SELECTORS
-              OPEN_CURLY
-              IDENT
-              COMMA
-              IDENT
-              CLOSE_CURLY
-            NL_KW",
+              OPEN_CURLY '{'
+              WHITESPACE ' '
+              IDENT 'bar'
+              COMMA ','
+              WHITESPACE ' '
+              IDENT 'baz'
+              WHITESPACE ' '
+              CLOSE_CURLY '}'
+            NL_KW '\n'
+      "#]],
     );
   }
 
@@ -178,7 +187,8 @@ mod tests {
   fn fun_dec() {
     check(
       "def foo = 3",
-      r"SOURCE_FILE
+      expect![[r#"
+        SOURCE_FILE
           FUN_DEC
             DEF_KW 'def'
             WHITESPACE ' '
@@ -188,12 +198,14 @@ mod tests {
             WHITESPACE ' '
             LITERAL
               INT_LIT_KW '3'
-            NL_KW '\n'",
+            NL_KW '\n'
+      "#]],
     );
 
     check(
       "def foo(a:) = 3",
-      r"SOURCE_FILE
+      expect![[r#"
+        SOURCE_FILE
           FUN_DEC
             DEF_KW 'def'
             WHITESPACE ' '
@@ -210,12 +222,14 @@ mod tests {
             WHITESPACE ' '
             LITERAL
               INT_LIT_KW '3'
-            NL_KW '\n'",
+            NL_KW '\n'
+      "#]],
     );
 
     check(
       "def foo(a: Int) = 3",
-      r"SOURCE_FILE
+      expect![[r#"
+        SOURCE_FILE
           FUN_DEC
             DEF_KW 'def'
             WHITESPACE ' '
@@ -233,12 +247,14 @@ mod tests {
             WHITESPACE ' '
             LITERAL
               INT_LIT_KW '3'
-            NL_KW '\n'",
+            NL_KW '\n'
+      "#]],
     );
 
     check(
       "def foo(a: Int, b: String) = 3",
-      r"SOURCE_FILE
+      expect![[r#"
+        SOURCE_FILE
           FUN_DEC
             DEF_KW 'def'
             WHITESPACE ' '
@@ -263,7 +279,8 @@ mod tests {
             WHITESPACE ' '
             LITERAL
               INT_LIT_KW '3'
-            NL_KW '\n'",
+            NL_KW '\n'
+      "#]],
     );
   }
 }

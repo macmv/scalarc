@@ -150,6 +150,7 @@ name = "scalarc-parser"
 version = "0.1.0"
 dependencies = [
  "drop_bomb",
+ "expect-test",
  "pretty_assertions",
  "rowan",
  "scalarc-ast",

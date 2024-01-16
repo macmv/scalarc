@@ -13,6 +13,10 @@ use token::{LexError, Token};
 #[macro_use]
 extern crate pretty_assertions;
 
+#[cfg(test)]
+#[macro_use]
+extern crate expect_test;
+
 pub enum EntryPoint {
   SourceFile,
   Expr,

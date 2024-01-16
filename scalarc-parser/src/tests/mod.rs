@@ -1,26 +1,22 @@
 use core::fmt;
 
-use crate::{token::Token, EntryPoint, Event, Lexer, SyntaxKind};
+use expect_test::Expect;
+
+use crate::{EntryPoint, Event, Lexer, SyntaxKind};
 
 mod inline;
 
-pub fn check_expr(text: &str, expected_tree: &str) {
+pub fn check_expr(text: &str, expected_tree: Expect) {
   check_inner(EntryPoint::Expr, text, expected_tree);
 }
-pub fn check(text: &str, expected_tree: &str) {
+pub fn check(text: &str, expected_tree: Expect) {
   check_inner(EntryPoint::SourceFile, text, expected_tree);
 }
 
-fn check_inner(entry_point: EntryPoint, text: &str, expected_tree: &str) {
+fn check_inner(entry_point: EntryPoint, text: &str, expected_tree: Expect) {
   let actual_tree = lex(entry_point, &format!("{}\n", text));
-  let expected_tree = expected_tree
-    .lines()
-    .map(|l| l.strip_prefix("        ").unwrap_or(l))
-    .collect::<Vec<_>>()
-    .join("\n");
-  if actual_tree.trim() != expected_tree.trim() {
-    pretty_assertions::assert_eq!(expected_tree.trim(), actual_tree.trim());
-  }
+
+  expected_tree.assert_eq(&actual_tree);
 }
 
 pub fn lex(entry_point: EntryPoint, text: &str) -> String {
