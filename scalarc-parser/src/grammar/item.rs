@@ -60,6 +60,7 @@ fn import_item(p: &mut Parser, m: Marker) {
       _ => {
         p.error(format!("expected ident, got {:?}", p.current()));
         p.recover_until(T![nl]);
+        p.eat(T![nl]);
         m.abandon(p);
         return;
       }
@@ -194,59 +195,75 @@ mod tests {
       "def foo(a:) = 3",
       r"SOURCE_FILE
           FUN_DEC
-            DEF_KW
-            IDENT
+            DEF_KW 'def'
+            WHITESPACE ' '
+            IDENT 'foo'
             FUN_PARAMS
-              OPEN_PAREN
+              OPEN_PAREN '('
               FUN_PARAM
-                IDENT
-                COLON
+                IDENT 'a'
+                COLON ':'
                 error: expected IDENT
-              CLOSE_PAREN
-            EQ
+              CLOSE_PAREN ')'
+            WHITESPACE ' '
+            EQ '='
+            WHITESPACE ' '
             LITERAL
-            NL_KW",
+              INT_LIT_KW '3'
+            NL_KW '\n'",
     );
 
     check(
       "def foo(a: Int) = 3",
       r"SOURCE_FILE
           FUN_DEC
-            DEF_KW
-            IDENT
+            DEF_KW 'def'
+            WHITESPACE ' '
+            IDENT 'foo'
             FUN_PARAMS
-              OPEN_PAREN
+              OPEN_PAREN '('
               FUN_PARAM
-                IDENT
-                COLON
-                IDENT
-              CLOSE_PAREN
-            EQ
+                IDENT 'a'
+                COLON ':'
+                WHITESPACE ' '
+                IDENT 'Int'
+              CLOSE_PAREN ')'
+            WHITESPACE ' '
+            EQ '='
+            WHITESPACE ' '
             LITERAL
-            NL_KW",
+              INT_LIT_KW '3'
+            NL_KW '\n'",
     );
 
     check(
       "def foo(a: Int, b: String) = 3",
       r"SOURCE_FILE
           FUN_DEC
-            DEF_KW
-            IDENT
+            DEF_KW 'def'
+            WHITESPACE ' '
+            IDENT 'foo'
             FUN_PARAMS
-              OPEN_PAREN
+              OPEN_PAREN '('
               FUN_PARAM
-                IDENT
-                COLON
-                IDENT
-              COMMA
+                IDENT 'a'
+                COLON ':'
+                WHITESPACE ' '
+                IDENT 'Int'
+              COMMA ','
+              WHITESPACE ' '
               FUN_PARAM
-                IDENT
-                COLON
-                IDENT
-              CLOSE_PAREN
-            EQ
+                IDENT 'b'
+                COLON ':'
+                WHITESPACE ' '
+                IDENT 'String'
+              CLOSE_PAREN ')'
+            WHITESPACE ' '
+            EQ '='
+            WHITESPACE ' '
             LITERAL
-            NL_KW",
+              INT_LIT_KW '3'
+            NL_KW '\n'",
     );
   }
 }

@@ -12,10 +12,7 @@ pub fn expr(p: &mut Parser) {
       m.complete(p, INFIX_EXPR);
     }
 
-    T![nl] => {
-      m.abandon(p);
-      p.eat(T![nl]);
-    }
+    T![nl] => m.abandon(p),
 
     _ => {
       m.abandon(p);

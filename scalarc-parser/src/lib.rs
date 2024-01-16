@@ -209,7 +209,6 @@ impl Parser<'_> {
     while self.current() != t && self.current() != SyntaxKind::EOF {
       self.bump();
     }
-    self.bump();
   }
 
   pub fn error_bump(&mut self, msg: impl Into<String>) {
