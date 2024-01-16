@@ -5,6 +5,6 @@ use crate::{
   Marker, Parser,
 };
 
-mod items;
+mod item;
 
 pub mod entry_point;
