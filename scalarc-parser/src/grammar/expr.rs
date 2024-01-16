@@ -41,9 +41,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
       T![ident] => {
         let op = p.slice();
         let (l_bp, r_bp) = op_bp(op);
-        dbg!(l_bp, r_bp, op);
         if l_bp < min_bp {
-          println!("l_bp < min_bp, abandoning");
           m.abandon(p);
           return;
         }
