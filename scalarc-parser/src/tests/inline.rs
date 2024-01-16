@@ -23,7 +23,7 @@ fn grammar_inline_tests() {
 
   for test in tests {
     let mut found_error = None;
-    for event in lex_events(&format!("{}\n", test.src)) {
+    for event in lex_events(crate::EntryPoint::SourceFile, &format!("{}\n", test.src)) {
       match event {
         Event::Error { msg } => found_error = Some(msg),
         _ => {}

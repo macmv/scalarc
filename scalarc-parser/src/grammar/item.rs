@@ -107,7 +107,7 @@ fn fun_sig(p: &mut Parser) {
   }
 
   p.expect(T![=]);
-  expr(p);
+  expr::expr(p);
 }
 
 fn fun_params(p: &mut Parser) {
@@ -135,17 +135,6 @@ fn fun_param(p: &mut Parser) {
     p.expect(T![ident]);
   }
   m.complete(p, FUN_PARAM);
-}
-
-fn expr(p: &mut Parser) {
-  match p.current() {
-    T![ident] => p.eat(T![ident]),
-    LITERAL => p.eat(LITERAL),
-    _ => {
-      p.error(format!("expected ident, got {:?}", p.current()));
-      p.recover_until(T![nl]);
-    }
-  }
 }
 
 #[cfg(test)]

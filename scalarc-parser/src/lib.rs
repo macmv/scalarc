@@ -15,6 +15,7 @@ extern crate pretty_assertions;
 
 pub enum EntryPoint {
   SourceFile,
+  Expr,
 }
 
 struct Parser<'a> {
@@ -120,6 +121,7 @@ impl EntryPoint {
     let mut parser = Parser::new(lexer);
     match self {
       EntryPoint::SourceFile => grammar::entry_point::source_file(&mut parser),
+      EntryPoint::Expr => grammar::entry_point::expr(&mut parser),
     }
     parser.finish()
   }

@@ -4,8 +4,15 @@ use crate::{EntryPoint, Event, Lexer, SyntaxKind};
 
 mod inline;
 
+pub fn check_expr(text: &str, expected_tree: &str) {
+  check_inner(EntryPoint::Expr, text, expected_tree);
+}
 pub fn check(text: &str, expected_tree: &str) {
-  let actual_tree = lex(&format!("{}\n", text));
+  check_inner(EntryPoint::SourceFile, text, expected_tree);
+}
+
+fn check_inner(entry_point: EntryPoint, text: &str, expected_tree: &str) {
+  let actual_tree = lex(entry_point, &format!("{}\n", text));
   let expected_tree = expected_tree
     .lines()
     .map(|l| l.strip_prefix("        ").unwrap_or(l))
@@ -16,9 +23,13 @@ pub fn check(text: &str, expected_tree: &str) {
   }
 }
 
-pub fn lex(text: &str) -> String { format_events(&lex_events(text)) }
+pub fn lex(entry_point: EntryPoint, text: &str) -> String {
+  format_events(&lex_events(entry_point, text))
+}
 
-pub fn lex_events(text: &str) -> Vec<Event> { EntryPoint::SourceFile.parse(&mut Lexer::new(text)) }
+pub fn lex_events(entry_point: EntryPoint, text: &str) -> Vec<Event> {
+  entry_point.parse(&mut Lexer::new(text))
+}
 
 pub fn format_events(events: &[Event]) -> String { Events(events).to_string() }
 
