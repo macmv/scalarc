@@ -21,35 +21,36 @@ fn grammar_inline_tests() {
 
   for test in tests {
     let events = lex(&test.text);
-    pretty_assertions::assert_eq!(events.trim(), test.expect.trim());
+    pretty_assertions::assert_eq!(test.expect.trim(), events.trim(), "at {}", test.location);
   }
 }
 
 #[derive(Debug)]
 struct Test {
-  text:   String,
-  expect: String,
+  location: String,
+  text:     String,
+  expect:   String,
 }
 
-fn collect_tests(s: &str) -> Vec<Test> {
+fn collect_tests(s: &str, location: &Path) -> Vec<Test> {
   let mut tests = vec![];
-  let mut in_test = false;
+  let mut in_test = None;
   let mut test_lines = vec![];
-  for line in s.lines() {
+  for (i, line) in s.lines().enumerate() {
     let line = line.trim();
 
-    if in_test {
+    if let Some(line_num) = in_test {
       if let Some(l) = line.strip_prefix("// ") {
         test_lines.push(l);
       } else {
         let src = test_lines.join("\n");
         let mut split = src.splitn(3, "---");
         let _ = split.next().unwrap();
-        let text = split.next().unwrap().trim().into();
+        let text = format!("{}\n", split.next().unwrap().trim());
         let expect = split.next().unwrap().trim().into();
 
-        tests.push(Test { text, expect });
-        in_test = false;
+        tests.push(Test { location: format!("{}:{}", location.display(), line_num), text, expect });
+        in_test = None;
         test_lines.clear();
       }
       continue;
@@ -59,7 +60,7 @@ fn collect_tests(s: &str) -> Vec<Test> {
       continue;
     }
 
-    in_test = true;
+    in_test = Some(i + 1);
   }
 
   tests
@@ -80,7 +81,7 @@ fn tests_from_dir(dir: &Path) -> Vec<Test> {
   fn process_file(tests: &mut Vec<Test>, path: &Path) {
     let text = fs::read_to_string(path).unwrap();
 
-    for test in collect_tests(&text) {
+    for test in collect_tests(&text, path) {
       tests.push(test);
     }
   }

@@ -30,7 +30,7 @@ fn item(p: &mut Parser) {
   };
 }
 
-// test ok
+// test
 // ---
 // import foo.bar.baz
 // ---
@@ -42,8 +42,7 @@ fn item(p: &mut Parser) {
 //     IDENT_KW
 //     DOT
 //     IDENT_KW
-//     EOF
-//     error: expected NL_KW
+//     NL_KW
 fn import_item(p: &mut Parser, m: Marker) {
   p.eat(T![import]);
   loop {
@@ -59,12 +58,17 @@ fn import_item(p: &mut Parser, m: Marker) {
 
       T!['{'] => import_list(p),
 
-      _ => break,
+      T![nl] => {
+        p.eat(T![nl]);
+        m.complete(p, IMPORT);
+        return;
+      }
+      _ => {
+        m.abandon(p);
+        return;
+      }
     }
   }
-
-  p.expect(T![nl]);
-  m.complete(p, IMPORT);
 }
 
 // test
@@ -82,8 +86,7 @@ fn import_item(p: &mut Parser, m: Marker) {
 //       COMMA
 //       IDENT_KW
 //       CLOSE_CURLY
-//     EOF
-//     error: expected NL_KW
+//     NL_KW
 fn import_list(p: &mut Parser) {
   let m = p.start();
   p.eat(T!['{']);
