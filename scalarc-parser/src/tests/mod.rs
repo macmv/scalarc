@@ -50,19 +50,19 @@ impl fmt::Display for Events<'_> {
           indent += 1;
         }
         Event::Finish => indent -= 1,
-        Event::Token { kind } => {
+        Event::Token { kind, len } => {
           write!(f, "{}{:?}", "  ".repeat(indent), kind)?;
           if index >= self.1.len() {
             writeln!(f, " <EOF>")?;
             continue;
           }
-          let str = &self.1[index..index + 1];
+          let str = &self.1[index..index + len];
           if str == "\n" {
             writeln!(f, " '\\n'")?;
           } else {
             writeln!(f, " '{str}'")?;
           }
-          index += 1;
+          index += len;
         }
         Event::Error { msg } => {
           writeln!(f, "{}error: {}", "  ".repeat(indent), msg)?;

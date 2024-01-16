@@ -105,6 +105,7 @@ pub enum Event {
   /// Produce a single leaf-element.
   Token {
     kind: SyntaxKind,
+    len:  usize,
   },
   /// When we parse `foo.0.0` or `foo. 0. 0` the lexer will hand us a float
   /// literal instead of an integer literal followed by a dot as the lexer has
@@ -146,9 +147,11 @@ impl Parser<'_> {
   pub fn finish(self) -> Vec<Event> { self.events }
 
   fn eat_trivia(&mut self) {
-    while self.pending_whitespace > 0 {
-      self.events.push(Event::Token { kind: SyntaxKind::WHITESPACE });
-      self.pending_whitespace -= 1;
+    if self.pending_whitespace > 0 {
+      self
+        .events
+        .push(Event::Token { kind: SyntaxKind::WHITESPACE, len: self.pending_whitespace });
+      self.pending_whitespace = 0;
     }
   }
 
@@ -168,7 +171,7 @@ impl Parser<'_> {
   }
   pub fn bump(&mut self) -> SyntaxKind {
     self.eat_trivia();
-    self.events.push(Event::Token { kind: self.current });
+    self.events.push(Event::Token { kind: self.current, len: self.lexer.slice().len() });
 
     loop {
       match self.lexer.next() {
@@ -176,7 +179,7 @@ impl Parser<'_> {
         // record that they got skipped, so that we can recover them later if we need a concrete
         // tree.
         Ok(Token::Whitespace) => {
-          self.pending_whitespace += self.lexer.slice().len();
+          self.pending_whitespace += 1;
         }
         Ok(t) => {
           self.current = token_to_kind(t, self.lexer.slice());

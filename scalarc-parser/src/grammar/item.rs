@@ -179,11 +179,15 @@ mod tests {
       "def foo = 3",
       r"SOURCE_FILE
           FUN_DEC
-            DEF_KW
-            IDENT
-            EQ
+            DEF_KW 'def'
+            WHITESPACE ' '
+            IDENT 'foo'
+            WHITESPACE ' '
+            EQ '='
+            WHITESPACE ' '
             LITERAL
-            NL_KW",
+              INT_LIT_KW '3'
+            NL_KW '\n'",
     );
 
     check(
