@@ -157,5 +157,25 @@ mod tests {
             INT_LIT_KW '5'
       "#],
     );
+
+    check_expr(
+      "2 == 2 + 5",
+      expect![@r#"
+        INFIX_EXPR
+          LITERAL
+            INT_LIT_KW '2'
+          WHITESPACE ' '
+          IDENT '=='
+          WHITESPACE ' '
+          INFIX_EXPR
+            LITERAL
+              INT_LIT_KW '2'
+            WHITESPACE ' '
+            IDENT '+'
+            WHITESPACE ' '
+            LITERAL
+              INT_LIT_KW '5'
+      "#],
+    );
   }
 }
