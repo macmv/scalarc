@@ -1,7 +1,56 @@
 pub mod ast;
 pub mod node;
 
-pub use crate::ast::SourceFile;
+use ast::AstNode;
+pub use ast::SourceFile;
+pub use error::SyntaxError;
+
+mod error;
+mod parse;
+
+use std::{marker::PhantomData, sync::Arc};
+
+use node::SyntaxNode;
+use rowan::GreenNode;
+use scalarc_parser::SyntaxKind;
+
+/// `Parse` is the result of the parsing: a syntax tree and a collection of
+/// errors.
+///
+/// Note that we always produce a syntax tree, even for completely invalid
+/// files.
+#[derive(Debug, PartialEq, Eq)]
+pub struct Parse<T> {
+  green:  GreenNode,
+  errors: Option<Arc<[SyntaxError]>>,
+  _ty:    PhantomData<fn() -> T>,
+}
+
+impl<T> Parse<T> {
+  pub fn syntax_node(&self) -> SyntaxNode { SyntaxNode::new_root(self.green.clone()) }
+  pub fn errors(&self) -> &[SyntaxError] { self.errors.as_deref().unwrap_or_default() }
+}
+
+impl<T: AstNode> Parse<T> {
+  pub fn tree(&self) -> T { T::cast(self.syntax_node()).unwrap() }
+}
+
+impl SourceFile {
+  pub fn parse(text: &str) -> Parse<SourceFile> {
+    let (green, mut errors) = parse::parse_text(text);
+    let root = SyntaxNode::new_root(green.clone());
+
+    // TODO: Add validation :P. Much easier said than done.
+    // errors.extend(validation::validate(&root));
+
+    assert_eq!(root.kind(), SyntaxKind::SOURCE_FILE);
+    Parse {
+      green,
+      errors: if errors.is_empty() { None } else { Some(errors.into()) },
+      _ty: PhantomData,
+    }
+  }
+}
 
 /// This test does not assert anything and instead just shows off the crate's
 /// API.
@@ -24,7 +73,7 @@ fn api_walkthrough() {
   // `SourceFile` is the root of the syntax tree. We can iterate file's items.
   // Let's fetch the `foo` function.
   let mut func = None;
-  for item in file.items() {
+  for item in file.top_stat_seq() {
     dbg!(item);
   }
   let func: ast::FunDec = func.unwrap();

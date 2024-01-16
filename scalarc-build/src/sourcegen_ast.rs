@@ -800,6 +800,8 @@ fn extract_struct_traits(ast: &mut AstSrc) {
     }
   }
 
+  // TODO: Do I need this?
+  /*
   let nodes_with_doc_comments = [
     "SourceFile",
     "Fn",
@@ -828,6 +830,7 @@ fn extract_struct_traits(ast: &mut AstSrc) {
       node.traits.push("HasDocComments".into());
     }
   }
+  */
 }
 
 fn extract_struct_trait(node: &mut AstNodeSrc, trait_name: &str, methods: &[&str]) {

@@ -276,4 +276,4 @@ TopStat        = (Annotation (nl)?)* (Modifier)* TmplDef
 Packaging      =  'package' QualId (nl)? '{' TopStatSeq '}'
 PackageObject  =  'package' 'object' ObjectDef
 
-File = ('package' QualId semi)* TopStatSeq
+SourceFile = ('package' QualId semi)* TopStatSeq

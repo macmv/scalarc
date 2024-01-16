@@ -1,0 +1,44 @@
+//! Some high level functions to wrap `scalarc_parser`.
+
+use crate::SyntaxError;
+use rowan::{GreenNode, TextRange};
+
+pub fn parse_text(text: &str) -> (GreenNode, Vec<SyntaxError>) { todo!() }
+
+/*
+pub fn parse_text(text: &str) -> (GreenNode, Vec<SyntaxError>) {
+  let lexed = scalarc_parser::LexedStr::new(text);
+  let parser_input = lexed.to_input();
+
+  let parser_output = scalarc_parser::TopEntryPoint::SourceFile.parse(&parser_input);
+  let (node, errors, _eof) = build_tree(lexed, parser_output);
+
+  (node, errors)
+}
+
+fn build_tree(
+  lexed: scalarc_parser::LexedStr<'_>,
+  parser_output: scalarc_parser::Output,
+) -> (GreenNode, Vec<SyntaxError>, bool) {
+  let mut builder = SyntaxTreeBuilder::default();
+
+  let is_eof = lexed.intersperse_trivia(&parser_output, &mut |step| match step {
+    scalarc_parser::StrStep::Token { kind, text } => builder.token(kind, text),
+    scalarc_parser::StrStep::Enter { kind } => builder.start_node(kind),
+    scalarc_parser::StrStep::Exit => builder.finish_node(),
+    scalarc_parser::StrStep::Error { msg, pos } => {
+      builder.error(msg.to_string(), pos.try_into().unwrap())
+    }
+  });
+
+  let (node, mut errors) = builder.finish_raw();
+  for (i, err) in lexed.errors() {
+    let text_range = lexed.text_range(i);
+    let text_range =
+      TextRange::new(text_range.start.try_into().unwrap(), text_range.end.try_into().unwrap());
+    errors.push(SyntaxError::new(err, text_range))
+  }
+
+  (node, errors, is_eof)
+}
+*/
