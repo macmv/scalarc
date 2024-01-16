@@ -327,42 +327,6 @@ fn write_doc_comment(contents: &[String], dest: &mut String) {
 }
 
 fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
-  let (single_byte_tokens_values, single_byte_tokens): (Vec<_>, Vec<_>) = kinds
-    .punct
-    .iter()
-    .filter(|(token, _name)| token.len() == 1)
-    .map(|(token, name)| (token.chars().next().unwrap(), format_ident!("{}", name)))
-    .unzip();
-
-  let punctuation_values = kinds.punct.iter().map(|(token, _name)| {
-    if "{}[]()".contains(token) {
-      let c = token.chars().next().unwrap();
-      quote! { #c }
-    } else {
-      let cs = token.chars().map(|c| Punct::new(c, Spacing::Joint));
-      quote! { #(#cs)* }
-    }
-  });
-  let punctuation =
-    kinds.punct.iter().map(|(_token, name)| format_ident!("{}", name)).collect::<Vec<_>>();
-
-  /*
-  let x = |&name| match name {
-    "Self" => format_ident!("SELF_TYPE_KW"),
-    name => format_ident!("{}_KW", to_upper_snake_case(name)),
-  };
-  let full_keywords_values = kinds.keywords;
-  let full_keywords = full_keywords_values.iter().map(x);
-
-  let contextual_keywords_values = &kinds.contextual_keywords;
-  let contextual_keywords = contextual_keywords_values.iter().map(x);
-
-  let all_keywords_values =
-    kinds.keywords.iter().chain(kinds.contextual_keywords.iter()).copied().collect::<Vec<_>>();
-  let all_keywords_idents = all_keywords_values.iter().map(|kw| format_ident!("{}", kw));
-  let all_keywords = all_keywords_values.iter().map(x).collect::<Vec<_>>();
-  */
-
   let literals = kinds.literals.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
 
   let mut keywords: Vec<Ident> = vec![];
