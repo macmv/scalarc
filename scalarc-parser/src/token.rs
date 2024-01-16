@@ -19,6 +19,7 @@ pub enum Token {
   Group(Group),
   Delimiter(Delimiter),
   Newline,
+  Whitespace,
 
   Invalid,
 }
@@ -152,19 +153,23 @@ impl<'a> Lexer<'a> {
     Ok(tok)
   }
 
-  fn eat_whitespace(&mut self) -> Result<()> {
+  fn eat_whitespace(&mut self) -> Result<Option<Token>> {
     loop {
       match self.tok.peek()? {
-        Some(InnerToken::Whitespace) => {}
+        Some(InnerToken::Whitespace) => {
+          self.tok.eat().unwrap();
+          return Ok(Some(Token::Whitespace));
+        }
         Some(_) | None => break,
       }
-      self.tok.eat().unwrap();
     }
-    Ok(())
+    Ok(None)
   }
 
   pub fn next(&mut self) -> Result<Token> {
-    self.eat_whitespace()?;
+    if let Some(t) = self.eat_whitespace()? {
+      return Ok(t);
+    }
 
     let start = self.tok.pos();
     let first = self.tok.eat()?;

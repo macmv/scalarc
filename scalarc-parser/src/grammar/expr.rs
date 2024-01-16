@@ -76,11 +76,14 @@ mod tests {
       r"INFIX_EXPR
           LITERAL
             INT_LIT_KW '2'
+          WHITESPACE ' '
           IDENT '+'
+          WHITESPACE ' '
           LITERAL
             INT_LIT_KW '2'
-          NL_KW",
+          NL_KW '\n'",
     );
+
     /*
     check_expr(
       "2 + 2 == 5",

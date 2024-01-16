@@ -36,6 +36,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
     },
     Token::Literal(token::Literal::Integer) => SyntaxKind::INT_LIT_KW,
     Token::Newline => T![nl],
+    Token::Whitespace => SyntaxKind::WHITESPACE,
     Token::Delimiter(token::Delimiter::Dot) => T![.],
     Token::Delimiter(token::Delimiter::Comma) => T![,],
     Token::Group(token::Group::OpenParen) => T!['('],
@@ -158,10 +159,25 @@ impl Parser<'_> {
   pub fn bump(&mut self) -> SyntaxKind {
     self.events.push(Event::Token { kind: self.current });
 
-    match self.lexer.next() {
-      Ok(t) => self.current = token_to_kind(t, self.lexer.slice()),
-      Err(LexError::EOF) => self.current = SyntaxKind::EOF,
-      Err(e) => self.error(e.to_string()),
+    loop {
+      match self.lexer.next() {
+        // Ignore whitespace tokens here, because we usually don't care about them when parsing. We
+        // record that they got skipped, so that we can recover them later if we need a concrete
+        // tree.
+        Ok(Token::Whitespace) => {}
+        Ok(t) => {
+          self.current = token_to_kind(t, self.lexer.slice());
+          break;
+        }
+        Err(LexError::EOF) => {
+          self.current = SyntaxKind::EOF;
+          break;
+        }
+        Err(e) => {
+          self.error(e.to_string());
+          break;
+        }
+      }
     }
     self.current
   }
