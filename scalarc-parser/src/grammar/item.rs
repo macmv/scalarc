@@ -114,6 +114,15 @@ fn fun_sig(p: &mut Parser) {
 fn fun_params(p: &mut Parser) {
   let m = p.start();
   p.eat(T!['(']);
+
+  // test ok
+  // def foo() = 3
+  if p.current() == T![')'] {
+    p.eat(T![')']);
+    m.complete(p, FUN_PARAMS);
+    return;
+  }
+
   loop {
     fun_param(p);
     // test ok
@@ -128,6 +137,8 @@ fn fun_params(p: &mut Parser) {
   }
 }
 
+// test ok
+// def foo(a: Int) = 3
 fn fun_param(p: &mut Parser) {
   let m = p.start();
   p.expect(T![ident]);
