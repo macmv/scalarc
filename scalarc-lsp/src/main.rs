@@ -66,5 +66,5 @@ fn setup_logging() {
   let dir = PathBuf::from("/home/macmv/.cache/scalarc");
   fs::create_dir_all(&dir).unwrap();
 
-  simple_logging::log_to_file(dir.join("scalarc-lsp.log"), log::LevelFilter::Debug).unwrap();
+  simple_logging::log_to_file(dir.join("scalarc-lsp.log"), log::LevelFilter::Info).unwrap();
 }

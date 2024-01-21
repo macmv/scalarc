@@ -3,7 +3,7 @@
 use crossbeam_channel::{Receiver, Sender};
 use std::error::Error;
 
-use lsp_types::{notification::Notification, Url};
+use lsp_types::Url;
 
 pub struct GlobalState {
   pub sender:    Sender<lsp_server::Message>,
@@ -34,7 +34,7 @@ impl GlobalState {
   }
 
   fn handle_request(&self, req: lsp_server::Request) -> Result<(), Box<dyn Error>> {
-    let mut dispatcher = Dispatcher { global: &self, req };
+    let mut dispatcher = RequestDispatcher { global: &self, req };
 
     use crate::handler::request;
     use lsp_types::request as lsp_request;
@@ -45,22 +45,25 @@ impl GlobalState {
   }
 
   fn handle_notification(&self, not: lsp_server::Notification) -> Result<(), Box<dyn Error>> {
-    match not.method.as_str() {
-      lsp_types::notification::Exit::METHOD => Ok(()),
-      _ => {
-        error!("unknown notification: {}", not.method);
-        Ok(())
-      }
-    }
+    let mut dispatcher = NotificationDispatcher { global: &self, not };
+
+    use crate::handler::notification;
+    use lsp_types::notification as lsp_notification;
+
+    dispatcher
+      .on::<lsp_notification::DidOpenTextDocument>(notification::handle_open_text_document)
+      .on::<lsp_notification::DidChangeTextDocument>(notification::handle_change_text_document);
+
+    Ok(())
   }
 }
 
-struct Dispatcher<'a> {
+struct RequestDispatcher<'a> {
   global: &'a GlobalState,
   req:    lsp_server::Request,
 }
 
-impl Dispatcher<'_> {
+impl RequestDispatcher<'_> {
   fn on<R>(&mut self, f: fn(R::Params) -> Result<R::Result, Box<dyn Error>>) -> &mut Self
   where
     R: lsp_types::request::Request,
@@ -87,6 +90,34 @@ impl Dispatcher<'_> {
         error:  None,
       }))
       .unwrap();
+
+    self
+  }
+}
+
+struct NotificationDispatcher<'a> {
+  global: &'a GlobalState,
+  not:    lsp_server::Notification,
+}
+
+impl NotificationDispatcher<'_> {
+  fn on<N>(&mut self, f: fn(N::Params) -> Result<(), Box<dyn Error>>) -> &mut Self
+  where
+    N: lsp_types::notification::Notification,
+  {
+    if self.not.method != N::METHOD {
+      return self;
+    }
+
+    let params = match serde_json::from_value::<N::Params>(self.not.params.clone()) {
+      Ok(p) => p,
+      Err(e) => {
+        error!("failed to deserialize params: {}", e);
+        return self;
+      }
+    };
+    // TODO: Dispatch this to a thread pool.
+    f(params).unwrap();
 
     self
   }
