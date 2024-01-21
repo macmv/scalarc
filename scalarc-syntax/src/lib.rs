@@ -71,11 +71,16 @@ fn api_walkthrough() {
   // `SourceFile` is the root of the syntax tree. We can iterate file's items.
   // Let's fetch the `foo` function.
   let mut func = None;
-  dbg!(&file);
-  for item in file.top_stat_seq() {
-    dbg!(item);
+  for item in file.fun_decs() {
+    // The `fun_sig` is the name, arguments, and return type. In this case, it will
+    // just be the name `foo`.
+    if item.fun_sig().unwrap().id_token().unwrap().text() == "foo" {
+      func = Some(item);
+    }
   }
   let func: ast::FunDec = func.unwrap();
+
+  panic!();
 
   /*
   // Each AST node has a bunch of getters for children. All getters return

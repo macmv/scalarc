@@ -215,13 +215,13 @@ ImportSelector    = id ('=>' id | '=>' '_')?
 
 Dec               = 'val' ValDec
                   | 'var' VarDec
-                  | 'def' FunDec
+                  | FunDec
                   | 'type' (nl)* TypeDec
 
 ValDec            = ids ':' Type
 VarDec            = ids ':' Type
-FunDec            = FunSig (':' Type)?
-FunSig            = id (FunTypeParamClause)? FunParams
+FunDec            = 'def' FunSig '=' Expr
+FunSig            = id FunTypeParamClause? FunParams (':' Type)?
 TypeDec           = id (TypeParamClause)? ('>:' Type)? ('<:' Type)?
 
 // Definitions
@@ -267,12 +267,14 @@ ConstrExpr     = SelfInvocation | ConstrBlock
 ConstrBlock    = '{' SelfInvocation (semi BlockStat)* '}'
 SelfInvocation = 'this' ArgumentExprList (ArgumentExprList)*
 
-TopStatSeq     = TopStat (semi TopStat)*
-TopStat        = (Annotation (nl)?)* (Modifier)* TmplDef
-               | Import
-               | Packaging
-               | PackageObject
-Packaging      =  'package' QualId (nl)? '{' TopStatSeq '}'
-PackageObject  =  'package' 'object' ObjectDef
+// TopStatSeq     = TopStat (semi TopStat)*
+// TopStat        = (Annotation (nl)?)* (Modifier)* TmplDef
+//                | Import
+//                | Packaging
+//                | PackageObject
+// Packaging      =  'package' QualId (nl)? '{' TopStatSeq '}'
+// PackageObject  =  'package' 'object' ObjectDef
+//
+// SourceFile = ('package' QualId semi)* TopStatSeq
 
-SourceFile = ('package' QualId semi)* TopStatSeq
+SourceFile = FunDec*

@@ -96,19 +96,21 @@ fn fun_dec(p: &mut Parser, m: Marker) {
   p.eat(T![def]);
   fun_sig(p);
 
+  p.expect(T![=]);
+  expr::expr(p);
+
   p.expect(T![nl]);
   m.complete(p, FUN_DEC);
 }
 
 fn fun_sig(p: &mut Parser) {
+  let m = p.start();
   p.expect(T![ident]);
 
   if p.current() == T!['('] {
     fun_params(p);
   }
-
-  p.expect(T![=]);
-  expr::expr(p);
+  m.complete(p, FUN_SIG);
 }
 
 fn fun_params(p: &mut Parser) {
