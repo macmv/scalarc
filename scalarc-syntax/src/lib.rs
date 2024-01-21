@@ -56,9 +56,7 @@ impl SourceFile {
 /// API.
 #[test]
 fn api_walkthrough() {
-  let source_code = "
-    def foo = 1 + 1
-  ";
+  let source_code = "def foo = 1 + 1\n";
   // `SourceFile` is the main entry point.
   //
   // The `parse` method returns a `Parse` -- a pair of syntax tree and a list
@@ -73,6 +71,7 @@ fn api_walkthrough() {
   // `SourceFile` is the root of the syntax tree. We can iterate file's items.
   // Let's fetch the `foo` function.
   let mut func = None;
+  dbg!(&file);
   for item in file.top_stat_seq() {
     dbg!(item);
   }
