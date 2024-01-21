@@ -1,5 +1,7 @@
 use std::{error::Error, fs, path::PathBuf};
 
+mod global;
+mod handler;
 mod info;
 
 #[macro_use]
@@ -54,7 +56,8 @@ fn run() -> Result<(), Box<dyn Error>> {
     return Err(e.into());
   }
 
-  println!("Hello, world!");
+  let global = global::GlobalState { sender: connection.sender, workspace: root_uri.unwrap() };
+  global.run(connection.receiver)?;
 
   Ok(())
 }
