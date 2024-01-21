@@ -1,6 +1,6 @@
 //! Handles global state and the main loop of the server.
 
-use crossbeam_channel::{Receiver, Sender};
+use crossbeam_channel::{select, Receiver, Sender};
 use scalarc_analysis::{Analysis, AnalysisHost};
 use std::{error::Error, path::PathBuf};
 
@@ -15,6 +15,9 @@ pub struct GlobalState {
   pub files: Files,
 
   pub analysis_host: AnalysisHost,
+
+  response_sender:   Sender<lsp_server::Message>,
+  response_receiver: Receiver<lsp_server::Message>,
 }
 
 pub(crate) struct GlobalStateSnapshot {
@@ -24,22 +27,36 @@ pub(crate) struct GlobalStateSnapshot {
 
 impl GlobalState {
   pub fn new(sender: Sender<lsp_server::Message>, workspace: Url) -> Self {
+    let (tx, rx) = crossbeam_channel::bounded(0);
+
     GlobalState {
       sender,
       workspace: workspace.to_file_path().unwrap(),
       files: Files::new(),
       analysis_host: AnalysisHost::new(),
+
+      response_sender: tx,
+      response_receiver: rx,
     }
   }
 
   pub fn run(mut self, receiver: Receiver<lsp_server::Message>) -> Result<(), Box<dyn Error>> {
     // TODO: Spawn a task to fetch bsp status here.
 
-    while let Ok(ev) = receiver.recv() {
-      self.handle_event(ev);
+    loop {
+      select! {
+        recv(receiver) -> msg => {
+          if let Ok(msg) = msg {
+            self.handle_event(msg);
+          }
+        },
+        recv(self.response_receiver) -> msg => {
+          if let Ok(msg) = msg {
+            let _ = self.sender.send(msg);
+          }
+        }
+      }
     }
-
-    Ok(())
   }
 
   fn handle_event(&mut self, ev: lsp_server::Message) {
@@ -128,16 +145,18 @@ impl RequestDispatcher<'_> {
     let snapshot = self.global.snapshot();
 
     // TODO: Dispatch this to a thread pool.
-    let response = f(snapshot, params).unwrap();
-    self
-      .global
-      .sender
-      .send(lsp_server::Message::Response(lsp_server::Response {
-        id:     self.req.id.clone(),
-        result: Some(serde_json::to_value(response).unwrap()),
-        error:  None,
-      }))
-      .unwrap();
+    let responder = self.global.response_sender.clone();
+    let id = self.req.id.clone();
+    std::thread::spawn(move || {
+      let response = f(snapshot, params).unwrap();
+      responder
+        .send(lsp_server::Message::Response(lsp_server::Response {
+          id,
+          result: Some(serde_json::to_value(response).unwrap()),
+          error: None,
+        }))
+        .unwrap();
+    });
 
     self
   }

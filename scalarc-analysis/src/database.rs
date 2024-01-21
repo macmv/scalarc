@@ -29,8 +29,9 @@ pub trait SourceDatabase: std::fmt::Debug {
 
 fn parse(db: &dyn SourceDatabase, file_id: FileId) -> ParsedFile {
   let text = db.file_text(file_id);
-  // SourceFile::parse(&text)
-  todo!("parse the text {text:?}")
+  info!("todo: parse the text {text:?}");
+
+  ParsedFile {}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

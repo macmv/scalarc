@@ -26,6 +26,15 @@ impl AnalysisHost {
   pub fn new() -> Self { AnalysisHost { db: RootDatabase::default() } }
 
   pub fn snapshot(&self) -> Analysis { Analysis { db: self.db.snapshot() } }
+
+  pub fn change(&mut self, change: Change) {
+    self.db.set_file_text(change.file, change.text.into());
+  }
+}
+
+pub struct Change {
+  pub file: FileId,
+  pub text: String,
 }
 
 impl ParallelDatabase for RootDatabase {

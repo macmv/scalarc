@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use scalarc_analysis::FileId;
+
 use crate::global::GlobalState;
 
 pub fn handle_open_text_document(
@@ -7,7 +9,12 @@ pub fn handle_open_text_document(
   params: lsp_types::DidOpenTextDocumentParams,
 ) -> Result<(), Box<dyn Error>> {
   if let Some(path) = global.workspace_path(&params.text_document.uri) {
-    global.files.write(&path, params.text_document.text);
+    global.files.write(&path, params.text_document.text.clone());
+
+    global.analysis_host.change(scalarc_analysis::Change {
+      file: FileId::temp_new(),
+      text: params.text_document.text,
+    });
   }
 
   Ok(())
@@ -23,7 +30,11 @@ pub fn handle_change_text_document(
     let new_file = apply_changes(file.clone(), &params.content_changes);
 
     if file != new_file {
-      global.files.write(&path, new_file);
+      global.files.write(&path, new_file.clone());
+
+      global
+        .analysis_host
+        .change(scalarc_analysis::Change { file: FileId::temp_new(), text: new_file });
     }
   }
 
