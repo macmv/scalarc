@@ -18,7 +18,8 @@ pub struct GlobalState {
 }
 
 pub(crate) struct GlobalStateSnapshot {
-  pub analysis: Analysis,
+  pub analysis:  Analysis,
+  pub workspace: PathBuf,
 }
 
 impl GlobalState {
@@ -79,6 +80,24 @@ impl GlobalState {
     let path = uri.to_file_path().ok()?;
     path.strip_prefix(&self.workspace).ok().map(Into::into)
   }
+
+  pub fn snapshot(&self) -> GlobalStateSnapshot {
+    GlobalStateSnapshot {
+      analysis:  self.analysis_host.snapshot(),
+      workspace: self.workspace.clone(),
+    }
+  }
+}
+
+impl GlobalStateSnapshot {
+  pub fn workspace_path(&self, uri: &Url) -> Option<PathBuf> {
+    if uri.scheme() != "file" {
+      return None;
+    }
+
+    let path = uri.to_file_path().ok()?;
+    path.strip_prefix(&self.workspace).ok().map(Into::into)
+  }
 }
 
 struct RequestDispatcher<'a> {
@@ -87,7 +106,10 @@ struct RequestDispatcher<'a> {
 }
 
 impl RequestDispatcher<'_> {
-  fn on<R>(&mut self, f: fn(R::Params) -> Result<R::Result, Box<dyn Error>>) -> &mut Self
+  fn on<R>(
+    &mut self,
+    f: fn(GlobalStateSnapshot, R::Params) -> Result<R::Result, Box<dyn Error>>,
+  ) -> &mut Self
   where
     R: lsp_types::request::Request,
   {
@@ -102,8 +124,11 @@ impl RequestDispatcher<'_> {
         return self;
       }
     };
+
+    let snapshot = self.global.snapshot();
+
     // TODO: Dispatch this to a thread pool.
-    let response = f(params).unwrap();
+    let response = f(snapshot, params).unwrap();
     self
       .global
       .sender

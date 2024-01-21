@@ -3,7 +3,7 @@ use std::{fmt, path::PathBuf, sync::Arc};
 #[salsa::database(SourceDatabaseStorage)]
 #[derive(Default)]
 pub struct RootDatabase {
-  storage: salsa::Storage<Self>,
+  pub(crate) storage: salsa::Storage<Self>,
 }
 impl salsa::Database for RootDatabase {}
 
@@ -35,6 +35,10 @@ fn parse(db: &dyn SourceDatabase, file_id: FileId) -> ParsedFile {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct FileId(u32);
+
+impl FileId {
+  pub fn temp_new() -> Self { FileId(0) }
+}
 
 // TODO: Hook up to scalarc-parser.
 #[derive(Debug, Clone, PartialEq, Eq)]
