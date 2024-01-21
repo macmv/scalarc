@@ -19,7 +19,7 @@ use scalarc_parser::SyntaxKind;
 ///
 /// Note that we always produce a syntax tree, even for completely invalid
 /// files.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Parse<T> {
   green:  GreenNode,
   errors: Option<Arc<[SyntaxError]>>,

@@ -1,5 +1,7 @@
 use std::{fmt, path::PathBuf, sync::Arc};
 
+use scalarc_syntax::{Parse, SourceFile};
+
 #[salsa::database(SourceDatabaseStorage)]
 #[derive(Default)]
 pub struct RootDatabase {
@@ -24,14 +26,12 @@ pub trait SourceDatabase: std::fmt::Debug {
   fn file_text(&self, file_id: FileId) -> Arc<str>;
 
   /// Parses the file into the syntax tree.
-  fn parse(&self, file_id: FileId) -> ParsedFile;
+  fn parse(&self, file_id: FileId) -> Parse<SourceFile>;
 }
 
-fn parse(db: &dyn SourceDatabase, file_id: FileId) -> ParsedFile {
+fn parse(db: &dyn SourceDatabase, file_id: FileId) -> Parse<SourceFile> {
   let text = db.file_text(file_id);
-  info!("todo: parse the text {text:?}");
-
-  ParsedFile {}
+  SourceFile::parse(&text)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -40,10 +40,6 @@ pub struct FileId(u32);
 impl FileId {
   pub fn temp_new() -> Self { FileId(0) }
 }
-
-// TODO: Hook up to scalarc-parser.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ParsedFile {}
 
 #[derive(Debug)]
 pub struct Workspace {

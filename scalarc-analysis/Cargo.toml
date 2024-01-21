@@ -6,5 +6,6 @@ edition = "2021"
 [dependencies]
 log = "0.4.20"
 salsa = "0.17.0-pre.2"
+scalarc-syntax.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
