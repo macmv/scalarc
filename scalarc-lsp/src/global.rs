@@ -1,6 +1,7 @@
 //! Handles global state and the main loop of the server.
 
 use crossbeam_channel::{Receiver, Sender};
+use scalarc_analysis::{Analysis, AnalysisHost};
 use std::{error::Error, path::PathBuf};
 
 use lsp_types::Url;
@@ -12,11 +13,22 @@ pub struct GlobalState {
   pub workspace: PathBuf,
 
   pub files: Files,
+
+  pub analysis_host: AnalysisHost,
+}
+
+pub(crate) struct GlobalStateSnapshot {
+  pub analysis: Analysis,
 }
 
 impl GlobalState {
   pub fn new(sender: Sender<lsp_server::Message>, workspace: Url) -> Self {
-    GlobalState { sender, workspace: workspace.to_file_path().unwrap(), files: Files::new() }
+    GlobalState {
+      sender,
+      workspace: workspace.to_file_path().unwrap(),
+      files: Files::new(),
+      analysis_host: AnalysisHost::new(),
+    }
   }
 
   pub fn run(mut self, receiver: Receiver<lsp_server::Message>) -> Result<(), Box<dyn Error>> {

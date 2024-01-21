@@ -6,6 +6,7 @@ members = [
   "scalarc-syntax",
   "scalarc-parser",
   "scalarc-typer",
+  "scalarc-analysis",
   "scalarc-lsp",
   "scalarc-test",
 ]
@@ -13,4 +14,5 @@ members = [
 [workspace.dependencies]
 scalarc-parser = { path = "scalarc-parser" }
 scalarc-build = { path = "scalarc-build" }
+scalarc-analysis = { path = "scalarc-analysis" }
 scalarc-test = { path = "scalarc-test" }
