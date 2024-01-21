@@ -1,18 +1,23 @@
-use std::error::Error;
+use std::{error::Error, fs, path::PathBuf};
 
 mod info;
+
+#[macro_use]
+extern crate log;
 
 fn main() {
   match run() {
     Ok(()) => (),
     Err(e) => {
-      eprintln!("{}", e);
+      error!("{}", e);
       std::process::exit(1);
     }
   }
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
+  setup_logging();
+
   // TODO: Use an epoll loop instead of spawning all these threads.
   let (connection, io_threads) = lsp_server::Connection::stdio();
 
@@ -28,7 +33,7 @@ fn run() -> Result<(), Box<dyn Error>> {
   let lsp_types::InitializeParams { root_uri, .. } =
     serde_json::from_value::<lsp_types::InitializeParams>(initialize_params)?;
 
-  println!("starting LSP server in project root: {:?}", root_uri);
+  info!("starting LSP server in project root: {:?}", root_uri);
 
   let server_capabilities = info::server_capabilities();
 
@@ -52,4 +57,11 @@ fn run() -> Result<(), Box<dyn Error>> {
   println!("Hello, world!");
 
   Ok(())
+}
+
+fn setup_logging() {
+  let dir = PathBuf::from("/home/macmv/.cache/scalarc");
+  fs::create_dir_all(&dir).unwrap();
+
+  simple_logging::log_to_file(dir.join("scalarc-lsp.log"), log::LevelFilter::Debug).unwrap();
 }
