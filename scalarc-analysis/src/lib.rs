@@ -47,7 +47,12 @@ impl Analysis {
   pub fn completions(&self, file: FileId) -> Cancellable<Vec<()>> {
     self.with_db(|db| {
       info!("parsing...");
-      db.parse(file);
+      let ast = db.parse(file);
+
+      for func in ast.tree().fun_decs() {
+        info!("func: {:?}", func);
+      }
+
       info!("parsed!");
       vec![]
     })
