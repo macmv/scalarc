@@ -1,17 +1,25 @@
 //! Handles global state and the main loop of the server.
 
 use crossbeam_channel::{Receiver, Sender};
-use std::error::Error;
+use std::{error::Error, path::PathBuf};
 
 use lsp_types::Url;
 
+use crate::files::Files;
+
 pub struct GlobalState {
   pub sender:    Sender<lsp_server::Message>,
-  pub workspace: Url,
+  pub workspace: PathBuf,
+
+  pub files: Files,
 }
 
 impl GlobalState {
-  pub fn run(self, receiver: Receiver<lsp_server::Message>) -> Result<(), Box<dyn Error>> {
+  pub fn new(sender: Sender<lsp_server::Message>, workspace: Url) -> Self {
+    GlobalState { sender, workspace: workspace.to_file_path().unwrap(), files: Files::new() }
+  }
+
+  pub fn run(mut self, receiver: Receiver<lsp_server::Message>) -> Result<(), Box<dyn Error>> {
     // TODO: Spawn a task to fetch bsp status here.
 
     while let Ok(ev) = receiver.recv() {
@@ -21,45 +29,48 @@ impl GlobalState {
     Ok(())
   }
 
-  fn handle_event(&self, ev: lsp_server::Message) {
+  fn handle_event(&mut self, ev: lsp_server::Message) {
     match ev {
-      lsp_server::Message::Request(req) => {
-        let _ = self.handle_request(req);
-      }
-      lsp_server::Message::Notification(not) => {
-        let _ = self.handle_notification(not);
-      }
+      lsp_server::Message::Request(req) => self.handle_request(req),
+      lsp_server::Message::Notification(not) => self.handle_notification(not),
       lsp_server::Message::Response(_) => (),
     }
   }
 
-  fn handle_request(&self, req: lsp_server::Request) -> Result<(), Box<dyn Error>> {
-    let mut dispatcher = RequestDispatcher { global: &self, req };
+  fn handle_request(&mut self, req: lsp_server::Request) {
+    let mut dispatcher = RequestDispatcher { global: self, req };
 
     use crate::handler::request;
     use lsp_types::request as lsp_request;
 
     dispatcher.on::<lsp_request::Completion>(request::handle_completion);
-
-    Ok(())
   }
 
-  fn handle_notification(&self, not: lsp_server::Notification) -> Result<(), Box<dyn Error>> {
-    let mut dispatcher = NotificationDispatcher { global: &self, not };
+  fn handle_notification(&mut self, not: lsp_server::Notification) {
+    let mut dispatcher = NotificationDispatcher { global: self, not };
 
     use crate::handler::notification;
     use lsp_types::notification as lsp_notification;
 
     dispatcher
-      .on::<lsp_notification::DidOpenTextDocument>(notification::handle_open_text_document)
-      .on::<lsp_notification::DidChangeTextDocument>(notification::handle_change_text_document);
+      .on_sync::<lsp_notification::DidOpenTextDocument>(notification::handle_open_text_document)
+      .on_sync::<lsp_notification::DidChangeTextDocument>(
+        notification::handle_change_text_document,
+      );
+  }
 
-    Ok(())
+  pub fn workspace_path(&self, uri: &Url) -> Option<PathBuf> {
+    if uri.scheme() != "file" {
+      return None;
+    }
+
+    let path = uri.to_file_path().ok()?;
+    path.strip_prefix(&self.workspace).ok().map(Into::into)
   }
 }
 
 struct RequestDispatcher<'a> {
-  global: &'a GlobalState,
+  global: &'a mut GlobalState,
   req:    lsp_server::Request,
 }
 
@@ -96,12 +107,15 @@ impl RequestDispatcher<'_> {
 }
 
 struct NotificationDispatcher<'a> {
-  global: &'a GlobalState,
+  global: &'a mut GlobalState,
   not:    lsp_server::Notification,
 }
 
 impl NotificationDispatcher<'_> {
-  fn on<N>(&mut self, f: fn(N::Params) -> Result<(), Box<dyn Error>>) -> &mut Self
+  fn on_sync<N>(
+    &mut self,
+    f: fn(&mut GlobalState, N::Params) -> Result<(), Box<dyn Error>>,
+  ) -> &mut Self
   where
     N: lsp_types::notification::Notification,
   {
@@ -117,7 +131,7 @@ impl NotificationDispatcher<'_> {
       }
     };
     // TODO: Dispatch this to a thread pool.
-    f(params).unwrap();
+    f(self.global, params).unwrap();
 
     self
   }

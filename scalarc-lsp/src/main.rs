@@ -1,5 +1,6 @@
 use std::{error::Error, fs, path::PathBuf};
 
+mod files;
 mod global;
 mod handler;
 mod info;
@@ -56,7 +57,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     return Err(e.into());
   }
 
-  let global = global::GlobalState { sender: connection.sender, workspace: root_uri.unwrap() };
+  let global = global::GlobalState::new(connection.sender, root_uri.unwrap());
   global.run(connection.receiver)?;
 
   Ok(())
