@@ -2,30 +2,16 @@ use super::*;
 
 pub fn mod_items(p: &mut Parser) { items(p, false); }
 
+// test ok
+// class Foo {
+//   def bar = 3
+// }
 fn items(p: &mut Parser, end_in_brace: bool) {
-  if p.at(EOF) {
-    if end_in_brace {
-      p.error("missing closing '}'");
-    }
-    return;
-  } else if p.at(T!['}']) {
-    if !end_in_brace {
-      p.error_bump("unexpected '}'");
-    } else {
-      p.bump();
-      return;
-    }
-  }
-
-  let mut found_newline = true;
+  let mut is_first = true;
   'items: loop {
-    if !found_newline {
-      p.error("expected newline");
-    }
-    item(p);
     // Eat trailing newlines, and update `found_newline` to make sure there is a
     // newline between each item.
-    found_newline = false;
+    let mut found_newline = false;
     loop {
       if p.at(T![nl]) {
         found_newline = true;
@@ -46,6 +32,13 @@ fn items(p: &mut Parser, end_in_brace: bool) {
         break;
       }
     }
+
+    if !found_newline && !is_first {
+      p.error("expected newline");
+    }
+    is_first = false;
+
+    item(p);
   }
 }
 
