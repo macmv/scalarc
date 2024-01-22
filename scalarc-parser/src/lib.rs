@@ -46,12 +46,13 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
     Token::Newline => T![nl],
     Token::Whitespace => SyntaxKind::WHITESPACE,
     Token::Delimiter(token::Delimiter::Dot) => T![.],
+    Token::Delimiter(token::Delimiter::Semicolon) => T![;],
     Token::Delimiter(token::Delimiter::Comma) => T![,],
     Token::Group(token::Group::OpenParen) => T!['('],
     Token::Group(token::Group::CloseParen) => T![')'],
     Token::Group(token::Group::OpenBrace) => T!['{'],
     Token::Group(token::Group::CloseBrace) => T!['}'],
-    _ => todo!("token {token:?}"),
+    _ => unreachable!("token {token:?}"),
   }
 }
 
