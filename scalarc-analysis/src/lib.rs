@@ -49,8 +49,8 @@ impl Analysis {
       info!("parsing...");
       let ast = db.parse(file);
 
-      for func in ast.tree().fun_decs() {
-        info!("func: {:?}", func);
+      for item in ast.tree().items() {
+        info!("item: {:?}", item);
       }
 
       info!("parsed!");
