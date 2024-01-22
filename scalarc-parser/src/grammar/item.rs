@@ -54,6 +54,7 @@ fn item(p: &mut Parser) {
 
 // test ok
 // import foo.bar.baz
+// import xxx.yyy.zzz
 fn import_item(p: &mut Parser) {
   let m = p.start();
 
@@ -72,7 +73,6 @@ fn import_item(p: &mut Parser) {
       T!['{'] => import_list(p),
 
       T![nl] | EOF => {
-        p.bump();
         m.complete(p, IMPORT);
         return;
       }
@@ -82,7 +82,6 @@ fn import_item(p: &mut Parser) {
       _ => {
         p.error(format!("expected ident, got {:?}", p.current()));
         p.recover_until(T![nl]);
-        p.bump();
         m.abandon(p);
         return;
       }
@@ -231,7 +230,6 @@ mod tests {
             IDENT 'bar'
             DOT '.'
             IDENT 'baz'
-            EOF <EOF>
       "#],
     );
 
@@ -253,7 +251,6 @@ mod tests {
               IDENT 'baz'
               WHITESPACE ' '
               CLOSE_CURLY '}'
-            EOF <EOF>
       "#],
     );
   }
