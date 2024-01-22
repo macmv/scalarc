@@ -27,11 +27,15 @@ pub enum EntryPoint {
 }
 
 struct Parser<'a> {
-  lexer:              &'a mut Lexer<'a>,
+  lexer: &'a mut Lexer<'a>,
+
   current:            SyntaxKind,
   current_range:      Range<usize>,
   pending_whitespace: usize,
-  events:             Vec<Event>,
+
+  events: Vec<Event>,
+
+  peeked: Option<(SyntaxKind, Range<usize>)>,
 }
 
 fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
@@ -151,6 +155,7 @@ impl<'a> Parser<'a> {
       current: first,
       events: Vec::new(),
       pending_whitespace: 0,
+      peeked: None,
     }
   }
 }
@@ -176,6 +181,16 @@ impl Parser<'_> {
     }
   }
 
+  pub fn peek(&mut self) -> SyntaxKind {
+    if let Some((p, _)) = self.peeked {
+      p
+    } else {
+      let t = self.bump_inner();
+      self.peeked = Some((t, self.lexer.range()));
+      t
+    }
+  }
+
   pub fn start(&mut self) -> Marker {
     self.eat_trivia();
 
@@ -192,6 +207,19 @@ impl Parser<'_> {
     self.bump();
   }
   pub fn bump(&mut self) -> SyntaxKind {
+    if let Some((t, r)) = self.peeked.take() {
+      self.current = t;
+      self.current_range = r;
+      t
+    } else {
+      let kind = self.bump_inner();
+      self.current = kind;
+      self.current_range = self.lexer.range();
+      kind
+    }
+  }
+
+  fn bump_inner(&mut self) -> SyntaxKind {
     self.eat_trivia();
     self.events.push(Event::Token { kind: self.current, len: self.lexer.slice().len() });
 
@@ -204,22 +232,17 @@ impl Parser<'_> {
           self.pending_whitespace += self.lexer.slice().len();
         }
         Ok(t) => {
-          self.current = token_to_kind(t, self.lexer.slice());
-          self.current_range = self.lexer.range();
-          break;
+          break token_to_kind(t, self.lexer.slice());
         }
         Err(LexError::EOF) => {
-          self.current = SyntaxKind::EOF;
-          self.current_range = self.lexer.range();
-          break;
+          break SyntaxKind::EOF;
         }
         Err(e) => {
           self.error(e.to_string());
-          break;
+          break self.current;
         }
       }
     }
-    self.current
   }
   pub fn expect(&mut self, t: SyntaxKind) {
     if self.current() != t {

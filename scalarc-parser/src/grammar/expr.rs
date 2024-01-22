@@ -93,6 +93,24 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
           break;
         }
       },
+
+      // test ok
+      // foo
+      //   .bar
+      //   .baz
+      T![nl] => match p.peek() {
+        T![.] => {
+          p.eat(T![nl]);
+          match postfix_dot_expr(p, lhs) {
+            Ok(it) => it,
+            Err(it) => {
+              lhs = it;
+              break;
+            }
+          }
+        }
+        _ => break,
+      },
       _ => break,
     };
   }
