@@ -8,6 +8,9 @@ pub use error::SyntaxError;
 mod error;
 mod parse;
 
+#[cfg(test)]
+mod tests;
+
 use std::{marker::PhantomData, sync::Arc};
 
 use node::SyntaxNode;
