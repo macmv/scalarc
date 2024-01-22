@@ -70,21 +70,25 @@ AscriptionType       = ':' InfixType
 AscriptionAnnotation = ':' Annotation (Annotation)*
 AscriptionSpread     = ':' '_' '*'
 
-Expr  = (Bindings | ('implicit')? (id | '_')) '=>' Expr | ExprInner
+Expr = IfExpr
+     | WhileExpr
+     | TryExpr
+     | DoWhileExpr
+     | ForExpr
+     | ThrowExpr
+     | ReturnExpr
+     | LambdaExpr
+     | AssignDotExpr
+     | PostfixExpr
+     | InfixExpr
+     | PrefixExpr
+     | PostfixExprAscription
+     | MatchExpr
+     // This is SimpleExpr
+     | NewExpr
+     | BlockExpr
+     | SimpleExprInnerUnderscore
 
-ExprInner = IfExpr
-          | WhileExpr
-          | TryExpr
-          | DoWhileExpr
-          | ForExpr
-          | ThrowExpr
-          | ReturnExpr
-          | AssignPrefixExpr
-          | AssignDotExpr
-          | AssignCallExpr
-          | PostfixExpr
-          | PostfixExprAscription
-          | MatchExpr
 IfExpr      = 'if' '(' Expr ')' (nl)* Expr ((semi)? 'else' Expr)?
 WhileExpr   = 'while' '(' Expr ')' (nl)* Expr
 TryExpr     = 'try' Expr ('catch' Expr)? ('finally' Expr)?
@@ -93,23 +97,22 @@ ForExpr     = 'for' ('(' Enumerators ')' | '{' Enumerators '}') (nl)* ('yield')?
 ThrowExpr   = 'throw' Expr
 ReturnExpr  = 'return' Expr?
 
-AssignPrefixExpr = PrefixOperator SimpleExpr '=' Expr
-AssignDotExpr    = (SimpleExpr '.')? id '=' Expr
-AssignCallExpr   = SimpleExprInner ArgumentExprList '=' Expr
+LambdaExpr = (Bindings | ('implicit')? (id | '_')) '=>' Expr
+
+AssignDotExpr = SimpleExpr '=' Expr
 
 PostfixExprAscription = PostfixExpr Ascription
 MatchExpr             = PostfixExpr 'match' '{' CaseClauses '}'
 
-PostfixExpr    = InfixExpr (id nl?)?
-InfixExpr      = PrefixExpr | InfixExpr id nl? InfixExpr
-PrefixExpr     = PrefixOperator? SimpleExpr
-PrefixOperator = '-' | '+' | '~' | '!'
+PostfixExpr    = Expr id
+InfixExpr      = Expr id Expr
+PrefixExpr     = id Expr // id can only be '-' | '+' | '~' | '!'
 
 SimpleExpr = NewExpr
            | BlockExpr
            | SimpleExprInnerUnderscore
 NewExpr                   = 'new' (ClassTemplate | TemplateBody)
-SimpleExprInnerUnderscore = SimpleExprInner ('_')?
+SimpleExprInnerUnderscore = SimpleExprInner '_'?
 
 SimpleExprInner = Literal
                 | Path
@@ -133,8 +136,8 @@ Block          = BlockStat (semi BlockStat)* (ResultExpr)?
 BlockStat      = Import
                | (Annotation)* ('implicit')? ('lazy')? Def
                | (Annotation)* (LocalModifier)* TmplDef
-               | ExprInner
-ResultExpr     = ExprInner
+               | Expr
+ResultExpr     = Expr
                | (Bindings | ('implicit')? (id | '_') (':' CompoundType)?) '=>' Block
 
 Enumerators    = Generator (semi Generator)*
