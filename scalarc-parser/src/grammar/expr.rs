@@ -219,6 +219,19 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       Some(m.complete(p, IDENT))
     }
 
+    T!['{'] => {
+      p.eat(T!['{']);
+      // test ok
+      // {
+      //   2 + 3
+      // }
+      p.eat_newlines();
+      expr(p);
+      p.eat_newlines();
+      p.expect(T!['}']);
+      Some(m.complete(p, BLOCK_EXPR))
+    }
+
     _ => {
       m.abandon(p);
       p.error(format!("expected expression, got {:?}", p.current()));
@@ -492,6 +505,28 @@ mod tests {
   }
 
   #[test]
+  fn block_expr() {
+    check_expr(
+      "{ 2 + 3 }",
+      expect![@r#"
+        BLOCK_EXPR
+          OPEN_CURLY '{'
+          WHITESPACE ' '
+          INFIX_EXPR
+            LIT_EXPR
+              INT_LIT_KW '2'
+            WHITESPACE ' '
+            IDENT '+'
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
+          WHITESPACE ' '
+          CLOSE_CURLY '}'
+      "#],
+    );
+  }
+
+  #[test]
   fn newline_magic() {
     check(
       "println {
@@ -527,20 +562,19 @@ mod tests {
             IDENT 'println'
           NL_KW '\n'
           WHITESPACE '       '
-          error: expected expression, got OPEN_CURLY
-          OPEN_CURLY '{'
-          NL_KW '\n'
-          WHITESPACE '         '
-          LIT_EXPR
-            INT_LIT_KW '3'
-          NL_KW '\n'
-          error: unexpected '}'
-          WHITESPACE '       '
-          CLOSE_CURLY '}'
+          BLOCK_EXPR
+            OPEN_CURLY '{'
+            NL_KW '\n'
+            WHITESPACE '         '
+            LIT_EXPR
+              INT_LIT_KW '3'
+            NL_KW '\n'
+            WHITESPACE '       '
+            CLOSE_CURLY '}'
       "#],
     );
 
-    // TODO: This should parse as two expressions lol
+    // NOTE: This should parse as two expressions lol
     check(
       "println
 
@@ -554,16 +588,15 @@ mod tests {
           NL_KW '\n'
           NL_KW '\n'
           WHITESPACE '       '
-          error: expected expression, got OPEN_CURLY
-          OPEN_CURLY '{'
-          NL_KW '\n'
-          WHITESPACE '         '
-          LIT_EXPR
-            INT_LIT_KW '3'
-          NL_KW '\n'
-          error: unexpected '}'
-          WHITESPACE '       '
-          CLOSE_CURLY '}'
+          BLOCK_EXPR
+            OPEN_CURLY '{'
+            NL_KW '\n'
+            WHITESPACE '         '
+            LIT_EXPR
+              INT_LIT_KW '3'
+            NL_KW '\n'
+            WHITESPACE '       '
+            CLOSE_CURLY '}'
       "#],
     );
   }
