@@ -148,7 +148,13 @@ fn call_block_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
   {
     let m = p.start();
     p.eat(T!['{']);
+    // test ok
+    // hi {
+    //   3
+    // }
+    p.eat_newlines();
     expr(p);
+    p.eat_newlines();
     p.expect(T!['}']);
     m.complete(p, BLOCK_ARGUMENTS);
   }
