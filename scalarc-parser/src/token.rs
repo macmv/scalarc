@@ -112,34 +112,36 @@ impl<'a> Tokenizer<'a> {
   }
 
   pub fn eat(&mut self) -> Result<InnerToken> {
-    let t = match self.source[self.index..].chars().next() {
-      Some('\u{0020}' | '\u{0009}' | '\u{000d}') => InnerToken::Whitespace,
-      Some('\n') => InnerToken::Newline,
-
-      Some('(') => InnerToken::Group(Group::OpenParen),
-      Some(')') => InnerToken::Group(Group::CloseParen),
-      Some('[') => InnerToken::Group(Group::OpenBracket),
-      Some(']') => InnerToken::Group(Group::CloseBracket),
-      Some('{') => InnerToken::Group(Group::OpenBrace),
-      Some('}') => InnerToken::Group(Group::CloseBrace),
-
-      Some('`') => InnerToken::Delimiter(Delimiter::Backtick),
-      Some('\'') => InnerToken::Delimiter(Delimiter::SingleQuote),
-      Some('"') => InnerToken::Delimiter(Delimiter::DoubleQuote),
-      Some('.') => InnerToken::Delimiter(Delimiter::Dot),
-      Some(';') => InnerToken::Delimiter(Delimiter::Semicolon),
-      Some(',') => InnerToken::Delimiter(Delimiter::Comma),
-      Some('/') => InnerToken::Delimiter(Delimiter::Slash),
-
-      Some('_') => InnerToken::Underscore,
-      Some('a'..='z' | 'A'..='Z') => InnerToken::Letter,
-      Some('0'..='9') => InnerToken::Digit,
-      Some('\u{0020}'..='\u{007e}') => InnerToken::Operator,
-
-      Some(_) => return Err(LexError::InvalidChar),
-      None => return Err(LexError::EOF),
+    let Some(c) = self.source[self.index..].chars().next() else {
+      return Err(LexError::EOF);
     };
-    self.index += 1;
+    self.index += c.len_utf8();
+    let t = match c {
+      '\u{0020}' | '\u{0009}' | '\u{000d}' => InnerToken::Whitespace,
+      '\n' => InnerToken::Newline,
+
+      '(' => InnerToken::Group(Group::OpenParen),
+      ')' => InnerToken::Group(Group::CloseParen),
+      '[' => InnerToken::Group(Group::OpenBracket),
+      ']' => InnerToken::Group(Group::CloseBracket),
+      '{' => InnerToken::Group(Group::OpenBrace),
+      '}' => InnerToken::Group(Group::CloseBrace),
+
+      '`' => InnerToken::Delimiter(Delimiter::Backtick),
+      '\'' => InnerToken::Delimiter(Delimiter::SingleQuote),
+      '"' => InnerToken::Delimiter(Delimiter::DoubleQuote),
+      '.' => InnerToken::Delimiter(Delimiter::Dot),
+      ';' => InnerToken::Delimiter(Delimiter::Semicolon),
+      ',' => InnerToken::Delimiter(Delimiter::Comma),
+      '/' => InnerToken::Delimiter(Delimiter::Slash),
+
+      '_' => InnerToken::Underscore,
+      'a'..='z' | 'A'..='Z' => InnerToken::Letter,
+      '0'..='9' => InnerToken::Digit,
+      '\u{0020}'..='\u{007e}' => InnerToken::Operator,
+
+      _ => return Err(LexError::InvalidChar),
+    };
     Ok(t)
   }
 
@@ -548,6 +550,13 @@ mod tests {
     assert_eq!(lexer.slice(), " ");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
     assert_eq!(lexer.slice(), "3");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+  }
+
+  #[test]
+  fn invalid_chars() {
+    let mut lexer = Lexer::new("⊥");
+    assert_eq!(lexer.next(), Err(LexError::InvalidChar));
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
