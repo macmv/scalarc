@@ -148,8 +148,14 @@ fn class_def(p: &mut Parser, m: Marker) {
 
   p.expect(T![ident]);
 
-  fun_params(p);
+  // test ok
+  // class Foo {}
+  if p.current() == T!['('] {
+    fun_params(p);
+  }
 
+  // test ok
+  // class Foo
   if p.current() == T!['{'] {
     item_body(p);
   }
