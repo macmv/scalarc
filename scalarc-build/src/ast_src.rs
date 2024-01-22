@@ -10,9 +10,10 @@ pub(crate) const KINDS_SRC: KindsSrc<'_> = KindsSrc {
 
 #[derive(Default, Debug)]
 pub(crate) struct AstSrc {
-  pub(crate) tokens: Vec<String>,
-  pub(crate) nodes:  Vec<AstNodeSrc>,
-  pub(crate) enums:  Vec<AstEnumSrc>,
+  pub(crate) tokens:         Vec<String>,
+  pub(crate) grammar_tokens: Vec<String>,
+  pub(crate) nodes:          Vec<AstNodeSrc>,
+  pub(crate) enums:          Vec<AstEnumSrc>,
 }
 
 #[derive(Debug)]

@@ -20,8 +20,9 @@ use super::{
 pub fn sourcegen_kinds() {
   let grammar: Grammar =
     include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/scala.ungram")).parse().unwrap();
+  let ast = lower(&grammar);
 
-  let syntax_kinds = generate_syntax_kinds(KINDS_SRC, &grammar);
+  let syntax_kinds = generate_syntax_kinds(KINDS_SRC, &ast);
   let syntax_kinds_file =
     sourcegen::project_root().join("scalarc-parser/src/syntax_kind/generated.rs");
   sourcegen::ensure_file_contents(syntax_kinds_file.as_path(), &syntax_kinds);
@@ -42,6 +43,7 @@ pub fn sourcegen_ast() {
 }
 
 fn generate_tokens(grammar: &AstSrc) -> String {
+  // TODO: Need to re-add these tokens.
   let tokens = grammar.tokens.iter().map(|token| {
     let name = format_ident!("{}", token);
     let kind = format_ident!("{}", to_upper_snake_case(token));
@@ -314,7 +316,7 @@ fn generate_nodes(grammar: &AstSrc) -> String {
     });
 
   let ast = quote! {
-    #![allow(non_snake_case)]
+    #![allow(non_snake_case, non_camel_case_types)]
     use crate::{
       ast::{support, AstChildren, AstTokenChildren, AstNode},
       node::{SyntaxNode, SyntaxToken},
@@ -357,16 +359,14 @@ fn write_doc_comment(contents: &[String], dest: &mut String) {
   }
 }
 
-fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
+fn generate_syntax_kinds(kinds: KindsSrc<'_>, ast: &AstSrc) -> String {
   let literals = kinds.literals.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
 
   let mut keywords: Vec<Ident> = vec![];
   let mut keyword_idents: Vec<Ident> = vec![];
   let mut punctuation: Vec<Ident> = vec![];
   let mut punctuation_values: Vec<TokenStream> = vec![];
-  for tok in grammar.tokens() {
-    let name = &grammar[tok].name;
-
+  for name in ast.grammar_tokens.iter() {
     if name == "semi" {
       punctuation_values.push(quote!(;));
       let ident = Ident::new(&to_upper_snake_case(name), Span::call_site());
@@ -404,13 +404,12 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, grammar: &Grammar) -> String {
   }
 
   let mut nodes: Vec<Ident> = vec![];
-  for node in grammar.iter() {
-    let name = &grammar[node].name;
-    if TOKEN_SHORTHANDS.contains(&name.as_str()) {
+  for node in ast.nodes.iter() {
+    if TOKEN_SHORTHANDS.contains(&node.name.as_str()) {
       continue;
     }
 
-    nodes.push(Ident::new(&to_upper_snake_case(name), Span::call_site()));
+    nodes.push(Ident::new(&to_upper_snake_case(&node.name), Span::call_site()));
   }
 
   let ast = quote! {
@@ -634,6 +633,7 @@ fn lower(grammar: &Grammar) -> AstSrc {
       .split_ascii_whitespace()
       .map(|it| it.to_string())
       .collect::<Vec<_>>(),
+    grammar_tokens: grammar.tokens().map(|it| grammar[it].name.clone()).collect::<Vec<_>>(),
     ..Default::default()
   };
 
