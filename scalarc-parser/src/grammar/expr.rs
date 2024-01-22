@@ -52,7 +52,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
         lhs = m.complete(p, INFIX_EXPR);
       }
 
-      T![nl] | EOF => {
+      T![nl] | T![,] | T![')'] | EOF => {
         m.abandon(p);
         return;
       }
@@ -60,14 +60,77 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
       _ => {
         m.abandon(p);
         p.error(format!("expected expression, got {:?}", p.current()));
-        p.recover_until(T![nl]);
+        p.recover_until_any(&[T![nl], T![,], T![')']]);
         return;
       }
     }
   }
 }
 
+// Expression like `hello(3, 4)`
 fn simple_expr(p: &mut Parser) -> Option<CompletedMarker> {
+  let lhs = atom_expr(p)?;
+  let m = postfix_expr(p, lhs);
+
+  Some(m)
+}
+
+fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
+  loop {
+    lhs = match p.current() {
+      // test ok
+      // hi(3)
+      T!['('] => call_expr(p, lhs),
+      // TODO
+      // T!['['] => index_expr(p, lhs),
+      T![.] => match postfix_dot_expr(p, lhs) {
+        Ok(it) => it,
+        Err(it) => {
+          lhs = it;
+          break;
+        }
+      },
+      _ => break,
+    };
+  }
+  lhs
+}
+
+fn call_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
+  let m = lhs.precede(p);
+  p.eat(T!['(']);
+  loop {
+    expr(p);
+    if p.at(T![,]) {
+      p.bump();
+    } else {
+      break;
+    }
+  }
+  p.eat(T![')']);
+  m.complete(p, CALL_EXPR)
+}
+
+fn postfix_dot_expr(
+  p: &mut Parser,
+  lhs: CompletedMarker,
+) -> Result<CompletedMarker, CompletedMarker> {
+  let m = lhs.precede(p);
+  p.eat(T![.]);
+  match p.current() {
+    T![ident] => {
+      p.bump();
+      Ok(m.complete(p, FIELD_EXPR))
+    }
+    _ => {
+      // TODO: need peek() to check for this error before calling `precede`.
+      Err(m.complete(p, FIELD_EXPR))
+    }
+  }
+}
+
+// Expressions like `1` or "hi"
+fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
   let m = p.start();
 
   match p.current() {
@@ -78,6 +141,10 @@ fn simple_expr(p: &mut Parser) -> Option<CompletedMarker> {
     STRING_LIT_KW => {
       p.eat(STRING_LIT_KW);
       Some(m.complete(p, LIT_EXPR))
+    }
+    IDENT => {
+      p.eat(IDENT);
+      Some(m.complete(p, IDENT))
     }
 
     _ => {
@@ -257,6 +324,39 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '4'
+      "#],
+    );
+  }
+
+  #[test]
+  fn call_op() {
+    check_expr(
+      "hi(2)",
+      expect![@r#"
+        CALL_EXPR
+          IDENT
+            IDENT 'hi'
+          OPEN_PAREN '('
+          LIT_EXPR
+            INT_LIT_KW '2'
+          CLOSE_PAREN ')'
+      "#],
+    );
+
+    check_expr(
+      "hi(2, 3)",
+      expect![@r#"
+        CALL_EXPR
+          IDENT
+            IDENT 'hi'
+          OPEN_PAREN '('
+          LIT_EXPR
+            INT_LIT_KW '2'
+          COMMA ','
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '3'
+          CLOSE_PAREN ')'
       "#],
     );
   }

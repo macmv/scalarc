@@ -228,6 +228,12 @@ impl Parser<'_> {
     }
   }
 
+  fn recover_until_any(&mut self, kinds: &[SyntaxKind]) {
+    while !kinds.contains(&self.current()) && self.current() != SyntaxKind::EOF {
+      self.bump();
+    }
+  }
+
   fn recover_until(&mut self, t: SyntaxKind) {
     while self.current() != t && self.current() != SyntaxKind::EOF {
       self.bump();
