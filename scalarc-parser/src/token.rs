@@ -45,6 +45,9 @@ pub enum LexError {
   #[error("invalid character")]
   InvalidChar,
 
+  #[error("string terminated in newline")]
+  NewlineInString,
+
   #[error("end of file reached")]
   EOF,
 }
@@ -257,6 +260,7 @@ impl<'a> Lexer<'a> {
             // TODO: Escapes
             match self.tok.eat() {
               Err(LexError::EOF) => break,
+              Ok(InnerToken::Newline) => return Err(LexError::NewlineInString),
               Ok(InnerToken::Delimiter(Delimiter::DoubleQuote)) => quote_len += 1,
               Ok(_) => quote_len = 0,
               Err(e) => return Err(e),

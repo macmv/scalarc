@@ -75,6 +75,10 @@ fn simple_expr(p: &mut Parser) -> Option<CompletedMarker> {
       p.eat(INT_LIT_KW);
       Some(m.complete(p, LIT_EXPR))
     }
+    STRING_LIT_KW => {
+      p.eat(STRING_LIT_KW);
+      Some(m.complete(p, LIT_EXPR))
+    }
 
     _ => {
       m.abandon(p);
@@ -99,8 +103,13 @@ mod tests {
       "#],
     );
 
-    // TODO
-    // check_expr("\"hi\"", r"LITERAL");
+    check_expr(
+      "\"hi\"",
+      expect![@r#"
+        LIT_EXPR
+          STRING_LIT_KW '"hi"'
+      "#],
+    );
   }
 
   #[test]
@@ -116,6 +125,20 @@ mod tests {
           WHITESPACE ' '
           LIT_EXPR
             INT_LIT_KW '2'
+      "#],
+    );
+
+    check_expr(
+      "\"hi\" + \"there\"",
+      expect![@r#"
+        INFIX_EXPR
+          LIT_EXPR
+            STRING_LIT_KW '"hi"'
+          WHITESPACE ' '
+          IDENT '+'
+          WHITESPACE ' '
+          LIT_EXPR
+            STRING_LIT_KW '"there"'
       "#],
     );
   }
