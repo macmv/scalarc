@@ -12,6 +12,7 @@ fn item(p: &mut Parser) {
   match p.current() {
     T![import] => import_item(p, m),
     T![def] => fun_def(p, m),
+    T![class] => class_def(p, m),
 
     /*
     T![type] => type_alias(p, m),
@@ -91,6 +92,35 @@ fn import_list(p: &mut Parser) {
 }
 
 // test ok
+// class Foo() {}
+fn class_def(p: &mut Parser, m: Marker) {
+  p.eat(T![class]);
+
+  p.expect(T![ident]);
+
+  fun_params(p);
+
+  if p.current() == T!['{'] {
+    item_body(p);
+  }
+
+  m.complete(p, CLASS_DEF);
+}
+
+fn item_body(p: &mut Parser) {
+  let m = p.start();
+  p.eat(T!['{']);
+
+  while !p.at(T!['}']) {
+    item(p);
+  }
+
+  p.eat(T!['}']);
+  m.complete(p, ITEM_BODY);
+  p.expect(T![nl]);
+}
+
+// test ok
 // def foo = 3
 fn fun_def(p: &mut Parser, m: Marker) {
   p.eat(T![def]);
@@ -99,8 +129,8 @@ fn fun_def(p: &mut Parser, m: Marker) {
   p.expect(T![=]);
   expr::expr(p);
 
-  p.expect(T![nl]);
   m.complete(p, FUN_DEF);
+  p.expect(T![nl]);
 }
 
 fn fun_sig(p: &mut Parser) {
@@ -212,7 +242,7 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '3'
-            NL_KW '\n'
+          NL_KW '\n'
       "#],
     );
 
@@ -237,7 +267,7 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '3'
-            NL_KW '\n'
+          NL_KW '\n'
       "#],
     );
 
@@ -263,7 +293,7 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '3'
-            NL_KW '\n'
+          NL_KW '\n'
       "#],
     );
 
@@ -296,7 +326,7 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '3'
-            NL_KW '\n'
+          NL_KW '\n'
       "#],
     );
   }

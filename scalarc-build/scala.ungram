@@ -207,9 +207,8 @@ AccessQualifier   =  '[' (id | 'this') ']'
 Annotation        =  '@' SimpleType ArgumentExprList*
 ConstrAnnotation  =  '@' SimpleType ArgumentExprList
 
-ItemBody = nl? '{' (SelfType)? Item (semi Item)* '}'
+ItemBody = nl? '{' SelfType? Item (semi Item)* '}'
 SelfType = id (':' Type)? '=>'
-             | 'this' ':' Type '=>'
 
 Import            = 'import' ImportExpr (',' ImportExpr)*
 ImportExpr        = StableId '.' (id | '_' | ImportSelectors)

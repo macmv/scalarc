@@ -1,7 +1,7 @@
 //! This module greps parser's code for specially formatted comments and turns
 //! them into tests.
 
-use crate::Event;
+use crate::{tests::format_events, Event};
 
 use super::lex_events;
 use std::{
@@ -23,7 +23,8 @@ fn grammar_inline_tests() {
 
   for test in tests {
     let mut found_error = None;
-    for event in lex_events(crate::EntryPoint::SourceFile, &format!("{}\n", test.src)) {
+    let events = lex_events(crate::EntryPoint::SourceFile, &format!("{}\n", test.src));
+    for event in &events {
       match event {
         Event::Error { msg } => found_error = Some(msg),
         _ => {}
@@ -31,7 +32,11 @@ fn grammar_inline_tests() {
     }
     match (found_error, test.ok) {
       (Some(err), true) => {
-        panic!("test failed to parse: {} {err}", test.location);
+        panic!(
+          "test failed to parse: {} {err}\n{}",
+          test.location,
+          format_events(&events, &test.src)
+        );
       }
       (None, false) => {
         panic!("test parsed ok but was expected to fail: {}", test.location);
