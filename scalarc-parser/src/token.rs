@@ -88,6 +88,7 @@ pub enum Delimiter {
   Dot,
   Semicolon,
   Comma,
+  Slash,
 }
 
 struct Tokenizer<'a> {
@@ -128,6 +129,7 @@ impl<'a> Tokenizer<'a> {
       Some('.') => InnerToken::Delimiter(Delimiter::Dot),
       Some(';') => InnerToken::Delimiter(Delimiter::Semicolon),
       Some(',') => InnerToken::Delimiter(Delimiter::Comma),
+      Some('/') => InnerToken::Delimiter(Delimiter::Slash),
 
       Some('_') => InnerToken::Underscore,
       Some('a'..='z' | 'A'..='Z') => InnerToken::Letter,
@@ -289,6 +291,22 @@ impl<'a> Lexer<'a> {
 
           self.ok(start, Token::Literal(Literal::String))
         }
+      }
+
+      // Line comments.
+      InnerToken::Delimiter(Delimiter::Slash) if self.tok.peek() == Ok(Some(first)) => {
+        self.tok.eat()?;
+
+        loop {
+          match self.tok.eat() {
+            Err(LexError::EOF) => break,
+            Ok(InnerToken::Newline) => break,
+            Ok(_) => {}
+            Err(e) => return Err(e),
+          }
+        }
+
+        self.ok(start, Token::Whitespace)
       }
 
       InnerToken::Delimiter(d) => self.ok(start, Token::Delimiter(d)),
@@ -466,6 +484,33 @@ mod tests {
     assert_eq!(lexer.slice(), "\"\"\"h\"\"i\"\"\"");
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+  }
+
+  #[test]
+  fn line_comments() {
+    let mut lexer = Lexer::new(
+      "3 // hi
+       2 + 3",
+    );
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "3");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), "// hi\n");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), "       ");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "2");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
+    assert_eq!(lexer.slice(), "+");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "3");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
