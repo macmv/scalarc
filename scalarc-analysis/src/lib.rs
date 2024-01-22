@@ -1,4 +1,5 @@
 mod database;
+mod diagnostic;
 
 #[macro_use]
 extern crate log;
@@ -6,6 +7,8 @@ extern crate log;
 use std::panic::UnwindSafe;
 
 pub use database::FileId;
+pub use diagnostic::Diagnostic;
+
 use database::RootDatabase;
 use salsa::{Cancelled, ParallelDatabase};
 
@@ -55,6 +58,13 @@ impl Analysis {
 
       info!("parsed!");
       vec![]
+    })
+  }
+
+  pub fn diagnostics(&self, file: FileId) -> Cancellable<Vec<Diagnostic>> {
+    self.with_db(|db| {
+      let ast = db.parse(file);
+      ast.errors().iter().map(|err| Diagnostic::from_syntax_error(err)).collect()
     })
   }
 
