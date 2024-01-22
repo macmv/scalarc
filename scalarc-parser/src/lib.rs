@@ -55,6 +55,8 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
     Token::Delimiter(token::Delimiter::Comma) => T![,],
     Token::Group(token::Group::OpenParen) => T!['('],
     Token::Group(token::Group::CloseParen) => T![')'],
+    Token::Group(token::Group::OpenBracket) => T!['['],
+    Token::Group(token::Group::CloseBracket) => T![']'],
     Token::Group(token::Group::OpenBrace) => T!['{'],
     Token::Group(token::Group::CloseBrace) => T!['}'],
     _ => unreachable!("token {token:?}"),
