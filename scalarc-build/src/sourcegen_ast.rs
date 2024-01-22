@@ -175,25 +175,13 @@ fn generate_nodes(grammar: &AstSrc) -> String {
         .map(|name| format_ident!("{}", to_upper_snake_case(&name.to_string())))
         .collect();
 
-      let construct_variant = en.variants.iter().map(|name| {
-        // Create the struct literal for structs, and call `cast` for enums.
-        let id = format_ident!("{}", name);
-        if grammar.enums.iter().any(|e| &e.name == name) {
-          quote!(#id::cast(syntax).unwrap())
-        } else {
-          quote!(#id { syntax })
-        }
-      });
+      // Check for enums in enums, which is disallowed.
 
-      let get_syntax = en.variants.iter().map(|name| {
-        // Call the `syntax()` function for enums, and just use the `syntax` field for
-        // structs.
+      for name in en.variants.iter() {
         if grammar.enums.iter().any(|e| &e.name == name) {
-          quote!(syntax())
-        } else {
-          quote!(syntax)
+          panic!("enums cannot store enums: {} in {}", name, en.name);
         }
-      });
+      }
 
       let traits = en.traits.iter().map(|trait_name| {
         let trait_name = format_ident!("{}", trait_name);
@@ -211,7 +199,7 @@ fn generate_nodes(grammar: &AstSrc) -> String {
             fn cast(syntax: SyntaxNode) -> Option<Self> {
               let res = match syntax.kind() {
                 #(
-                #kinds => #name::#variants(#construct_variant),
+                #kinds => #name::#variants(#variants { syntax }),
                 )*
                 _ => return None,
               };
@@ -220,7 +208,7 @@ fn generate_nodes(grammar: &AstSrc) -> String {
             fn syntax(&self) -> &SyntaxNode {
               match self {
                 #(
-                #name::#variants(it) => &it.#get_syntax,
+                #name::#variants(it) => &it.syntax,
                 )*
               }
             }
