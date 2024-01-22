@@ -1,9 +1,6 @@
-use core::fmt;
-
 use scalarc_test::Expect;
 
-use crate::{EntryPoint, Event, Lexer, SyntaxKind};
-use std::mem;
+use crate::{format::format_events, EntryPoint, Event, Lexer};
 
 mod inline;
 
@@ -28,42 +25,4 @@ pub fn lex_events(entry_point: EntryPoint, text: &str) -> Vec<Event> {
   let mut events = entry_point.parse(&mut Lexer::new(text));
   let processed = crate::process_events(&mut events);
   processed
-}
-
-pub fn format_events(events: &[Event], text: &str) -> String { Events(events, text).to_string() }
-
-struct Events<'a>(&'a [Event], &'a str);
-
-impl fmt::Display for Events<'_> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let mut indent = 0;
-    let mut index = 0;
-    for e in self.0 {
-      match e {
-        Event::Start { kind, .. } => {
-          writeln!(f, "{}{:?}", "  ".repeat(indent), kind)?;
-          indent += 1;
-        }
-        Event::Finish => indent -= 1,
-        Event::Token { kind, len } => {
-          write!(f, "{}{:?}", "  ".repeat(indent), kind)?;
-          if index >= self.1.len() {
-            writeln!(f, " <EOF>")?;
-            continue;
-          }
-          let str = &self.1[index..index + len];
-          if str == "\n" {
-            writeln!(f, " '\\n'")?;
-          } else {
-            writeln!(f, " '{str}'")?;
-          }
-          index += len;
-        }
-        Event::Error { msg } => {
-          writeln!(f, "{}error: {}", "  ".repeat(indent), msg)?;
-        }
-      }
-    }
-    Ok(())
-  }
 }

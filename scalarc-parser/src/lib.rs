@@ -1,3 +1,5 @@
+pub mod format;
+
 mod grammar;
 mod syntax_kind;
 #[cfg(test)]
