@@ -180,7 +180,7 @@ fn fun_params(p: &mut Parser) {
 
   // test ok
   // def foo() = 3
-  if p.current() == T![')'] {
+  if p.at(T![')']) {
     p.eat(T![')']);
     m.complete(p, FUN_PARAMS);
     return;

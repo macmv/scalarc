@@ -118,46 +118,52 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
 }
 
 fn call_paren_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
-  let m = lhs.precede(p);
+  let call = lhs.precede(p);
 
-  {
-    let m = p.start();
-    p.eat(T!['(']);
+  let args = p.start();
+  p.eat(T!['(']);
+  // test ok
+  // hi(
+  //   3,
+  //   4
+  // )
+  p.eat_newlines();
+
+  // test ok
+  // hi()
+  if p.at(T![')']) {
+    p.eat(T![')']);
+    args.complete(p, PAREN_ARGUMENTS);
+    return call.complete(p, CALL_EXPR);
+  }
+
+  loop {
+    expr(p);
     // test ok
     // hi(
-    //   3,
+    //   3
+    //   ,
     //   4
     // )
     p.eat_newlines();
-
-    loop {
-      expr(p);
-      // test ok
-      // hi(
-      //   3
-      //   ,
-      //   4
-      // )
+    if p.at(T![,]) {
+      p.bump();
       p.eat_newlines();
-      if p.at(T![,]) {
-        p.bump();
-        p.eat_newlines();
 
-        // test ok
-        // hi(3,4,)
-        if p.at(T![')']) {
-          break;
-        }
-      } else {
+      // test ok
+      // hi(3,4,)
+      if p.at(T![')']) {
         break;
       }
+    } else {
+      break;
     }
-
-    p.expect(T![')']);
-    m.complete(p, PAREN_ARGUMENTS);
   }
 
-  m.complete(p, CALL_EXPR)
+  p.expect(T![')']);
+  args.complete(p, PAREN_ARGUMENTS);
+
+  call.complete(p, CALL_EXPR)
 }
 
 fn call_block_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
