@@ -186,12 +186,27 @@ fn fun_params(p: &mut Parser) {
     return;
   }
 
+  // test ok
+  // def foo(
+  //   a: Int
+  // ) = 3
+  p.eat_newlines();
+
   loop {
     fun_param(p);
+    p.eat_newlines();
     // test ok
     // def foo(a: Int, b: String) = 3
     if p.current() == T![,] {
       p.eat(T![,]);
+
+      // test ok
+      // def foo(
+      //   a: Int
+      //   ,
+      //   b: Int
+      // ) = 3
+      p.eat_newlines();
     } else {
       p.expect(T![')']);
       m.complete(p, FUN_PARAMS);
@@ -205,10 +220,18 @@ fn fun_params(p: &mut Parser) {
 fn fun_param(p: &mut Parser) {
   let m = p.start();
   p.expect(T![ident]);
-  if p.current() == T![:] {
-    p.eat(T![:]);
-    p.expect(T![ident]);
-  }
+
+  p.expect(T![:]);
+  // test ok
+  // def foo(
+  //   a:
+  //   Int
+  // ) = 3
+  p.eat_newlines();
+
+  // TODO: Parse types
+  p.expect(T![ident]);
+
   m.complete(p, FUN_PARAM);
 }
 
