@@ -84,8 +84,8 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
       // test ok
       // hi { 3 }
       T!['{'] => call_block_expr(p, lhs),
-      // TODO
-      // T!['['] => index_expr(p, lhs),
+      // test ok
+      // foo.bar
       T![.] => match postfix_dot_expr(p, lhs) {
         Ok(it) => it,
         Err(it) => {
@@ -401,6 +401,34 @@ mod tests {
               INT_LIT_KW '3'
             WHITESPACE ' '
             CLOSE_CURLY '}'
+      "#],
+    );
+  }
+
+  #[test]
+  fn dot_exprs() {
+    check_expr(
+      "foo.bar",
+      expect![@r#"
+        FIELD_EXPR
+          IDENT
+            IDENT 'foo'
+          DOT '.'
+          IDENT 'bar'
+      "#],
+    );
+
+    check_expr(
+      "foo.bar.baz",
+      expect![@r#"
+        FIELD_EXPR
+          FIELD_EXPR
+            IDENT
+              IDENT 'foo'
+            DOT '.'
+            IDENT 'bar'
+          DOT '.'
+          IDENT 'baz'
       "#],
     );
   }
