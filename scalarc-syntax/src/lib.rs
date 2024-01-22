@@ -37,7 +37,7 @@ impl<T: AstNode> Parse<T> {
 
 impl SourceFile {
   pub fn parse(text: &str) -> Parse<SourceFile> {
-    let (green, mut errors) = parse::parse_text(text);
+    let (green, errors) = parse::parse_text(text);
     let root = SyntaxNode::new_root(green.clone());
 
     // TODO: Add validation :P. Much easier said than done.
@@ -56,7 +56,7 @@ impl SourceFile {
 /// API.
 #[test]
 fn api_walkthrough() {
-  let source_code = "def foo = 1 + 1\n";
+  let source_code = "def foo = 1 + 2\n";
   // `SourceFile` is the main entry point.
   //
   // The `parse` method returns a `Parse` -- a pair of syntax tree and a list
@@ -80,30 +80,13 @@ fn api_walkthrough() {
   }
   let func: ast::FunDec = func.unwrap();
 
-  panic!();
+  // The `expr` of a function is everything on the right of the `=`. We can match
+  // on this expression and grab the inner literals of `1 + 2`.
+  let ast::Expr::InfixExpr(infix) = func.expr().unwrap() else { panic!() };
 
-  /*
-  // Each AST node has a bunch of getters for children. All getters return
-  // `Option`s though, to account for incomplete code. Some getters are common
-  // for several kinds of node. In this case, a trait like `ast::NameOwner`
-  // usually exists. By convention, all ast types should be used with `ast::`
-  // qualifier.
-  let name: Option<ast::Path> = func.name();
-  let name = name.unwrap();
-  assert_eq!(name.text(), "foo");
+  let ast::Expr::LitExpr(lhs) = infix.lhs().unwrap() else { panic!() };
+  assert_eq!(lhs.int_lit_token().unwrap().text(), "1");
 
-  // Let's get the `1 + 1` expression!
-  let body: ast::BlockExpr = func.body().unwrap();
-  let stmt_list: ast::StmtList = body.stmt_list().unwrap();
-  let expr: ast::Expr = stmt_list.tail_expr().unwrap();
-
-  // Enums are used to group related ast nodes together, and can be used for
-  // matching. However, because there are no public fields, it's possible to
-  // match only the top level enum: that is the price we pay for increased API
-  // flexibility
-  let bin_expr: &ast::BinExpr = match &expr {
-    ast::Expr::BinExpr(e) => e,
-    _ => unreachable!(),
-  };
-  */
+  let ast::Expr::LitExpr(rhs) = infix.rhs().unwrap() else { panic!() };
+  assert_eq!(rhs.int_lit_token().unwrap().text(), "2");
 }

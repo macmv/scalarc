@@ -1,3 +1,4 @@
+mod ext;
 mod generated;
 
 use std::marker::PhantomData;

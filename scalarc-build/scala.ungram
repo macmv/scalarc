@@ -18,7 +18,7 @@
 
 
 // TODO: Need to lex all of this
-Literal = ('-')? 'int_lit'
+LitExpr = ('-')? 'int_lit'
         | ('-')? 'float_lit'
         | 'true' | 'false'
         | 'character_lit'
@@ -84,10 +84,16 @@ Expr = IfExpr
      | PrefixExpr
      | PostfixExprAscription
      | MatchExpr
-     // This is SimpleExpr
-     | NewExpr
+     | NewClassExpr
+     | NewTemplateExpr
      | BlockExpr
-     | SimpleExprInnerUnderscore
+     | PostfixUnderscoreExpr
+     | LitExpr
+     | Path
+     | UnderscoreExpr
+     | TupleExpr
+     | FieldExpr
+     | CallExpr
 
 IfExpr      = 'if' '(' Expr ')' (nl)* Expr ((semi)? 'else' Expr)?
 WhileExpr   = 'while' '(' Expr ')' (nl)* Expr
@@ -105,26 +111,29 @@ PostfixExprAscription = PostfixExpr Ascription
 MatchExpr             = PostfixExpr 'match' '{' CaseClauses '}'
 
 PostfixExpr    = Expr id
-InfixExpr      = Expr id Expr
+InfixExpr      = lhs:Expr id rhs:Expr
 PrefixExpr     = id Expr // id can only be '-' | '+' | '~' | '!'
 
-SimpleExpr = NewExpr
+SimpleExpr = NewClassExpr
+           | NewTemplateExpr
            | BlockExpr
-           | SimpleExprInnerUnderscore
-NewExpr                   = 'new' (ClassTemplate | TemplateBody)
-SimpleExprInnerUnderscore = SimpleExprInner '_'?
+           | PostfixUnderscoreExpr
+           | LitExpr
+           | Path
+           | UnderscoreExpr
+           | TupleExpr
+           | FieldExpr
+           | CallExpr
 
-SimpleExprInner = Literal
-                | Path
-                | UnderscoreExpr
-                | TupleExpr
-                | FieldExpr
-                | CallExpr
+NewClassExpr    = 'new' ClassTemplate
+NewTemplateExpr = 'new' TemplateBody
+PostfixUnderscoreExpr = Expr '_'
+
 UnderscoreExpr = '_'
 TupleExpr      = '(' (Expr (',' Expr)*)? ')'
-FieldExpr      = SimpleExpr '.' id
-TypedExpr      = SimpleExpr TypeArgs
-CallExpr       = SimpleExprInner ArgumentExprList
+FieldExpr      = Expr '.' id
+TypedExpr      = Expr TypeArgs
+CallExpr       = Expr ArgumentExprList
 
 ArgumentExprList = ParenArguments | SpreadArguments | BlockArguments
 ParenArguments  = '(' (Expr (',' Expr)*)? ')'
@@ -161,7 +170,7 @@ PatternNamed   = SimplePattern
                | SimplePattern ( id (nl)? SimplePattern )*
 SimplePattern  = '_'
                | varid
-               | Literal
+               | LitExpr
                | StableId
                | StableId '(' (Patterns)? ')'
                | StableId '(' (Patterns ',')? (id '@')? '_' '*' ')'

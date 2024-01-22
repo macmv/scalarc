@@ -73,7 +73,7 @@ fn simple_expr(p: &mut Parser) -> Option<CompletedMarker> {
   match p.current() {
     INT_LIT_KW => {
       p.eat(INT_LIT_KW);
-      Some(m.complete(p, LITERAL))
+      Some(m.complete(p, LIT_EXPR))
     }
 
     _ => {
