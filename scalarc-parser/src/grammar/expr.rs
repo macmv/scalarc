@@ -230,7 +230,7 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
 
 #[cfg(test)]
 mod tests {
-  use crate::tests::check_expr;
+  use crate::tests::{check, check_expr};
 
   #[test]
   fn literals() {
@@ -487,6 +487,83 @@ mod tests {
         DOT '.'
         error: expected expression, got DOT
         INT_LIT_KW '3'
+      "#],
+    );
+  }
+
+  #[test]
+  fn newline_magic() {
+    check(
+      "println {
+         3
+       }",
+      expect![@r#"
+        SOURCE_FILE
+          CALL_EXPR
+            IDENT
+              IDENT 'println'
+            WHITESPACE ' '
+            BLOCK_ARGUMENTS
+              OPEN_CURLY '{'
+              NL_KW '\n'
+              WHITESPACE '         '
+              LIT_EXPR
+                INT_LIT_KW '3'
+              NL_KW '\n'
+              WHITESPACE '       '
+              CLOSE_CURLY '}'
+      "#],
+    );
+
+    // TODO: This should parse the same as the above
+    check(
+      "println
+       {
+         3
+       }",
+      expect![@r#"
+        SOURCE_FILE
+          IDENT
+            IDENT 'println'
+          NL_KW '\n'
+          WHITESPACE '       '
+          error: expected expression, got OPEN_CURLY
+          OPEN_CURLY '{'
+          NL_KW '\n'
+          WHITESPACE '         '
+          LIT_EXPR
+            INT_LIT_KW '3'
+          NL_KW '\n'
+          error: unexpected '}'
+          WHITESPACE '       '
+          CLOSE_CURLY '}'
+      "#],
+    );
+
+    // TODO: This should parse as two expressions lol
+    check(
+      "println
+
+       {
+         3
+       }",
+      expect![@r#"
+        SOURCE_FILE
+          IDENT
+            IDENT 'println'
+          NL_KW '\n'
+          NL_KW '\n'
+          WHITESPACE '       '
+          error: expected expression, got OPEN_CURLY
+          OPEN_CURLY '{'
+          NL_KW '\n'
+          WHITESPACE '         '
+          LIT_EXPR
+            INT_LIT_KW '3'
+          NL_KW '\n'
+          error: unexpected '}'
+          WHITESPACE '       '
+          CLOSE_CURLY '}'
       "#],
     );
   }
