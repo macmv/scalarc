@@ -105,11 +105,31 @@ fn call_paren_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
   {
     let m = p.start();
     p.eat(T!['(']);
+    // test ok
+    // hi(
+    //   3,
+    //   4
+    // )
+    p.eat_newlines();
 
     loop {
       expr(p);
+      // test ok
+      // hi(
+      //   3
+      //   ,
+      //   4
+      // )
+      p.eat_newlines();
       if p.at(T![,]) {
         p.bump();
+        p.eat_newlines();
+
+        // test ok
+        // hi(3,4,)
+        if p.at(T![')']) {
+          break;
+        }
       } else {
         break;
       }

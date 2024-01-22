@@ -228,6 +228,16 @@ impl Parser<'_> {
     }
   }
 
+  pub fn eat_newlines(&mut self) {
+    loop {
+      if self.at(T![nl]) {
+        self.eat(T![nl]);
+      } else {
+        break;
+      }
+    }
+  }
+
   fn recover_until_any(&mut self, kinds: &[SyntaxKind]) {
     while !kinds.contains(&self.current()) && self.current() != SyntaxKind::EOF {
       self.bump();
