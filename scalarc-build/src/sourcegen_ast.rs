@@ -778,6 +778,7 @@ fn extract_enums(ast: &mut AstSrc) {
 }
 
 fn extract_struct_traits(ast: &mut AstSrc) {
+  /*
   let traits: &[(&str, &[&str])] = &[
     ("HasAttrs", &["attrs"]),
     ("HasName", &["name"]),
@@ -794,6 +795,7 @@ fn extract_struct_traits(ast: &mut AstSrc) {
       extract_struct_trait(node, name, methods);
     }
   }
+  */
 
   // TODO: Do I need this?
   /*

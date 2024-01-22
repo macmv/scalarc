@@ -100,7 +100,7 @@ fn fun_dec(p: &mut Parser, m: Marker) {
   expr::expr(p);
 
   p.expect(T![nl]);
-  m.complete(p, FUN_DEC);
+  m.complete(p, FUN_DEF);
 }
 
 fn fun_sig(p: &mut Parser) {
@@ -202,7 +202,7 @@ mod tests {
       "def foo = 3",
       expect![@r#"
         SOURCE_FILE
-          FUN_DEC
+          FUN_DEF
             DEF_KW 'def'
             WHITESPACE ' '
             FUN_SIG
@@ -220,7 +220,7 @@ mod tests {
       "def foo(a:) = 3",
       expect![@r#"
         SOURCE_FILE
-          FUN_DEC
+          FUN_DEF
             DEF_KW 'def'
             WHITESPACE ' '
             FUN_SIG
@@ -245,7 +245,7 @@ mod tests {
       "def foo(a: Int) = 3",
       expect![@r#"
         SOURCE_FILE
-          FUN_DEC
+          FUN_DEF
             DEF_KW 'def'
             WHITESPACE ' '
             FUN_SIG
@@ -271,7 +271,7 @@ mod tests {
       "def foo(a: Int, b: String) = 3",
       expect![@r#"
         SOURCE_FILE
-          FUN_DEC
+          FUN_DEF
             DEF_KW 'def'
             WHITESPACE ' '
             FUN_SIG

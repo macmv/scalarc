@@ -48,7 +48,7 @@ FunctionArgTypes  = InfixType | '(' ( ParamType (',' ParamType)* )? ')'
 // No idea what 'forSome' is, going to comment out for now.
 // ExistentialClause = 'forSome' '{' ExistentialDec (semi ExistentialDec)? '}'
 ExistentialClause = 'for' '{' ExistentialDec (semi ExistentialDec)? '}'
-ExistentialDec    = 'type' TypeDec | 'val' ValDec
+ExistentialDec    = TypeDec | ValDef
 InfixType         = CompoundType (id (nl)? CompoundType)*
 CompoundType      = AnnotType ('with' AnnotType)* (Refinement)? | Refinement
 AnnotType         = SimpleType (Annotation)*
@@ -60,8 +60,7 @@ SimpleType        = SimpleType TypeArgs
 
 TypeArgs   = '[' Types ']'
 Types      = Type (',' Type)*
-Refinement = (nl)? '{' RefineStat (semi RefineStat)* '}'
-RefineStat = Dec | TypeDef
+Refinement = (nl)? '{' Def (semi Def)* '}'
 TypePat    = Type
 
 Ascription = AscriptionType | AscriptionAnnotation | AscriptionSpread
@@ -85,7 +84,7 @@ Expr = IfExpr
      | PostfixExprAscription
      | MatchExpr
      | NewClassExpr
-     | NewTemplateExpr
+     | NewItemExpr
      | BlockExpr
      | PostfixUnderscoreExpr
      | LitExpr
@@ -115,7 +114,7 @@ InfixExpr      = lhs:Expr id rhs:Expr
 PrefixExpr     = id Expr // id can only be '-' | '+' | '~' | '!'
 
 SimpleExpr = NewClassExpr
-           | NewTemplateExpr
+           | NewItemExpr
            | BlockExpr
            | PostfixUnderscoreExpr
            | LitExpr
@@ -125,8 +124,8 @@ SimpleExpr = NewClassExpr
            | FieldExpr
            | CallExpr
 
-NewClassExpr    = 'new' ClassTemplate
-NewTemplateExpr = 'new' TemplateBody
+NewClassExpr = 'new' ClassTemplate
+NewItemExpr  = 'new' ItemBody
 PostfixUnderscoreExpr = Expr '_'
 
 UnderscoreExpr = '_'
@@ -141,11 +140,7 @@ SpreadArguments = '(' (Expr (',' Expr)*)? PostfixExpr ':' '_' '*' ')'
 BlockArguments  = nl? BlockExpr
 
 BlockExpr      = '{' CaseClauses '}' | '{' Block '}'
-Block          = BlockStat (semi BlockStat)* (ResultExpr)?
-BlockStat      = Import
-               | (Annotation)* ('implicit')? ('lazy')? Def
-               | (Annotation)* (LocalModifier)* TmplDef
-               | Expr
+Block          = Item (semi Item)* ResultExpr?
 ResultExpr     = Expr
                | (Bindings | ('implicit')? (id | '_') (':' CompoundType)?) '=>' Block
 
@@ -212,71 +207,72 @@ AccessQualifier   =  '[' (id | 'this') ']'
 Annotation        =  '@' SimpleType ArgumentExprList*
 ConstrAnnotation  =  '@' SimpleType ArgumentExprList
 
-TemplateBody      =  (nl)? '{' (SelfType)? TemplateStat (semi TemplateStat)* '}'
-TemplateStat      =  Import
-                  | (Annotation (nl)?)* (Modifier)* Def
-                  | (Annotation (nl)?)* (Modifier)* Dec
-                  | Expr
-SelfType          = id (':' Type)? '=>'
-                  | 'this' ':' Type '=>'
+ItemBody = nl? '{' (SelfType)? Item (semi Item)* '}'
+SelfType = id (':' Type)? '=>'
+             | 'this' ':' Type '=>'
 
 Import            = 'import' ImportExpr (',' ImportExpr)*
 ImportExpr        = StableId '.' (id | '_' | ImportSelectors)
 ImportSelectors   = '{' (ImportSelector ',')* (ImportSelector | '_') '}'
 ImportSelector    = id ('=>' id | '=>' '_')?
 
-Dec               = 'val' ValDec
-                  | 'var' VarDec
-                  | FunDec
-                  | 'type' (nl)* TypeDec
+Def = ValDef
+    | VarDef
+    | FunDef
+    | TypeDef
 
-ValDec            = ids ':' Type
-VarDec            = ids ':' Type
-FunDec            = 'def' FunSig '=' Expr
-FunSig            = id FunTypeParamClause? FunParams (':' Type)?
-TypeDec           = id (TypeParamClause)? ('>:' Type)? ('<:' Type)?
+ValDef  = 'val' ids ':' Type
+VarDef  = 'var' ids ':' Type
+FunDef  = 'def' FunSig '=' Expr
+FunSig  = id FunTypeParamClause? FunParams (':' Type)?
+TypeDec = 'type' id (TypeParamClause)? ('>:' Type)? ('<:' Type)?
 
-// Definitions
+// Items
 
-Def = ValPatDef
-  | VarPatDef
-  | FunEqDef
-  | FunBlockDef
-  | FunThisDef
+Item = ItemExpr
+  | LazyItem
+  | ImplicitItem
+  | AnnotatedItem
+  | ValDef
+  | VarDef
+  | FunDef
   | TypeDef
   | ClassDef
   | ObjectDef
   | TraitDef
+  | Import
 
-PatVarDef = ValPatDef | VarPatDef
+// new-typed expr so we can have nested enums.
+ItemExpr = Expr
 
-ValPatDef = 'val' (PatDef | VarDef)
-VarPatDef = 'var' VarDef
+LazyItem = 'lazy' Item
+ImplicitItem = 'implicit' Item
+AnnotatedItem = Annotation* Item
 
-PatDef      = PatternAt (',' PatternAt)* (':' Type)? '=' Expr
-VarDef      = ids ':' Type '=' '_'
-FunEqDef    = FunSig (':' Type)? '=' Expr
-FunBlockDef = FunSig (nl)? '{' Block '}'
-FunThisDef  = 'this' FunParams ('=' ConstrExpr | (nl)? ConstrBlock)
+// TODO: Need to merge this with ValDef and VarDef
+// PatDef      = ('val' | 'var') PatternAt (',' PatternAt)* (':' Type)? '=' Expr
+// FunEqDef    = 'def' FunSig '=' Expr
+// FunBlockDef = 'def' FunSig (nl)? '{' Block '}'
+// FunThisDef  = 'this' FunParams ('=' ConstrExpr | (nl)? ConstrBlock)
 
 TypeDef     = 'type' id TypeParamClause? '=' Type
 
 TmplDef          = ClassDef | TraitDef | ObjectDef
-ClassDef         = 'case'? 'class' id TypeParamClause? (ConstrAnnotation)* (AccessModifier)? ClassFunParams ClassTemplateOpt
+ClassDef         = 'case'? 'class' id TypeParamClause? ConstrAnnotation* AccessModifier? ClassFunParams ClassTemplateOpt
 TraitDef         = 'trait' id TypeParamClause? TraitTemplateOpt
 ObjectDef        = 'case'? 'object' id ClassTemplateOpt
-ClassTemplateOpt = 'extends' ClassTemplate | ('extends'? TemplateBody)?
-TraitTemplateOpt = 'extends' TraitTemplate | ('extends'? TemplateBody)?
-ClassTemplate    = EarlyDefs? ClassParents TemplateBody?
-TraitTemplate    = EarlyDefs? TraitParents TemplateBody?
+ClassTemplateOpt = 'extends' ClassTemplate | ('extends'? ItemBody)?
+TraitTemplateOpt = 'extends' TraitTemplate | ('extends'? ItemBody)?
+ClassTemplate    = EarlyDefs? ClassParents ItemBody?
+TraitTemplate    = EarlyDefs? TraitParents ItemBody?
 ClassParents     = Constr ('with' AnnotType)*
 TraitParents     = AnnotType ('with' AnnotType)*
 Constr           = AnnotType ArgumentExprList*
 EarlyDefs        = '{' (EarlyDef (semi EarlyDef)*)? '}' 'with'
-EarlyDef         = (Annotation (nl)?)* (Modifier)* PatVarDef
+EarlyDef         = (Annotation (nl)?)* (Modifier)* Def
 
 ConstrExpr     = SelfInvocation | ConstrBlock
-ConstrBlock    = '{' SelfInvocation (semi BlockStat)* '}'
+ConstrBlock    = '{' SelfInvocation (semi Item)* '}'
 SelfInvocation = 'this' ArgumentExprList (ArgumentExprList)*
 
 // TopStatSeq     = TopStat (semi TopStat)*
@@ -289,4 +285,4 @@ SelfInvocation = 'this' ArgumentExprList (ArgumentExprList)*
 //
 // SourceFile = ('package' QualId semi)* TopStatSeq
 
-SourceFile = FunDec*
+SourceFile = Item*

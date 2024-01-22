@@ -71,14 +71,15 @@ fn api_walkthrough() {
   // `SourceFile` is the root of the syntax tree. We can iterate file's items.
   // Let's fetch the `foo` function.
   let mut func = None;
-  for item in file.fun_decs() {
+  for item in file.items() {
     // The `fun_sig` is the name, arguments, and return type. In this case, it will
     // just be the name `foo`.
+    let ast::Item::FunDef(item) = item else { panic!() };
     if item.fun_sig().unwrap().id_token().unwrap().text() == "foo" {
       func = Some(item);
     }
   }
-  let func: ast::FunDec = func.unwrap();
+  let func: ast::FunDef = func.unwrap();
 
   // The `expr` of a function is everything on the right of the `=`. We can match
   // on this expression and grab the inner literals of `1 + 2`.
