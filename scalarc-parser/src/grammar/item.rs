@@ -1,6 +1,10 @@
 use super::*;
 
 pub fn mod_items(p: &mut Parser) { items(p, false); }
+pub fn block_items(p: &mut Parser) {
+  p.eat(T!['{']);
+  items(p, true);
+}
 
 // test ok
 // class Foo {

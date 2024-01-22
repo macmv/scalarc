@@ -171,15 +171,12 @@ fn call_block_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
 
   {
     let m = p.start();
-    p.eat(T!['{']);
     // test ok
     // hi {
     //   3
+    //   4
     // }
-    p.eat_newlines();
-    expr(p);
-    p.eat_newlines();
-    p.expect(T!['}']);
+    super::item::block_items(p);
     m.complete(p, BLOCK_ARGUMENTS);
   }
 
@@ -220,15 +217,12 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     T!['{'] => {
-      p.eat(T!['{']);
       // test ok
       // {
       //   2 + 3
+      //   5 + 6
       // }
-      p.eat_newlines();
-      expr(p);
-      p.eat_newlines();
-      p.expect(T!['}']);
+      super::item::block_items(p);
       Some(m.complete(p, BLOCK_EXPR))
     }
 
