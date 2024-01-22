@@ -113,6 +113,23 @@ mod tests {
   }
 
   #[test]
+  fn whitespace() {
+    check_expr(
+      "2   +  56",
+      expect![@r#"
+        INFIX_EXPR
+          LIT_EXPR
+            INT_LIT_KW '2'
+          WHITESPACE '   '
+          IDENT '+'
+          WHITESPACE '  '
+          LIT_EXPR
+            INT_LIT_KW '56'
+      "#],
+    );
+  }
+
+  #[test]
   fn binary_op() {
     check_expr(
       "1 + 2",

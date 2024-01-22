@@ -200,7 +200,7 @@ impl Parser<'_> {
         // record that they got skipped, so that we can recover them later if we need a concrete
         // tree.
         Ok(Token::Whitespace) => {
-          self.pending_whitespace += 1;
+          self.pending_whitespace += self.lexer.slice().len();
         }
         Ok(t) => {
           self.current = token_to_kind(t, self.lexer.slice());
