@@ -183,7 +183,7 @@ impl Parser<'_> {
   pub fn slice(&self) -> &str { &self.lexer.view(self.current_range.clone()) }
   #[track_caller]
   pub fn eat(&mut self, t: SyntaxKind) {
-    assert_eq!(self.current(), t);
+    assert_eq!(self.current(), t, "eat got unexpected result");
     self.bump();
   }
   pub fn bump(&mut self) -> SyntaxKind {

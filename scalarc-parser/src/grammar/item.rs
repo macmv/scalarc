@@ -93,8 +93,8 @@ fn import_item(p: &mut Parser, m: Marker) {
 
       T!['{'] => import_list(p),
 
-      T![nl] => {
-        p.eat(T![nl]);
+      T![nl] | EOF => {
+        p.bump();
         m.complete(p, IMPORT);
         return;
       }
@@ -104,7 +104,7 @@ fn import_item(p: &mut Parser, m: Marker) {
       _ => {
         p.error(format!("expected ident, got {:?}", p.current()));
         p.recover_until(T![nl]);
-        p.eat(T![nl]);
+        p.bump();
         m.abandon(p);
         return;
       }
@@ -244,7 +244,7 @@ mod tests {
             IDENT 'bar'
             DOT '.'
             IDENT 'baz'
-            NL_KW '\n'
+            EOF <EOF>
       "#],
     );
 
@@ -266,7 +266,7 @@ mod tests {
               IDENT 'baz'
               WHITESPACE ' '
               CLOSE_CURLY '}'
-            NL_KW '\n'
+            EOF <EOF>
       "#],
     );
   }
@@ -287,7 +287,6 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '3'
-          NL_KW '\n'
       "#],
     );
 
@@ -312,7 +311,6 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '3'
-          NL_KW '\n'
       "#],
     );
 
@@ -338,7 +336,6 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '3'
-          NL_KW '\n'
       "#],
     );
 
@@ -371,7 +368,6 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '3'
-          NL_KW '\n'
       "#],
     );
   }
@@ -419,7 +415,6 @@ mod tests {
                   CLOSE_CURLY '}'
               WHITESPACE ' '
               CLOSE_CURLY '}'
-          NL_KW '\n'
       "#],
     );
   }

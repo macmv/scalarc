@@ -52,7 +52,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
         lhs = m.complete(p, INFIX_EXPR);
       }
 
-      T![nl] => {
+      T![nl] | EOF => {
         m.abandon(p);
         return;
       }

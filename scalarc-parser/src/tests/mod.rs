@@ -15,7 +15,7 @@ pub fn check(text: &str, expected_tree: Expect) {
 }
 
 fn check_inner(entry_point: EntryPoint, text: &str, expected_tree: Expect) {
-  let actual_tree = lex(entry_point, &format!("{}\n", text));
+  let actual_tree = lex(entry_point, &text);
 
   expected_tree.assert_eq(&actual_tree);
 }
