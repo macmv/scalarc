@@ -28,7 +28,6 @@ LitExpr = ('-')? 'int_lit'
         | 'null'
 
 id = 'ident'
-semi = 'semi'
 nl = 'nl'
 
 varid = id
@@ -46,8 +45,8 @@ ClassQualifier = '[' id ']'
 Type              = FunctionArgTypes '=>' Type | InfixType (ExistentialClause)?
 FunctionArgTypes  = InfixType | '(' ( ParamType (',' ParamType)* )? ')'
 // No idea what 'forSome' is, going to comment out for now.
-// ExistentialClause = 'forSome' '{' ExistentialDec (semi ExistentialDec)? '}'
-ExistentialClause = 'for' '{' ExistentialDec (semi ExistentialDec)? '}'
+// ExistentialClause = 'forSome' '{' ExistentialDec (';' ExistentialDec)? '}'
+ExistentialClause = 'for' '{' ExistentialDec (';' ExistentialDec)? '}'
 ExistentialDec    = TypeDec | ValDef
 InfixType         = CompoundType (id (nl)? CompoundType)*
 CompoundType      = AnnotType ('with' AnnotType)* (Refinement)? | Refinement
@@ -60,7 +59,7 @@ SimpleType        = SimpleType TypeArgs
 
 TypeArgs   = '[' Types ']'
 Types      = Type (',' Type)*
-Refinement = (nl)? '{' Def (semi Def)* '}'
+Refinement = (nl)? '{' Def (';' Def)* '}'
 TypePat    = Type
 
 Ascription = AscriptionType | AscriptionAnnotation | AscriptionSpread
@@ -94,10 +93,10 @@ Expr = IfExpr
      | FieldExpr
      | CallExpr
 
-IfExpr      = 'if' '(' Expr ')' (nl)* Expr ((semi)? 'else' Expr)?
+IfExpr      = 'if' '(' Expr ')' (nl)* Expr ((';')? 'else' Expr)?
 WhileExpr   = 'while' '(' Expr ')' (nl)* Expr
 TryExpr     = 'try' Expr ('catch' Expr)? ('finally' Expr)?
-DoWhileExpr = 'do' Expr (semi)? 'while' '(' Expr ')'
+DoWhileExpr = 'do' Expr (';')? 'while' '(' Expr ')'
 ForExpr     = 'for' ('(' Enumerators ')' | '{' Enumerators '}') (nl)* ('yield')? Expr
 ThrowExpr   = 'throw' Expr
 ReturnExpr  = 'return' Expr?
@@ -140,12 +139,12 @@ SpreadArguments = '(' (Expr (',' Expr)*)? PostfixExpr ':' '_' '*' ')'
 BlockArguments  = nl? BlockExpr
 
 BlockExpr      = '{' CaseClauses '}' | '{' Block '}'
-Block          = Item (semi Item)* ResultExpr?
+Block          = Item (';' Item)* ResultExpr?
 ResultExpr     = Expr
                | (Bindings | ('implicit')? (id | '_') (':' CompoundType)?) '=>' Block
 
-Enumerators    = Generator (semi Generator)*
-Generator      = ('case')? PatternSingle '<-' Expr ((semi)? Guard | semi PatternSingle '=' Expr)*
+Enumerators    = Generator (';' Generator)*
+Generator      = ('case')? PatternSingle '<-' Expr ((';')? Guard | ';' PatternSingle '=' Expr)*
 
 CaseClauses    = CaseClause ( CaseClause )*
 CaseClause     = 'case' Pattern (Guard)? '=>' Block
@@ -207,7 +206,7 @@ AccessQualifier   =  '[' (id | 'this') ']'
 Annotation        =  '@' SimpleType ArgumentExprList*
 ConstrAnnotation  =  '@' SimpleType ArgumentExprList
 
-ItemBody = nl? '{' SelfType? Item (semi Item)* '}'
+ItemBody = nl? '{' SelfType? (Item (';' Item)*) '}'
 SelfType = id (':' Type)? '=>'
 
 Import            = 'import' ImportExpr (',' ImportExpr)*
@@ -256,25 +255,25 @@ AnnotatedItem = Annotation* Item
 
 TypeDef     = 'type' id TypeParamClause? '=' Type
 
-TmplDef          = ClassDef | TraitDef | ObjectDef
-ClassDef         = 'case'? 'class' id TypeParamClause? ConstrAnnotation* AccessModifier? ClassFunParams ClassTemplateOpt
-TraitDef         = 'trait' id TypeParamClause? TraitTemplateOpt
-ObjectDef        = 'case'? 'object' id ClassTemplateOpt
-ClassTemplateOpt = 'extends' ClassTemplate | ('extends'? ItemBody)?
+ClassDef     = 'case'? 'class' id TypeParamClause? ConstrAnnotation* AccessModifier? ClassFunParams ClassExtends body:ItemBody
+TraitDef     = 'trait' id TypeParamClause? TraitTemplateOpt
+ObjectDef    = 'case'? 'object' id body:ItemBody
+ClassExtends = 'extends' ClassTemplate // TODO
+
 TraitTemplateOpt = 'extends' TraitTemplate | ('extends'? ItemBody)?
 ClassTemplate    = EarlyDefs? ClassParents ItemBody?
 TraitTemplate    = EarlyDefs? TraitParents ItemBody?
 ClassParents     = Constr ('with' AnnotType)*
 TraitParents     = AnnotType ('with' AnnotType)*
 Constr           = AnnotType ArgumentExprList*
-EarlyDefs        = '{' (EarlyDef (semi EarlyDef)*)? '}' 'with'
+EarlyDefs        = '{' (EarlyDef (';' EarlyDef)*)? '}' 'with'
 EarlyDef         = (Annotation (nl)?)* (Modifier)* Def
 
 ConstrExpr     = SelfInvocation | ConstrBlock
-ConstrBlock    = '{' SelfInvocation (semi Item)* '}'
+ConstrBlock    = '{' SelfInvocation (';' Item)* '}'
 SelfInvocation = 'this' ArgumentExprList (ArgumentExprList)*
 
-// TopStatSeq     = TopStat (semi TopStat)*
+// TopStatSeq     = TopStat (';' TopStat)*
 // TopStat        = (Annotation (nl)?)* (Modifier)* TmplDef
 //                | Import
 //                | Packaging
@@ -282,6 +281,6 @@ SelfInvocation = 'this' ArgumentExprList (ArgumentExprList)*
 // Packaging      =  'package' QualId (nl)? '{' TopStatSeq '}'
 // PackageObject  =  'package' 'object' ObjectDef
 //
-// SourceFile = ('package' QualId semi)* TopStatSeq
+// SourceFile = ('package' QualId ';')* TopStatSeq
 
 SourceFile = Item*
