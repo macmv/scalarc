@@ -138,7 +138,7 @@ ParenArguments  = '(' (Expr (',' Expr)*)? ')'
 SpreadArguments = '(' (Expr (',' Expr)*)? PostfixExpr ':' '_' '*' ')'
 BlockArguments  = nl? BlockExpr
 
-BlockExpr      = '{' CaseClauses '}' | '{' Block '}'
+BlockExpr      = '{' CaseClauses '}' | '{' (Item (';' Item)*) '}'
 Block          = Item (';' Item)* ResultExpr?
 ResultExpr     = Expr
                | (Bindings | ('implicit')? (id | '_') (':' CompoundType)?) '=>' Block
@@ -227,7 +227,7 @@ TypeDec = 'type' id (TypeParamClause)? ('>:' Type)? ('<:' Type)?
 
 // Items
 
-Item = ItemExpr
+Item = ExprItem
   | LazyItem
   | ImplicitItem
   | AnnotatedItem
@@ -241,7 +241,7 @@ Item = ItemExpr
   | Import
 
 // new-typed expr so we can have nested enums.
-ItemExpr = Expr
+ExprItem = Expr
 
 LazyItem = 'lazy' Item
 ImplicitItem = 'implicit' Item

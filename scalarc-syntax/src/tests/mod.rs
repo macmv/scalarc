@@ -45,3 +45,27 @@ fn call_expr() {
 
   assert_eq!(lit.int_lit_token().unwrap().text(), "3");
 }
+
+#[test]
+fn block_expr() {
+  let parse = parse_ok("{ 2 + 3\n \"hello\" }");
+  let file: SourceFile = parse.tree();
+
+  assert_eq!(file.items().count(), 1);
+  let ast::Item::ExprItem(expr) = file.items().next().unwrap() else { panic!() };
+  let ast::Expr::BlockExpr(block) = expr.expr().unwrap() else { panic!() };
+
+  let ast::Item::ExprItem(plus) = block.items().nth(0).unwrap() else { panic!() };
+  let ast::Expr::InfixExpr(infix) = plus.expr().unwrap() else { panic!() };
+
+  let ast::Expr::LitExpr(lit) = infix.lhs().unwrap() else { panic!() };
+  assert_eq!(lit.int_lit_token().unwrap().text(), "2");
+
+  let ast::Expr::LitExpr(lit) = infix.rhs().unwrap() else { panic!() };
+  assert_eq!(lit.int_lit_token().unwrap().text(), "3");
+
+  let ast::Item::ExprItem(string) = block.items().nth(1).unwrap() else { panic!() };
+
+  let ast::Expr::LitExpr(lit) = string.expr().unwrap() else { panic!() };
+  assert_eq!(lit.string_lit_token().unwrap().text(), "\"hello\"");
+}

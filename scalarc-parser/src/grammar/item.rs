@@ -52,7 +52,11 @@ fn item(p: &mut Parser) {
     T![def] => fun_def(p),
     T![case] | T![class] => class_def(p),
 
-    _ => expr::expr(p),
+    _ => {
+      let m = p.start();
+      expr::expr(p);
+      m.complete(p, EXPR_ITEM);
+    }
   };
 }
 
