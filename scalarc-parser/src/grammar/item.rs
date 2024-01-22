@@ -43,35 +43,20 @@ fn items(p: &mut Parser, end_in_brace: bool) {
 }
 
 fn item(p: &mut Parser) {
-  let m = p.start();
-
   match p.current() {
-    T![import] => import_item(p, m),
-    T![def] => fun_def(p, m),
-    T![case] | T![class] => class_def(p, m),
+    T![import] => import_item(p),
+    T![def] => fun_def(p),
+    T![case] | T![class] => class_def(p),
 
-    /*
-    T![type] => type_alias(p, m),
-    T![struct] => adt::strukt(p, m),
-    T![enum] => adt::enum_(p, m),
-    IDENT if p.at_contextual_kw(T![union]) && p.nth(1) == IDENT => adt::union(p, m),
-
-    T![macro] => macro_def(p, m),
-    IDENT if p.at_contextual_kw(T![macro_rules]) && p.nth(1) == BANG => macro_rules(p, m),
-
-    T![const] if (la == IDENT || la == T![_] || la == T![mut]) => consts::konst(p, m),
-    T![static] if (la == IDENT || la == T![_] || la == T![mut]) => consts::static_(p, m),
-    */
-    _ => {
-      p.error_bump(format!("expected item, got {:?}", p.current()));
-      m.abandon(p);
-    }
+    _ => expr::expr(p),
   };
 }
 
 // test ok
 // import foo.bar.baz
-fn import_item(p: &mut Parser, m: Marker) {
+fn import_item(p: &mut Parser) {
+  let m = p.start();
+
   p.eat(T![import]);
   loop {
     match p.current() {
@@ -129,7 +114,8 @@ fn import_list(p: &mut Parser) {
 
 // test ok
 // class Foo() {}
-fn class_def(p: &mut Parser, m: Marker) {
+fn class_def(p: &mut Parser) {
+  let m = p.start();
   // test ok
   // case class Foo() {}
   if p.current() == T![case] {
@@ -167,7 +153,9 @@ fn item_body(p: &mut Parser) {
 
 // test ok
 // def foo = 3
-fn fun_def(p: &mut Parser, m: Marker) {
+fn fun_def(p: &mut Parser) {
+  let m = p.start();
+
   p.eat(T![def]);
   fun_sig(p);
 

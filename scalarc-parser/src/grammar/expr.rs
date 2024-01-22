@@ -364,10 +364,11 @@ mod tests {
         CALL_EXPR
           IDENT
             IDENT 'hi'
-          OPEN_PAREN '('
-          LIT_EXPR
-            INT_LIT_KW '2'
-          CLOSE_PAREN ')'
+          PAREN_ARGUMENTS
+            OPEN_PAREN '('
+            LIT_EXPR
+              INT_LIT_KW '2'
+            CLOSE_PAREN ')'
       "#],
     );
 
@@ -377,14 +378,15 @@ mod tests {
         CALL_EXPR
           IDENT
             IDENT 'hi'
-          OPEN_PAREN '('
-          LIT_EXPR
-            INT_LIT_KW '2'
-          COMMA ','
-          WHITESPACE ' '
-          LIT_EXPR
-            INT_LIT_KW '3'
-          CLOSE_PAREN ')'
+          PAREN_ARGUMENTS
+            OPEN_PAREN '('
+            LIT_EXPR
+              INT_LIT_KW '2'
+            COMMA ','
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
+            CLOSE_PAREN ')'
       "#],
     );
   }
