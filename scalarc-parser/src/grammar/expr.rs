@@ -52,7 +52,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
         lhs = m.complete(p, INFIX_EXPR);
       }
 
-      T![nl] | T![,] | T![')'] | EOF => {
+      T![nl] | T![,] | T![')'] | T!['}'] | EOF => {
         m.abandon(p);
         return;
       }
@@ -60,7 +60,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
       _ => {
         m.abandon(p);
         p.error(format!("expected expression, got {:?}", p.current()));
-        p.recover_until_any(&[T![nl], T![,], T![')']]);
+        p.recover_until_any(&[T![nl], T![,], T![')'], T!['}']]);
         return;
       }
     }
@@ -81,6 +81,8 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
       // test ok
       // hi(3)
       T!['('] => call_paren_expr(p, lhs),
+      // test ok
+      // hi { 3 }
       T!['{'] => call_block_expr(p, lhs),
       // TODO
       // T!['['] => index_expr(p, lhs),
@@ -123,17 +125,7 @@ fn call_paren_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
 fn call_block_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
   let m = lhs.precede(p);
   p.eat(T!['{']);
-
-  // TODO: This is wrong.
-  loop {
-    expr(p);
-    if p.at(T![,]) {
-      p.bump();
-    } else {
-      break;
-    }
-  }
-
+  expr(p);
   p.expect(T!['}']);
 
   m.complete(p, CALL_EXPR)
