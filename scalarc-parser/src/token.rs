@@ -36,6 +36,7 @@ pub enum Literal {
   Integer,
   Float,
   String,
+  Char,
 }
 
 pub type Result<T> = std::result::Result<T, LexError>;
@@ -47,6 +48,9 @@ pub enum LexError {
 
   #[error("string terminated in newline")]
   NewlineInString,
+
+  #[error("missing closing char quote")]
+  MissingCharClose,
 
   #[error("end of file reached")]
   EOF,
@@ -297,6 +301,19 @@ impl<'a> Lexer<'a> {
           }
 
           self.ok(start, Token::Literal(Literal::String))
+        }
+      }
+
+      // Character literals.
+      InnerToken::Delimiter(Delimiter::SingleQuote) => {
+        self.tok.eat()?; // the token inside.
+
+        match self.tok.eat() {
+          Ok(InnerToken::Delimiter(Delimiter::SingleQuote)) => {
+            self.ok(start, Token::Literal(Literal::Char))
+          }
+          Ok(_) => Err(LexError::MissingCharClose),
+          Err(e) => Err(e),
         }
       }
 
@@ -557,6 +574,14 @@ mod tests {
   fn invalid_chars() {
     let mut lexer = Lexer::new("⊥");
     assert_eq!(lexer.next(), Err(LexError::InvalidChar));
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+  }
+
+  #[test]
+  fn char_literals() {
+    let mut lexer = Lexer::new("'a'");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Char)));
+    assert_eq!(lexer.slice(), "'a'");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 

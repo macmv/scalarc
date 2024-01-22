@@ -48,6 +48,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
     },
     Token::Literal(token::Literal::Integer) => SyntaxKind::INT_LIT_KW,
     Token::Literal(token::Literal::String) => SyntaxKind::STRING_LIT_KW,
+    Token::Literal(token::Literal::Char) => SyntaxKind::CHARACTER_LIT_KW,
     Token::Newline => T![nl],
     Token::Whitespace => SyntaxKind::WHITESPACE,
     Token::Delimiter(token::Delimiter::Dot) => T![.],
