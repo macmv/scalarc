@@ -11,7 +11,7 @@ fn item(p: &mut Parser) {
 
   match p.current() {
     T![import] => import_item(p, m),
-    T![def] => fun_dec(p, m),
+    T![def] => fun_def(p, m),
 
     /*
     T![type] => type_alias(p, m),
@@ -92,7 +92,7 @@ fn import_list(p: &mut Parser) {
 
 // test ok
 // def foo = 3
-fn fun_dec(p: &mut Parser, m: Marker) {
+fn fun_def(p: &mut Parser, m: Marker) {
   p.eat(T![def]);
   fun_sig(p);
 
