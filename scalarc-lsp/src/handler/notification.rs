@@ -1,7 +1,5 @@
 use std::error::Error;
 
-use scalarc_analysis::FileId;
-
 use crate::global::GlobalState;
 
 pub fn handle_open_text_document(

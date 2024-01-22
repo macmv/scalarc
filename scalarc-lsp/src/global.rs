@@ -4,7 +4,7 @@ use crossbeam_channel::{select, Receiver, Sender};
 use scalarc_analysis::{Analysis, AnalysisHost};
 use std::{error::Error, path::PathBuf};
 
-use lsp_types::{notification::Notification, request::Request, Url};
+use lsp_types::{notification::Notification, Url};
 
 use crate::files::Files;
 

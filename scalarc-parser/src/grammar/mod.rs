@@ -2,7 +2,7 @@
 
 use crate::{
   syntax_kind::{SyntaxKind::*, T},
-  Marker, Parser,
+  Parser,
 };
 
 mod expr;

@@ -1,7 +1,7 @@
 //! Some high level functions to wrap `scalarc_parser`.
 
 use crate::{node::Scala, SyntaxError};
-use rowan::{GreenNode, GreenNodeBuilder, Language, TextRange, TextSize};
+use rowan::{GreenNode, GreenNodeBuilder, Language, TextSize};
 use scalarc_parser::{Event, SyntaxKind};
 
 pub fn parse_text(text: &str) -> (GreenNode, Vec<SyntaxError>) {
