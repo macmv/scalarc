@@ -10,11 +10,6 @@ pub fn handle_open_text_document(
 ) -> Result<(), Box<dyn Error>> {
   if let Some(path) = global.workspace_path(&params.text_document.uri) {
     global.files.write(&path, params.text_document.text.clone());
-
-    global.analysis_host.change(scalarc_analysis::Change {
-      file: FileId::temp_new(),
-      text: params.text_document.text,
-    });
   }
 
   Ok(())
@@ -31,10 +26,6 @@ pub fn handle_change_text_document(
 
     if file != new_file {
       global.files.write(&path, new_file.clone());
-
-      global
-        .analysis_host
-        .change(scalarc_analysis::Change { file: FileId::temp_new(), text: new_file });
     }
   }
 

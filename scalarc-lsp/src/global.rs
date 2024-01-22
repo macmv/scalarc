@@ -60,12 +60,7 @@ impl GlobalState {
           return Ok(());
         }
 
-        Event::Message(ev) => {
-          self.handle_event(ev);
-        }
-        Event::Response(e) => {
-          self.sender.send(e)?;
-        }
+        _ => self.handle_event(e)?,
       }
     }
 
@@ -85,17 +80,64 @@ impl GlobalState {
     }
   }
 
-  fn handle_event(&mut self, ev: lsp_server::Message) {
-    match ev {
-      lsp_server::Message::Request(req) => self.handle_request(req),
-      lsp_server::Message::Notification(not) => self.handle_notification(not),
-      lsp_server::Message::Response(_) => (),
+  fn handle_event(&mut self, e: Event) -> Result<(), Box<dyn Error>> {
+    match e {
+      Event::Message(lsp_server::Message::Request(req)) => self.handle_request(req),
+      Event::Message(lsp_server::Message::Notification(not)) => self.handle_notification(not),
+      Event::Message(lsp_server::Message::Response(_)) => (),
+      Event::Response(e) => {
+        self.sender.send(e)?;
+      }
+    }
+
+    self.process_changes();
+
+    Ok(())
+  }
+
+  fn process_changes(&mut self) {
+    let changes = self.files.take_changes();
+
+    for path in &changes {
+      self.analysis_host.change(scalarc_analysis::Change {
+        file: scalarc_analysis::FileId::temp_new(),
+        text: self.files.read(path),
+      });
+    }
+
+    let snap = self.analysis_host.snapshot();
+
+    for path in &changes {
+      let src = self.files.read(path);
+      let diagnostics = snap.diagnostics(scalarc_analysis::FileId::temp_new()).unwrap();
+
+      self
+        .sender
+        .send(lsp_server::Message::Notification(lsp_server::Notification {
+          method: lsp_types::notification::PublishDiagnostics::METHOD.into(),
+          params: serde_json::to_value(lsp_types::PublishDiagnosticsParams {
+            uri:         Url::from_file_path(self.workspace.join(path)).unwrap(),
+            diagnostics: diagnostics
+              .into_iter()
+              .map(|d| lsp_types::Diagnostic {
+                message: d.message,
+                range: lsp_types::Range {
+                  start: pos_to_lsp(&src, d.span.start),
+                  end:   pos_to_lsp(&src, d.span.end + 1), // TODO: Don't make empty spans
+                },
+                ..Default::default()
+              })
+              .collect(),
+            version:     None,
+          })
+          .unwrap(),
+        }))
+        .unwrap();
     }
   }
 
   fn handle_request(&mut self, req: lsp_server::Request) {
     let mut dispatcher = RequestDispatcher { global: self, req };
-
     use crate::handler::request;
     use lsp_types::request as lsp_request;
 
@@ -255,4 +297,18 @@ impl NotificationDispatcher<'_> {
 
     self
   }
+}
+
+// TODO: Store this in salsa.
+fn pos_to_lsp(file: &str, pos: u32) -> lsp_types::Position {
+  let mut offset = 0;
+
+  for (i, line) in file.lines().enumerate() {
+    if offset + line.len() as u32 >= pos {
+      return lsp_types::Position { line: i as u32, character: pos - offset };
+    }
+    offset += line.len() as u32 + 1;
+  }
+
+  panic!("pos not in file");
 }
