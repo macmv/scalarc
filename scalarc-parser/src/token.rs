@@ -262,7 +262,6 @@ impl<'a> Lexer<'a> {
             // TODO: Escapes
             match self.tok.eat() {
               Err(LexError::EOF) => break,
-              Ok(InnerToken::Newline) => return Err(LexError::NewlineInString),
               Ok(InnerToken::Delimiter(Delimiter::DoubleQuote)) => quote_len += 1,
               Ok(_) => quote_len = 0,
               Err(e) => return Err(e),
@@ -280,9 +279,15 @@ impl<'a> Lexer<'a> {
         } else {
           // One-line, double quoted string.
 
+          match second {
+            InnerToken::Newline => return Err(LexError::NewlineInString),
+            _ => {}
+          }
+
           loop {
             // TODO: Escapes
             match self.tok.eat() {
+              Ok(InnerToken::Newline) => return Err(LexError::NewlineInString),
               Ok(InnerToken::Delimiter(Delimiter::DoubleQuote)) | Err(LexError::EOF) => break,
               Ok(_) => {}
               Err(e) => return Err(e),
@@ -450,6 +455,23 @@ mod tests {
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
     assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new(
+      r#" "hello
+           world"
+      "#,
+    );
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Err(LexError::NewlineInString));
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), "           ");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "world");
+    assert_eq!(lexer.next(), Err(LexError::NewlineInString));
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), "      ");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
   #[test]
@@ -484,6 +506,21 @@ mod tests {
     assert_eq!(lexer.slice(), "\"\"\"h\"\"i\"\"\"");
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new(
+      r#" """hello
+             world"""
+      "#,
+    );
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::String)));
+    assert_eq!(lexer.slice(), "\"\"\"hello\n             world\"\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Newline));
+    assert_eq!(lexer.slice(), "\n");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), "      ");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
