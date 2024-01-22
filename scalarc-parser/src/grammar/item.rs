@@ -1,8 +1,51 @@
 use super::*;
 
-pub fn mod_items(p: &mut Parser) {
-  while !p.at(EOF) {
+pub fn mod_items(p: &mut Parser) { items(p, false); }
+
+fn items(p: &mut Parser, end_in_brace: bool) {
+  if p.at(EOF) {
+    if end_in_brace {
+      p.error("missing closing '}'");
+    }
+    return;
+  } else if p.at(T!['}']) {
+    if !end_in_brace {
+      p.error_bump("unexpected '}'");
+    } else {
+      p.bump();
+      return;
+    }
+  }
+
+  let mut found_newline = true;
+  'items: loop {
+    if !found_newline {
+      p.error("expected newline");
+    }
     item(p);
+    // Eat trailing newlines, and update `found_newline` to make sure there is a
+    // newline between each item.
+    found_newline = false;
+    loop {
+      if p.at(T![nl]) {
+        found_newline = true;
+        p.eat(T![nl]);
+      } else if p.at(EOF) {
+        if end_in_brace {
+          p.error("missing closing '}'");
+        }
+        break 'items;
+      } else if p.at(T!['}']) {
+        if !end_in_brace {
+          p.error_bump("unexpected '}'");
+        } else {
+          p.bump();
+          break 'items;
+        }
+      } else {
+        break;
+      }
+    }
   }
 }
 
@@ -118,13 +161,9 @@ fn item_body(p: &mut Parser) {
   let m = p.start();
   p.eat(T!['{']);
 
-  while !p.at(T!['}']) {
-    item(p);
-  }
+  items(p, true);
 
-  p.eat(T!['}']);
   m.complete(p, ITEM_BODY);
-  p.expect(T![nl]);
 }
 
 // test ok
@@ -137,7 +176,6 @@ fn fun_def(p: &mut Parser, m: Marker) {
   expr::expr(p);
 
   m.complete(p, FUN_DEF);
-  p.expect(T![nl]);
 }
 
 fn fun_sig(p: &mut Parser) {
@@ -333,6 +371,54 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '3'
+          NL_KW '\n'
+      "#],
+    );
+  }
+
+  #[test]
+  fn newline_handling() {
+    check(
+      "class Foo() { class Bar() {} class Baz() {} }",
+      expect![@r#"
+        SOURCE_FILE
+          CLASS_DEF
+            CLASS_KW 'class'
+            WHITESPACE ' '
+            IDENT 'Foo'
+            FUN_PARAMS
+              OPEN_PAREN '('
+              CLOSE_PAREN ')'
+            WHITESPACE ' '
+            ITEM_BODY
+              OPEN_CURLY '{'
+              WHITESPACE ' '
+              CLASS_DEF
+                CLASS_KW 'class'
+                WHITESPACE ' '
+                IDENT 'Bar'
+                FUN_PARAMS
+                  OPEN_PAREN '('
+                  CLOSE_PAREN ')'
+                WHITESPACE ' '
+                ITEM_BODY
+                  OPEN_CURLY '{'
+                  CLOSE_CURLY '}'
+              error: expected newline
+              WHITESPACE ' '
+              CLASS_DEF
+                CLASS_KW 'class'
+                WHITESPACE ' '
+                IDENT 'Baz'
+                FUN_PARAMS
+                  OPEN_PAREN '('
+                  CLOSE_PAREN ')'
+                WHITESPACE ' '
+                ITEM_BODY
+                  OPEN_CURLY '{'
+                  CLOSE_CURLY '}'
+              WHITESPACE ' '
+              CLOSE_CURLY '}'
           NL_KW '\n'
       "#],
     );
