@@ -94,7 +94,7 @@ mod tests {
     check_expr(
       "2",
       expect![@r#"
-        LITERAL
+        LIT_EXPR
           INT_LIT_KW '2'
       "#],
     );
@@ -109,12 +109,12 @@ mod tests {
       "1 + 2",
       expect![@r#"
         INFIX_EXPR
-          LITERAL
+          LIT_EXPR
             INT_LIT_KW '1'
           WHITESPACE ' '
           IDENT '+'
           WHITESPACE ' '
-          LITERAL
+          LIT_EXPR
             INT_LIT_KW '2'
       "#],
     );
@@ -126,12 +126,12 @@ mod tests {
       "2 + 2",
       expect![@r#"
         INFIX_EXPR
-          LITERAL
+          LIT_EXPR
             INT_LIT_KW '2'
           WHITESPACE ' '
           IDENT '+'
           WHITESPACE ' '
-          LITERAL
+          LIT_EXPR
             INT_LIT_KW '2'
       "#],
     );
@@ -141,17 +141,17 @@ mod tests {
       expect![@r#"
         INFIX_EXPR
           INFIX_EXPR
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '2'
             WHITESPACE ' '
             IDENT '+'
             WHITESPACE ' '
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '2'
           WHITESPACE ' '
           IDENT '=='
           WHITESPACE ' '
-          LITERAL
+          LIT_EXPR
             INT_LIT_KW '5'
       "#],
     );
@@ -160,18 +160,18 @@ mod tests {
       "2 == 2 + 5",
       expect![@r#"
         INFIX_EXPR
-          LITERAL
+          LIT_EXPR
             INT_LIT_KW '2'
           WHITESPACE ' '
           IDENT '=='
           WHITESPACE ' '
           INFIX_EXPR
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '2'
             WHITESPACE ' '
             IDENT '+'
             WHITESPACE ' '
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '5'
       "#],
     );
@@ -184,17 +184,17 @@ mod tests {
       expect![@r#"
         INFIX_EXPR
           INFIX_EXPR
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '2'
             WHITESPACE ' '
             IDENT '+'
             WHITESPACE ' '
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '3'
           WHITESPACE ' '
           IDENT '+'
           WHITESPACE ' '
-          LITERAL
+          LIT_EXPR
             INT_LIT_KW '4'
       "#],
     );
@@ -204,18 +204,18 @@ mod tests {
       "2 +: 3 +: 4",
       expect![@r#"
         INFIX_EXPR
-          LITERAL
+          LIT_EXPR
             INT_LIT_KW '2'
           WHITESPACE ' '
           IDENT '+:'
           WHITESPACE ' '
           INFIX_EXPR
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '3'
             WHITESPACE ' '
             IDENT '+:'
             WHITESPACE ' '
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '4'
       "#],
     );

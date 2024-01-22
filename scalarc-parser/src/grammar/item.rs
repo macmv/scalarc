@@ -205,11 +205,12 @@ mod tests {
           FUN_DEC
             DEF_KW 'def'
             WHITESPACE ' '
-            IDENT 'foo'
+            FUN_SIG
+              IDENT 'foo'
             WHITESPACE ' '
             EQ '='
             WHITESPACE ' '
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '3'
             NL_KW '\n'
       "#],
@@ -222,18 +223,19 @@ mod tests {
           FUN_DEC
             DEF_KW 'def'
             WHITESPACE ' '
-            IDENT 'foo'
-            FUN_PARAMS
-              OPEN_PAREN '('
-              FUN_PARAM
-                IDENT 'a'
-                COLON ':'
-                error: expected IDENT
-              CLOSE_PAREN ')'
+            FUN_SIG
+              IDENT 'foo'
+              FUN_PARAMS
+                OPEN_PAREN '('
+                FUN_PARAM
+                  IDENT 'a'
+                  COLON ':'
+                  error: expected IDENT
+                CLOSE_PAREN ')'
             WHITESPACE ' '
             EQ '='
             WHITESPACE ' '
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '3'
             NL_KW '\n'
       "#],
@@ -246,19 +248,20 @@ mod tests {
           FUN_DEC
             DEF_KW 'def'
             WHITESPACE ' '
-            IDENT 'foo'
-            FUN_PARAMS
-              OPEN_PAREN '('
-              FUN_PARAM
-                IDENT 'a'
-                COLON ':'
-                WHITESPACE ' '
-                IDENT 'Int'
-              CLOSE_PAREN ')'
+            FUN_SIG
+              IDENT 'foo'
+              FUN_PARAMS
+                OPEN_PAREN '('
+                FUN_PARAM
+                  IDENT 'a'
+                  COLON ':'
+                  WHITESPACE ' '
+                  IDENT 'Int'
+                CLOSE_PAREN ')'
             WHITESPACE ' '
             EQ '='
             WHITESPACE ' '
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '3'
             NL_KW '\n'
       "#],
@@ -271,26 +274,27 @@ mod tests {
           FUN_DEC
             DEF_KW 'def'
             WHITESPACE ' '
-            IDENT 'foo'
-            FUN_PARAMS
-              OPEN_PAREN '('
-              FUN_PARAM
-                IDENT 'a'
-                COLON ':'
+            FUN_SIG
+              IDENT 'foo'
+              FUN_PARAMS
+                OPEN_PAREN '('
+                FUN_PARAM
+                  IDENT 'a'
+                  COLON ':'
+                  WHITESPACE ' '
+                  IDENT 'Int'
+                COMMA ','
                 WHITESPACE ' '
-                IDENT 'Int'
-              COMMA ','
-              WHITESPACE ' '
-              FUN_PARAM
-                IDENT 'b'
-                COLON ':'
-                WHITESPACE ' '
-                IDENT 'String'
-              CLOSE_PAREN ')'
+                FUN_PARAM
+                  IDENT 'b'
+                  COLON ':'
+                  WHITESPACE ' '
+                  IDENT 'String'
+                CLOSE_PAREN ')'
             WHITESPACE ' '
             EQ '='
             WHITESPACE ' '
-            LITERAL
+            LIT_EXPR
               INT_LIT_KW '3'
             NL_KW '\n'
       "#],
