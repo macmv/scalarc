@@ -12,7 +12,7 @@ fn item(p: &mut Parser) {
   match p.current() {
     T![import] => import_item(p, m),
     T![def] => fun_def(p, m),
-    T![class] => class_def(p, m),
+    T![case] | T![class] => class_def(p, m),
 
     /*
     T![type] => type_alias(p, m),
@@ -94,7 +94,14 @@ fn import_list(p: &mut Parser) {
 // test ok
 // class Foo() {}
 fn class_def(p: &mut Parser, m: Marker) {
-  p.eat(T![class]);
+  // test ok
+  // case class Foo() {}
+  if p.current() == T![case] {
+    p.eat(T![case]);
+    p.expect(T![class]);
+  } else {
+    p.eat(T![class]);
+  }
 
   p.expect(T![ident]);
 
