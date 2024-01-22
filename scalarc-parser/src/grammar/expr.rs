@@ -80,7 +80,8 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
     lhs = match p.current() {
       // test ok
       // hi(3)
-      T!['('] => call_expr(p, lhs),
+      T!['('] => call_paren_expr(p, lhs),
+      T!['{'] => call_block_expr(p, lhs),
       // TODO
       // T!['['] => index_expr(p, lhs),
       T![.] => match postfix_dot_expr(p, lhs) {
@@ -96,9 +97,34 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
   lhs
 }
 
-fn call_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
+fn call_paren_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
   let m = lhs.precede(p);
-  p.eat(T!['(']);
+
+  {
+    let m = p.start();
+    p.eat(T!['(']);
+
+    loop {
+      expr(p);
+      if p.at(T![,]) {
+        p.bump();
+      } else {
+        break;
+      }
+    }
+
+    p.expect(T![')']);
+    m.complete(p, PAREN_ARGUMENTS);
+  }
+
+  m.complete(p, CALL_EXPR)
+}
+
+fn call_block_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
+  let m = lhs.precede(p);
+  p.eat(T!['{']);
+
+  // TODO: This is wrong.
   loop {
     expr(p);
     if p.at(T![,]) {
@@ -107,7 +133,9 @@ fn call_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
       break;
     }
   }
-  p.eat(T![')']);
+
+  p.expect(T!['}']);
+
   m.complete(p, CALL_EXPR)
 }
 

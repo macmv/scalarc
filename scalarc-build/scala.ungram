@@ -131,9 +131,9 @@ UnderscoreExpr = '_'
 TupleExpr      = '(' (Expr (',' Expr)*)? ')'
 FieldExpr      = Expr '.' id
 TypedExpr      = Expr TypeArgs
-CallExpr       = Expr ArgumentExprList
+CallExpr       = Expr Arguments
 
-ArgumentExprList = ParenArguments | SpreadArguments | BlockArguments
+Arguments       = ParenArguments | SpreadArguments | BlockArguments
 ParenArguments  = '(' (Expr (',' Expr)*)? ')'
 SpreadArguments = '(' (Expr (',' Expr)*)? PostfixExpr ':' '_' '*' ')'
 BlockArguments  = nl? BlockExpr
@@ -203,8 +203,8 @@ LocalModifier = 'abstract'
 AccessModifier    =  ('private' | 'protected') (AccessQualifier)?
 AccessQualifier   =  '[' (id | 'this') ']'
 
-Annotation        =  '@' SimpleType ArgumentExprList*
-ConstrAnnotation  =  '@' SimpleType ArgumentExprList
+Annotation        =  '@' SimpleType Arguments*
+ConstrAnnotation  =  '@' SimpleType Arguments
 
 ItemBody = nl? '{' SelfType? (Item (';' Item)*) '}'
 SelfType = id (':' Type)? '=>'
@@ -265,13 +265,13 @@ ClassTemplate    = EarlyDefs? ClassParents ItemBody?
 TraitTemplate    = EarlyDefs? TraitParents ItemBody?
 ClassParents     = Constr ('with' AnnotType)*
 TraitParents     = AnnotType ('with' AnnotType)*
-Constr           = AnnotType ArgumentExprList*
+Constr           = AnnotType Arguments*
 EarlyDefs        = '{' (EarlyDef (';' EarlyDef)*)? '}' 'with'
 EarlyDef         = (Annotation (nl)?)* (Modifier)* Def
 
 ConstrExpr     = SelfInvocation | ConstrBlock
 ConstrBlock    = '{' SelfInvocation (';' Item)* '}'
-SelfInvocation = 'this' ArgumentExprList (ArgumentExprList)*
+SelfInvocation = 'this' Arguments*
 
 // TopStatSeq     = TopStat (';' TopStat)*
 // TopStat        = (Annotation (nl)?)* (Modifier)* TmplDef
