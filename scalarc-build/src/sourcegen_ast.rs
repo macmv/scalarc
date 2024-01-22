@@ -172,6 +172,27 @@ fn generate_nodes(grammar: &AstSrc) -> String {
         .iter()
         .map(|name| format_ident!("{}", to_upper_snake_case(&name.to_string())))
         .collect();
+
+      let construct_variant = en.variants.iter().map(|name| {
+        // Create the struct literal for structs, and call `cast` for enums.
+        let id = format_ident!("{}", name);
+        if grammar.enums.iter().any(|e| &e.name == name) {
+          quote!(#id::cast(syntax).unwrap())
+        } else {
+          quote!(#id { syntax })
+        }
+      });
+
+      let get_syntax = en.variants.iter().map(|name| {
+        // Call the `syntax()` function for enums, and just use the `syntax` field for
+        // structs.
+        if grammar.enums.iter().any(|e| &e.name == name) {
+          quote!(syntax())
+        } else {
+          quote!(syntax)
+        }
+      });
+
       let traits = en.traits.iter().map(|trait_name| {
         let trait_name = format_ident!("{}", trait_name);
         quote!(impl ast::#trait_name for #name {})
@@ -188,7 +209,7 @@ fn generate_nodes(grammar: &AstSrc) -> String {
             fn cast(syntax: SyntaxNode) -> Option<Self> {
               let res = match syntax.kind() {
                 #(
-                #kinds => #name::#variants(#variants { syntax }),
+                #kinds => #name::#variants(#construct_variant),
                 )*
                 _ => return None,
               };
@@ -197,7 +218,7 @@ fn generate_nodes(grammar: &AstSrc) -> String {
             fn syntax(&self) -> &SyntaxNode {
               match self {
                 #(
-                #name::#variants(it) => &it.syntax,
+                #name::#variants(it) => &it.#get_syntax,
                 )*
               }
             }
@@ -858,7 +879,7 @@ fn extract_enum_traits(ast: &mut AstSrc) {
     let mut variant_traits = enm
       .variants
       .iter()
-      .map(|var| nodes.iter().find(|it| &it.name == var).unwrap())
+      .filter_map(|var| nodes.iter().find(|it| &it.name == var))
       .map(|node| node.traits.iter().cloned().collect::<BTreeSet<_>>());
 
     let mut enum_traits = match variant_traits.next() {
