@@ -124,9 +124,14 @@ fn call_paren_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
 
 fn call_block_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
   let m = lhs.precede(p);
-  p.eat(T!['{']);
-  expr(p);
-  p.expect(T!['}']);
+
+  {
+    let m = p.start();
+    p.eat(T!['{']);
+    expr(p);
+    p.expect(T!['}']);
+    m.complete(p, BLOCK_ARGUMENTS);
+  }
 
   m.complete(p, CALL_EXPR)
 }
@@ -379,6 +384,23 @@ mod tests {
             LIT_EXPR
               INT_LIT_KW '3'
             CLOSE_PAREN ')'
+      "#],
+    );
+
+    check_expr(
+      "hi { 3 }",
+      expect![@r#"
+        CALL_EXPR
+          IDENT
+            IDENT 'hi'
+          WHITESPACE ' '
+          BLOCK_ARGUMENTS
+            OPEN_CURLY '{'
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
+            WHITESPACE ' '
+            CLOSE_CURLY '}'
       "#],
     );
   }
