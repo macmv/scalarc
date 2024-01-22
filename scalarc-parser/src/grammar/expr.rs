@@ -184,17 +184,14 @@ fn postfix_dot_expr(
   p: &mut Parser,
   lhs: CompletedMarker,
 ) -> Result<CompletedMarker, CompletedMarker> {
-  let m = lhs.precede(p);
-  p.eat(T![.]);
-  match p.current() {
+  match p.peek() {
     T![ident] => {
-      p.bump();
+      let m = lhs.precede(p);
+      p.eat(T![.]);
+      p.eat(T![ident]);
       Ok(m.complete(p, FIELD_EXPR))
     }
-    _ => {
-      // TODO: need peek() to check for this error before calling `precede`.
-      Err(m.complete(p, FIELD_EXPR))
-    }
+    _ => Err(lhs),
   }
 }
 
@@ -473,6 +470,17 @@ mod tests {
             IDENT 'bar'
           DOT '.'
           IDENT 'baz'
+      "#],
+    );
+
+    check_expr(
+      "foo.3",
+      expect![@r#"
+        IDENT
+          IDENT 'foo'
+        DOT '.'
+        error: expected expression, got DOT
+        INT_LIT_KW '3'
       "#],
     );
   }
