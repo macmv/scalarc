@@ -20,15 +20,7 @@ pub fn type_expr(p: &mut Parser) {
       }
       T!['['] => {
         let m = lhs.precede(p);
-        {
-          let m = p.start();
-          p.eat(T!['[']);
-          p.eat_newlines();
-          type_expr(p);
-          p.eat_newlines();
-          p.expect(T![']']);
-          m.complete(p, TYPE_ARGS);
-        }
+        type_params(p);
         lhs = m.complete(p, GENERIC_TYPE);
       }
 
@@ -41,6 +33,35 @@ pub fn type_expr(p: &mut Parser) {
         p.recover_until_any(&[T![nl], T![,], T![')'], T!['}'], T![=]]);
         return;
       }
+    }
+  }
+}
+
+fn type_params(p: &mut Parser) {
+  let m = p.start();
+  p.eat(T!['[']);
+
+  p.eat_newlines();
+  loop {
+    type_expr(p);
+    p.eat_newlines();
+
+    // test ok
+    // val f: Foo[Int, String] = 3
+    if p.current() == T![,] {
+      p.eat(T![,]);
+
+      // test ok
+      // def foo(
+      //   a: Int
+      //   ,
+      //   b: Int
+      // ) = 3
+      p.eat_newlines();
+    } else {
+      p.expect(T![']']);
+      m.complete(p, TYPE_PARAMS);
+      break;
     }
   }
 }
@@ -104,6 +125,32 @@ mod tests {
   #[test]
   fn type_params() {
     check(
+      "val foo: Foo[] = 3",
+      expect![@r#"
+        SOURCE_FILE
+          VAL_DEF
+            VAL_KW 'val'
+            WHITESPACE ' '
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            GENERIC_TYPE
+              SIMPLE_TYPE
+                IDENT 'Foo'
+              TYPE_PARAMS
+                OPEN_BRACKET '['
+                SIMPLE_TYPE
+                  error: expected IDENT
+                CLOSE_BRACKET ']'
+            WHITESPACE ' '
+            EQ '='
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
+      "#],
+    );
+
+    check(
       "val foo: Foo[Int] = 3",
       expect![@r#"
         SOURCE_FILE
@@ -116,10 +163,40 @@ mod tests {
             GENERIC_TYPE
               SIMPLE_TYPE
                 IDENT 'Foo'
-              TYPE_ARGS
+              TYPE_PARAMS
                 OPEN_BRACKET '['
                 SIMPLE_TYPE
                   IDENT 'Int'
+                CLOSE_BRACKET ']'
+            WHITESPACE ' '
+            EQ '='
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
+      "#],
+    );
+
+    check(
+      "val foo: Foo[Int, String] = 3",
+      expect![@r#"
+        SOURCE_FILE
+          VAL_DEF
+            VAL_KW 'val'
+            WHITESPACE ' '
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            GENERIC_TYPE
+              SIMPLE_TYPE
+                IDENT 'Foo'
+              TYPE_PARAMS
+                OPEN_BRACKET '['
+                SIMPLE_TYPE
+                  IDENT 'Int'
+                COMMA ','
+                WHITESPACE ' '
+                SIMPLE_TYPE
+                  IDENT 'String'
                 CLOSE_BRACKET ']'
             WHITESPACE ' '
             EQ '='

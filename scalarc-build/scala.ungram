@@ -65,12 +65,12 @@ Type = LambdaType
      | SimpleType
 
 LambdaType  = '(' ')' '=>' Type // TODO
-GenericType = Type TypeArgs
+GenericType = Type TypeParams
 PathType    = Type '.' id
 TupleType   = '(' (Type (',' Type)*)? ')'
 SimpleType  = id
 
-TypeArgs   = '[' (Type (',' Type)*) ']'
+TypeParams = '[' (Type (',' Type)*) ']'
 Types      = (Type (',' Type)*)
 Refinement = nl? '{' Def (';' Def)* '}'
 TypePat    = Type
@@ -143,7 +143,7 @@ PostfixUnderscoreExpr = Expr '_'
 UnderscoreExpr = '_'
 TupleExpr      = '(' (Expr (',' Expr)*)? ')'
 FieldExpr      = Expr '.' id
-TypedExpr      = Expr TypeArgs
+TypedExpr      = Expr TypeParams
 CallExpr       = Expr Arguments
 
 Arguments       = ParenArguments | SpreadArguments | BlockArguments
