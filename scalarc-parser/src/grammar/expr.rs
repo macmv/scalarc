@@ -451,8 +451,9 @@ mod tests {
           BLOCK_ARGUMENTS
             OPEN_CURLY '{'
             WHITESPACE ' '
-            LIT_EXPR
-              INT_LIT_KW '3'
+            EXPR_ITEM
+              LIT_EXPR
+                INT_LIT_KW '3'
             WHITESPACE ' '
             CLOSE_CURLY '}'
       "#],
@@ -506,14 +507,15 @@ mod tests {
         BLOCK_EXPR
           OPEN_CURLY '{'
           WHITESPACE ' '
-          INFIX_EXPR
-            LIT_EXPR
-              INT_LIT_KW '2'
-            WHITESPACE ' '
-            IDENT '+'
-            WHITESPACE ' '
-            LIT_EXPR
-              INT_LIT_KW '3'
+          EXPR_ITEM
+            INFIX_EXPR
+              LIT_EXPR
+                INT_LIT_KW '2'
+              WHITESPACE ' '
+              IDENT '+'
+              WHITESPACE ' '
+              LIT_EXPR
+                INT_LIT_KW '3'
           WHITESPACE ' '
           CLOSE_CURLY '}'
       "#],
@@ -528,19 +530,21 @@ mod tests {
        }",
       expect![@r#"
         SOURCE_FILE
-          CALL_EXPR
-            IDENT
-              IDENT 'println'
-            WHITESPACE ' '
-            BLOCK_ARGUMENTS
-              OPEN_CURLY '{'
-              NL_KW '\n'
-              WHITESPACE '         '
-              LIT_EXPR
-                INT_LIT_KW '3'
-              NL_KW '\n'
-              WHITESPACE '       '
-              CLOSE_CURLY '}'
+          EXPR_ITEM
+            CALL_EXPR
+              IDENT
+                IDENT 'println'
+              WHITESPACE ' '
+              BLOCK_ARGUMENTS
+                OPEN_CURLY '{'
+                NL_KW '\n'
+                WHITESPACE '         '
+                EXPR_ITEM
+                  LIT_EXPR
+                    INT_LIT_KW '3'
+                  NL_KW '\n'
+                WHITESPACE '       '
+                CLOSE_CURLY '}'
       "#],
     );
 
@@ -552,19 +556,22 @@ mod tests {
        }",
       expect![@r#"
         SOURCE_FILE
-          IDENT
-            IDENT 'println'
-          NL_KW '\n'
+          EXPR_ITEM
+            IDENT
+              IDENT 'println'
+            NL_KW '\n'
           WHITESPACE '       '
-          BLOCK_EXPR
-            OPEN_CURLY '{'
-            NL_KW '\n'
-            WHITESPACE '         '
-            LIT_EXPR
-              INT_LIT_KW '3'
-            NL_KW '\n'
-            WHITESPACE '       '
-            CLOSE_CURLY '}'
+          EXPR_ITEM
+            BLOCK_EXPR
+              OPEN_CURLY '{'
+              NL_KW '\n'
+              WHITESPACE '         '
+              EXPR_ITEM
+                LIT_EXPR
+                  INT_LIT_KW '3'
+                NL_KW '\n'
+              WHITESPACE '       '
+              CLOSE_CURLY '}'
       "#],
     );
 
@@ -577,20 +584,23 @@ mod tests {
        }",
       expect![@r#"
         SOURCE_FILE
-          IDENT
-            IDENT 'println'
-          NL_KW '\n'
+          EXPR_ITEM
+            IDENT
+              IDENT 'println'
+            NL_KW '\n'
           NL_KW '\n'
           WHITESPACE '       '
-          BLOCK_EXPR
-            OPEN_CURLY '{'
-            NL_KW '\n'
-            WHITESPACE '         '
-            LIT_EXPR
-              INT_LIT_KW '3'
-            NL_KW '\n'
-            WHITESPACE '       '
-            CLOSE_CURLY '}'
+          EXPR_ITEM
+            BLOCK_EXPR
+              OPEN_CURLY '{'
+              NL_KW '\n'
+              WHITESPACE '         '
+              EXPR_ITEM
+                LIT_EXPR
+                  INT_LIT_KW '3'
+                NL_KW '\n'
+              WHITESPACE '       '
+              CLOSE_CURLY '}'
       "#],
     );
   }
