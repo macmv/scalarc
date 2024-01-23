@@ -259,7 +259,6 @@ fn fun_param(p: &mut Parser) {
   // ) = 3
   p.eat_newlines();
 
-  // TODO: Parse types
   super::type_expr::type_expr(p);
 
   m.complete(p, FUN_PARAM);

@@ -114,7 +114,7 @@ ForExpr     = 'for' ('(' Enumerators ')' | '{' Enumerators '}') (nl)* ('yield')?
 ThrowExpr   = 'throw' Expr
 ReturnExpr  = 'return' Expr?
 
-LambdaExpr = (Bindings | ('implicit')? (id | '_')) '=>' Expr
+LambdaExpr = ('todo') '=>' Expr
 
 AssignDotExpr = SimpleExpr '=' Expr
 
@@ -154,55 +154,63 @@ BlockArguments  = nl? BlockExpr
 BlockExpr      = '{' CaseClause (CaseClause)* '}' | '{' (Item (';' Item)*) '}'
 Block          = Item (';' Item)* ResultExpr?
 ResultExpr     = Expr
-               | (Bindings | ('implicit')? (id | '_') (':' Type)?) '=>' Block
 
 Enumerators    = Generator (';' Generator)*
-Generator      = ('case')? PatternSingle '<-' Expr ((';')? Guard | ';' PatternSingle '=' Expr)*
+Generator      = ('case')? Pattern '<-' Expr ((';')? Guard | ';' Pattern '=' Expr)*
 
 CaseClause     = 'case' Pattern (Guard)? '=>' Block
 Guard          = 'if' PostfixExpr
 
-// this is Pattern
-Pattern        = PatternSingle ( '|' PatternSingle )*
-// this is Pattern1
-PatternSingle  = boundvarid ':' TypePat
-               | '_' ':' TypePat
-               | PatternAt
-// this is Pattern2
-PatternAt      = id ('@' PatternNamed)?
-               | PatternNamed
-// this is PatternNamed
-PatternNamed   = SimplePattern
-               | SimplePattern ( id (nl)? SimplePattern )*
-SimplePattern  = '_'
-               | varid
-               | LitExpr
-               | StableId
-               | StableId '(' (Patterns)? ')'
-               | StableId '(' (Patterns ',')? (id '@')? '_' '*' ')'
-               | '(' (Patterns)? ')'
-Patterns       = Pattern (',' Patterns)?
-               | '_' '*'
+Pattern = 'todo'
 
-TypeParamClause    = '[' VariantTypeParam (',' VariantTypeParam)* ']'
-FunTypeParamClause = '[' TypeParam (',' TypeParam)* ']'
-VariantTypeParam   = (Annotation)* ('+' | '-')? TypeParam
-TypeParam          = (id | '_') (TypeParamClause)? ('>:' Type)? ('<:' Type)?
-                     ('<%' Type)* (':' Type)*
-FunParams         = ParamClause* ((nl)? '(' 'implicit' FunParam (',' FunParam)* ')')?
-ParamClause       = nl? '(' (FunParam (',' FunParam)*)? ')'
-FunParam          = Annotation* id (':' ParamType)? ('=' Expr)?
-ParamType         = Type
-                  | '=>' Type
-                  | Type '*'
+// // this is Pattern
+// Pattern        = PatternSingle ( '|' PatternSingle )*
+// // this is Pattern1
+// PatternSingle  = boundvarid ':' TypePat
+//                | '_' ':' TypePat
+//                | PatternAt
+// // this is Pattern2
+// PatternAt      = id ('@' PatternNamed)?
+//                | PatternNamed
+// // this is PatternNamed
+// PatternNamed   = SimplePattern
+//                | SimplePattern ( id (nl)? SimplePattern )*
+// SimplePattern  = '_'
+//                | varid
+//                | LitExpr
+//                | StableId
+//                | StableId '(' (Patterns)? ')'
+//                | StableId '(' (Patterns ',')? (id '@')? '_' '*' ')'
+//                | '(' (Patterns)? ')'
+// Patterns       = Pattern (',' Patterns)?
+//                | '_' '*'
 
-ClassFunParams = (ClassParamClause)* ((nl)? '(' 'implicit' ClassParams ')')?
-ClassParamClause  = (nl)? '(' (ClassParams)? ')'
-ClassParams       = ClassParam (',' ClassParam)*
-ClassParam        = (Annotation)* (Modifier)* ('val' | 'var')?
-                      id ':' ParamType ('=' Expr)?
-Bindings          = '(' Binding (',' Binding)* ')'
-Binding           = (id | '_') (':' Type)?
+TypeParamClause = 'todo'
+
+// TypeParamClause    = '[' VariantTypeParam (',' VariantTypeParam)* ']'
+// FunTypeParamClause = '[' TypeParam (',' TypeParam)* ']'
+// VariantTypeParam   = (Annotation)* ('+' | '-')? TypeParam
+// TypeParam          = (id | '_') (TypeParamClause)? ('>:' Type)? ('<:' Type)?
+//                      ('<%' Type)* (':' Type)*
+// FunParams         = ParamClause* ((nl)? '(' 'implicit' FunParam (',' FunParam)* ')')?
+// ParamClause       = nl? '(' (FunParam (',' FunParam)*)? ')'
+// FunParam          = Annotation* id (':' ParamType)? ('=' Expr)?
+// ParamType         = Type
+//                   | '=>' Type
+//                   | Type '*'
+
+FunParams = '(' (FunParam (',' FunParam)*) ')'
+FunParam  = Annotation* id (':' Type)? ('=' Expr)?
+
+ClassFunParams = 'todo'
+
+// ClassFunParams = (ClassParamClause)* ((nl)? '(' 'implicit' ClassParams ')')?
+// ClassParamClause  = (nl)? '(' (ClassParams)? ')'
+// ClassParams       = ClassParam (',' ClassParam)*
+// ClassParam        = (Annotation)* (Modifier)* ('val' | 'var')?
+//                       id ':' ParamType ('=' Expr)?
+// Bindings          = '(' Binding (',' Binding)* ')'
+// Binding           = (id | '_') (':' Type)?
 
 Modifier      = LocalModifier
               | AccessModifier
@@ -234,7 +242,7 @@ Def = ValDef
 ValDef  = 'val' id (':' Type)? '=' Expr
 VarDef  = 'var' id (':' Type)? '=' Expr
 FunDef  = 'def' FunSig '=' Expr
-FunSig  = id FunTypeParamClause? FunParams (':' Type)?
+FunSig  = id FunParams (':' Type)?
 TypeDec = 'type' id (TypeParamClause)? ('>:' Type)? ('<:' Type)?
 
 // Items
