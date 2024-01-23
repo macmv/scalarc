@@ -42,29 +42,42 @@ StableId = id
          | (id '.')? 'super' (ClassQualifier)? '.' id
 ClassQualifier = '[' id ']'
 
-Type              = FunctionArgTypes '=>' Type | InfixType (ExistentialClause)?
-FunctionArgTypes  = InfixType | '(' ( ParamType (',' ParamType)* )? ')'
-// No idea what 'forSome' is, going to comment out for now.
-// ExistentialClause = 'forSome' '{' ExistentialDec (';' ExistentialDec)? '}'
-ExistentialClause = 'for' '{' ExistentialDec (';' ExistentialDec)? '}'
-ExistentialDec    = TypeDec | ValDef
-InfixType         = CompoundType (id (nl)? CompoundType)*
-CompoundType      = AnnotType ('with' AnnotType)* (Refinement)? | Refinement
-AnnotType         = SimpleType (Annotation)*
-SimpleType        = SimpleType TypeArgs
-                  | SimpleType '#' id
-                  | StableId
-                  | Path '.' 'type'
-                  | '(' Types ')'
+// This is the orignal grammar, which is insane.
+// Type              = FunctionArgTypes '=>' Type | InfixType (ExistentialClause)?
+// FunctionArgTypes  = InfixType | '(' ( ParamType (',' ParamType)* )? ')'
+// // No idea what 'forSome' is, going to comment out for now.
+// // ExistentialClause = 'forSome' '{' ExistentialDec (';' ExistentialDec)? '}'
+// ExistentialClause = 'for' '{' ExistentialDec (';' ExistentialDec)? '}'
+// ExistentialDec    = TypeDec | ValDef
+// InfixType         = CompoundType (id (nl)? CompoundType)*
+// CompoundType      = AnnotType ('with' AnnotType)* (Refinement)? | Refinement
+// AnnotType         = SimpleType (Annotation)*
+// SimpleType        = SimpleType TypeArgs
+//                   | SimpleType '#' id
+//                   | StableId
+//                   | Path '.' 'type'
+//                   | '(' Types ')'
 
-TypeArgs   = '[' Types ']'
-Types      = Type (',' Type)*
-Refinement = (nl)? '{' Def (';' Def)* '}'
+Type = LambdaType
+     | GenericType
+     | TupleType
+     | PathType
+     | SimpleType
+
+LambdaType  = '(' ')' '=>' Type // TODO
+GenericType = Type TypeArgs
+PathType    = Type '.' id
+TupleType   = '(' (Type (',' Type)*)? ')'
+SimpleType  = id
+
+TypeArgs   = '[' (Type (',' Type)*) ']'
+Types      = (Type (',' Type)*)
+Refinement = nl? '{' Def (';' Def)* '}'
 TypePat    = Type
 
 Ascription = AscriptionType | AscriptionAnnotation | AscriptionSpread
 
-AscriptionType       = ':' InfixType
+AscriptionType       = ':' Type
 AscriptionAnnotation = ':' Annotation (Annotation)*
 AscriptionSpread     = ':' '_' '*'
 
@@ -141,7 +154,7 @@ BlockArguments  = nl? BlockExpr
 BlockExpr      = '{' CaseClauses '}' | '{' (Item (';' Item)*) '}'
 Block          = Item (';' Item)* ResultExpr?
 ResultExpr     = Expr
-               | (Bindings | ('implicit')? (id | '_') (':' CompoundType)?) '=>' Block
+               | (Bindings | ('implicit')? (id | '_') (':' Type)?) '=>' Block
 
 Enumerators    = Generator (';' Generator)*
 Generator      = ('case')? PatternSingle '<-' Expr ((';')? Guard | ';' PatternSingle '=' Expr)*
@@ -203,8 +216,8 @@ LocalModifier = 'abstract'
 AccessModifier    =  ('private' | 'protected') (AccessQualifier)?
 AccessQualifier   =  '[' (id | 'this') ']'
 
-Annotation        =  '@' SimpleType Arguments*
-ConstrAnnotation  =  '@' SimpleType Arguments
+Annotation        =  '@' Type Arguments*
+ConstrAnnotation  =  '@' Type Arguments
 
 ItemBody = nl? '{' SelfType? (Item (';' Item)*) '}'
 SelfType = id (':' Type)? '=>'
@@ -263,9 +276,9 @@ ClassExtends = 'extends' ClassTemplate // TODO
 TraitTemplateOpt = 'extends' TraitTemplate | ('extends'? ItemBody)?
 ClassTemplate    = EarlyDefs? ClassParents ItemBody?
 TraitTemplate    = EarlyDefs? TraitParents ItemBody?
-ClassParents     = Constr ('with' AnnotType)*
-TraitParents     = AnnotType ('with' AnnotType)*
-Constr           = AnnotType Arguments*
+ClassParents     = Constr ('with' Type)*
+TraitParents     = Type ('with' Type)*
+Constr           = Type Arguments*
 EarlyDefs        = '{' (EarlyDef (';' EarlyDef)*)? '}' 'with'
 EarlyDef         = (Annotation (nl)?)* (Modifier)* Def
 
