@@ -192,6 +192,60 @@ impl<'a> Lexer<'a> {
 
     let first = self.tok.eat()?;
     match first {
+      // Line comments.
+      InnerToken::Delimiter(Delimiter::Slash) if self.tok.peek() == Ok(Some(first)) => {
+        self.tok.eat()?;
+
+        loop {
+          match self.tok.eat() {
+            Err(LexError::EOF) => break,
+            Ok(InnerToken::Newline) => break,
+            Ok(_) => {}
+            Err(e) => return Err(e),
+          }
+        }
+
+        self.ok(start, Token::Whitespace)
+      }
+
+      // Block comments.
+      InnerToken::Delimiter(Delimiter::Slash)
+        if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Star))) =>
+      {
+        self.tok.eat()?;
+
+        let mut depth = 1;
+
+        loop {
+          match self.tok.eat() {
+            // `/*`
+            Ok(InnerToken::Delimiter(Delimiter::Slash))
+              if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Star))) =>
+            {
+              depth += 1;
+            }
+
+            // `*/`
+            Ok(InnerToken::Delimiter(Delimiter::Star))
+              if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Slash))) =>
+            {
+              depth -= 1;
+            }
+
+            Ok(_) => {}
+            Err(LexError::EOF) => break,
+            Err(e) => return Err(e),
+          }
+
+          if depth == 0 {
+            self.tok.eat()?;
+            break;
+          }
+        }
+
+        self.ok(start, Token::Whitespace)
+      }
+
       // Plain identifier.
       InnerToken::Underscore | InnerToken::Letter => {
         // This is intentionally not `first == InnerToken::Underscore`, to match scala's
@@ -217,10 +271,16 @@ impl<'a> Lexer<'a> {
       }
 
       // Operator identifier.
-      InnerToken::Operator => {
+      InnerToken::Operator
+      | InnerToken::Delimiter(Delimiter::Slash)
+      | InnerToken::Delimiter(Delimiter::Star) => {
         loop {
           match self.tok.peek()? {
-            Some(InnerToken::Operator) => {}
+            Some(
+              InnerToken::Operator
+              | InnerToken::Delimiter(Delimiter::Slash)
+              | InnerToken::Delimiter(Delimiter::Star),
+            ) => {}
             Some(_) | None => break,
           }
           self.tok.eat().unwrap();
@@ -321,60 +381,6 @@ impl<'a> Lexer<'a> {
         }
       }
 
-      // Line comments.
-      InnerToken::Delimiter(Delimiter::Slash) if self.tok.peek() == Ok(Some(first)) => {
-        self.tok.eat()?;
-
-        loop {
-          match self.tok.eat() {
-            Err(LexError::EOF) => break,
-            Ok(InnerToken::Newline) => break,
-            Ok(_) => {}
-            Err(e) => return Err(e),
-          }
-        }
-
-        self.ok(start, Token::Whitespace)
-      }
-
-      // Block comments.
-      InnerToken::Delimiter(Delimiter::Slash)
-        if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Star))) =>
-      {
-        self.tok.eat()?;
-
-        let mut depth = 1;
-
-        loop {
-          match self.tok.eat() {
-            // `/*`
-            Ok(InnerToken::Delimiter(Delimiter::Slash))
-              if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Star))) =>
-            {
-              depth += 1;
-            }
-
-            // `*/`
-            Ok(InnerToken::Delimiter(Delimiter::Star))
-              if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Slash))) =>
-            {
-              depth -= 1;
-            }
-
-            Ok(_) => {}
-            Err(LexError::EOF) => break,
-            Err(e) => return Err(e),
-          }
-
-          if depth == 0 {
-            self.tok.eat()?;
-            break;
-          }
-        }
-
-        self.ok(start, Token::Whitespace)
-      }
-
       InnerToken::Delimiter(d) => self.ok(start, Token::Delimiter(d)),
       InnerToken::Group(g) => self.ok(start, Token::Group(g)),
       InnerToken::Newline => self.ok(start, Token::Newline),
@@ -465,6 +471,32 @@ mod tests {
     assert_eq!(lexer.slice(), " ");
     assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "_");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("a / b");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "a");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
+    assert_eq!(lexer.slice(), "/");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "b");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("a ** b");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "a");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
+    assert_eq!(lexer.slice(), "**");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "b");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 

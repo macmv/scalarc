@@ -59,8 +59,6 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
     Token::Delimiter(token::Delimiter::Dot) => T![.],
     Token::Delimiter(token::Delimiter::Semicolon) => T![;],
     Token::Delimiter(token::Delimiter::Comma) => T![,],
-    // TODO: This delimiter should never be emitted by the lexer.
-    Token::Delimiter(token::Delimiter::Slash) => SyntaxKind::UNDERSCORE,
     Token::Group(token::Group::OpenParen) => T!['('],
     Token::Group(token::Group::CloseParen) => T![')'],
     Token::Group(token::Group::OpenBracket) => T!['['],
