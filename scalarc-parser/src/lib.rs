@@ -44,6 +44,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       // TODO: Keywords should be defined somewhere else.
       "import" => T![import],
       "def" => T![def],
+      "val" => T![val],
       "case" => T![case],
       "class" => T![class],
       "=" => T![=],

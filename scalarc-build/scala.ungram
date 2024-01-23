@@ -219,8 +219,8 @@ Def = ValDef
     | FunDef
     | TypeDef
 
-ValDef  = 'val' ids ':' Type
-VarDef  = 'var' ids ':' Type
+ValDef  = 'val' id (':' Type)? '=' Expr
+VarDef  = 'var' id (':' Type)? '=' Expr
 FunDef  = 'def' FunSig '=' Expr
 FunSig  = id FunTypeParamClause? FunParams (':' Type)?
 TypeDec = 'type' id (TypeParamClause)? ('>:' Type)? ('<:' Type)?

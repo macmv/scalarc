@@ -50,6 +50,7 @@ fn item(p: &mut Parser) {
   match p.current() {
     T![import] => import_item(p),
     T![def] => fun_def(p),
+    T![val] => val_def(p),
     T![case] | T![class] => class_def(p),
 
     _ => {
@@ -243,6 +244,28 @@ fn fun_param(p: &mut Parser) {
   m.complete(p, FUN_PARAM);
 }
 
+// test ok
+// def foo = 3
+fn val_def(p: &mut Parser) {
+  let m = p.start();
+
+  p.eat(T![val]);
+  p.expect(T![ident]);
+
+  if p.at(T![:]) {
+    p.eat(T![:]);
+
+    // TODO: Eat type expr
+    p.expect(T![ident]);
+  }
+
+  p.expect(T![=]);
+
+  expr::expr(p);
+
+  m.complete(p, VAL_DEF);
+}
+
 #[cfg(test)]
 mod tests {
   use crate::tests::check;
@@ -430,6 +453,44 @@ mod tests {
                   CLOSE_CURLY '}'
               WHITESPACE ' '
               CLOSE_CURLY '}'
+      "#],
+    );
+  }
+
+  #[test]
+  fn val_def() {
+    check(
+      "val foo = 3",
+      expect![@r#"
+        SOURCE_FILE
+          VAL_DEF
+            VAL_KW 'val'
+            WHITESPACE ' '
+            IDENT 'foo'
+            WHITESPACE ' '
+            EQ '='
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
+      "#],
+    );
+
+    check(
+      "val foo: Int = 3",
+      expect![@r#"
+        SOURCE_FILE
+          VAL_DEF
+            VAL_KW 'val'
+            WHITESPACE ' '
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            IDENT 'Int'
+            WHITESPACE ' '
+            EQ '='
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
       "#],
     );
   }
