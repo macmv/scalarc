@@ -68,4 +68,22 @@ fn setup_logging() {
   fs::create_dir_all(&dir).unwrap();
 
   simple_logging::log_to_file(dir.join("scalarc-lsp.log"), log::LevelFilter::Info).unwrap();
+
+  // Copied the stdlibs panic hook, but uses `error!()` instead of stdout.
+  std::panic::set_hook(Box::new(|info| {
+    let location = info.location().unwrap_or_else(|| std::panic::Location::caller());
+
+    let msg = match info.payload().downcast_ref::<&'static str>() {
+      Some(s) => *s,
+      None => match info.payload().downcast_ref::<String>() {
+        Some(s) => &s[..],
+        None => "Box<dyn Any>",
+      },
+    };
+
+    let thread = std::thread::current();
+    let name = thread.name().unwrap_or("<unnamed>");
+
+    error!("thread '{name}' panicked at {location}:\n{msg}");
+  }));
 }
