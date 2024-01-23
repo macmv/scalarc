@@ -25,7 +25,7 @@
 //! ```
 //!
 //! Running this code will produce a test failure, as `"5"` is indeed not equal
-//! to `"4"`. Running the test with `UPDATE_EXPECT=1` env variable however would
+//! to `"4"`. Running the test with `BLESS=1` env variable however would
 //! "magically" update the code to:
 //!
 //! ```no_run
@@ -40,7 +40,7 @@
 //!
 //! Under the hood, the `expect!` macro uses `file!`, `line!` and `column!` to
 //! record source position at compile time. At runtime, this position is used
-//! to patch the file in-place, if `UPDATE_EXPECT` is set.
+//! to patch the file in-place, if `BLESS` is set.
 //!
 //! # Guide
 //!
@@ -68,7 +68,7 @@
 //!
 //! Be careful with `assert_debug_eq` - in general, stability of the debug
 //! representation is not guaranteed. However, even if it changes, you can
-//! quickly update all the tests by running the test suite with `UPDATE_EXPECT`
+//! quickly update all the tests by running the test suite with `BLESS`
 //! environmental variable set.
 //!
 //! If the expected data is too verbose to include inline, you can store it in
@@ -112,7 +112,7 @@
 //! comes from the input data.
 //!
 //! When writing a new test, I usually copy-paste an old one, leave the `expect`
-//! blank and use `UPDATE_EXPECT` to fill the value for me:
+//! blank and use `BLESS` to fill the value for me:
 //!
 //! ```
 //! # use scalarc_test::{expect, Expect};
@@ -158,12 +158,12 @@ use std::{
 const HELP: &str = "
 You can update all `expect!` tests by running:
 
-    env UPDATE_EXPECT=1 cargo test
+    BLESS=1 cargo test
 
 To update a single test, place the cursor on `expect` token and use `run` feature of rust-analyzer.
 ";
 
-fn update_expect() -> bool { env::var("UPDATE_EXPECT").is_ok() }
+fn update_expect() -> bool { env::var("BLESS").is_ok() }
 
 /// Creates an instance of `Expect` from string literal:
 ///
