@@ -80,10 +80,18 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
     lhs = match p.current() {
       // test ok
       // hi(3)
-      T!['('] => call_paren_expr(p, lhs),
+      T!['('] => {
+        let call = lhs.precede(p);
+        call_paren_expr(p);
+        call.complete(p, CALL_EXPR)
+      }
       // test ok
       // hi { 3 }
-      T!['{'] => call_block_expr(p, lhs),
+      T!['{'] => {
+        let m = lhs.precede(p);
+        call_block_expr(p);
+        m.complete(p, CALL_EXPR)
+      }
       // test ok
       // foo.bar
       T![.] => match postfix_dot_expr(p, lhs) {
@@ -117,9 +125,7 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
   lhs
 }
 
-fn call_paren_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
-  let call = lhs.precede(p);
-
+fn call_paren_expr(p: &mut Parser) {
   let args = p.start();
   p.eat(T!['(']);
   // test ok
@@ -134,7 +140,7 @@ fn call_paren_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
   if p.at(T![')']) {
     p.eat(T![')']);
     args.complete(p, PAREN_ARGUMENTS);
-    return call.complete(p, CALL_EXPR);
+    return;
   }
 
   loop {
@@ -162,25 +168,17 @@ fn call_paren_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
 
   p.expect(T![')']);
   args.complete(p, PAREN_ARGUMENTS);
-
-  call.complete(p, CALL_EXPR)
 }
 
-fn call_block_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
-  let m = lhs.precede(p);
-
-  {
-    let m = p.start();
-    // test ok
-    // hi {
-    //   3
-    //   4
-    // }
-    super::item::block_items(p);
-    m.complete(p, BLOCK_ARGUMENTS);
-  }
-
-  m.complete(p, CALL_EXPR)
+fn call_block_expr(p: &mut Parser) {
+  let m = p.start();
+  // test ok
+  // hi {
+  //   3
+  //   4
+  // }
+  super::item::block_items(p);
+  m.complete(p, BLOCK_ARGUMENTS);
 }
 
 fn postfix_dot_expr(
@@ -214,6 +212,32 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
     IDENT => {
       p.eat(IDENT);
       Some(m.complete(p, IDENT))
+    }
+
+    T![new] => {
+      p.eat(T![new]);
+
+      // test ok
+      // new Iterator
+      if p.at(T![ident]) {
+        p.eat(T![ident]);
+      }
+
+      // test ok
+      // new Iterator()
+      // new Iterator("hello")
+      if p.at(T!['(']) {
+        call_paren_expr(p);
+      }
+
+      // test ok
+      // new { def next = None }
+      // new Iterator { def next = None }
+      if p.at(T!['{']) {
+        call_block_expr(p);
+      }
+
+      Some(m.complete(p, NEW_CLASS_EXPR))
     }
 
     T!['{'] => {
@@ -601,6 +625,85 @@ mod tests {
                 NL_KW '\n'
               WHITESPACE '       '
               CLOSE_CURLY '}'
+      "#],
+    );
+  }
+
+  #[test]
+  fn new_expr() {
+    check(
+      "new Iterator",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            NEW_CLASS_EXPR
+              NEW_KW 'new'
+              WHITESPACE ' '
+              IDENT 'Iterator'
+      "#],
+    );
+
+    check(
+      "new Iterator()",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            NEW_CLASS_EXPR
+              NEW_KW 'new'
+              WHITESPACE ' '
+              IDENT 'Iterator'
+              PAREN_ARGUMENTS
+                OPEN_PAREN '('
+                CLOSE_PAREN ')'
+      "#],
+    );
+
+    check(
+      "new Iterator(2, 3)",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            NEW_CLASS_EXPR
+              NEW_KW 'new'
+              WHITESPACE ' '
+              IDENT 'Iterator'
+              PAREN_ARGUMENTS
+                OPEN_PAREN '('
+                LIT_EXPR
+                  INT_LIT_KW '2'
+                COMMA ','
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '3'
+                CLOSE_PAREN ')'
+      "#],
+    );
+
+    check(
+      "new Iterator { def next = None }",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            NEW_CLASS_EXPR
+              NEW_KW 'new'
+              WHITESPACE ' '
+              IDENT 'Iterator'
+              WHITESPACE ' '
+              BLOCK_ARGUMENTS
+                OPEN_CURLY '{'
+                WHITESPACE ' '
+                FUN_DEF
+                  DEF_KW 'def'
+                  WHITESPACE ' '
+                  FUN_SIG
+                    IDENT 'next'
+                  WHITESPACE ' '
+                  EQ '='
+                  WHITESPACE ' '
+                  IDENT
+                    IDENT 'None'
+                WHITESPACE ' '
+                CLOSE_CURLY '}'
       "#],
     );
   }
