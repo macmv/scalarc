@@ -182,13 +182,25 @@ fn fun_def(p: &mut Parser, m: Marker) {
   m.complete(p, FUN_DEF);
 }
 
+// test ok
+// def foo(a: String, b: String): List[Int] = 2
 fn fun_sig(p: &mut Parser) {
   let m = p.start();
   p.expect(T![ident]);
 
-  if p.current() == T!['('] {
+  // test ok
+  // def foo(a: String) = 2
+  if p.at(T!['(']) {
     fun_params(p);
   }
+
+  // test ok
+  // def bar: Int = 2
+  if p.at(T![:]) {
+    p.eat(T![:]);
+    super::type_expr::type_expr(p);
+  }
+
   m.complete(p, FUN_SIG);
 }
 
