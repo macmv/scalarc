@@ -92,7 +92,10 @@ pub enum Delimiter {
   Dot,
   Semicolon,
   Comma,
+
+  // Not quite tokens, but used to lex comments.
   Slash,
+  Star,
 }
 
 struct Tokenizer<'a> {
@@ -138,6 +141,7 @@ impl<'a> Tokenizer<'a> {
       ';' => InnerToken::Delimiter(Delimiter::Semicolon),
       ',' => InnerToken::Delimiter(Delimiter::Comma),
       '/' => InnerToken::Delimiter(Delimiter::Slash),
+      '*' => InnerToken::Delimiter(Delimiter::Star),
 
       '_' => InnerToken::Underscore,
       'a'..='z' | 'A'..='Z' => InnerToken::Letter,
@@ -327,6 +331,44 @@ impl<'a> Lexer<'a> {
             Ok(InnerToken::Newline) => break,
             Ok(_) => {}
             Err(e) => return Err(e),
+          }
+        }
+
+        self.ok(start, Token::Whitespace)
+      }
+
+      // Block comments.
+      InnerToken::Delimiter(Delimiter::Slash)
+        if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Star))) =>
+      {
+        self.tok.eat()?;
+
+        let mut depth = 1;
+
+        loop {
+          match self.tok.eat() {
+            // `/*`
+            Ok(InnerToken::Delimiter(Delimiter::Slash))
+              if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Star))) =>
+            {
+              depth += 1;
+            }
+
+            // `*/`
+            Ok(InnerToken::Delimiter(Delimiter::Star))
+              if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Slash))) =>
+            {
+              depth -= 1;
+            }
+
+            Ok(_) => {}
+            Err(LexError::EOF) => break,
+            Err(e) => return Err(e),
+          }
+
+          if depth == 0 {
+            self.tok.eat()?;
+            break;
           }
         }
 
@@ -567,6 +609,42 @@ mod tests {
     assert_eq!(lexer.slice(), " ");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
     assert_eq!(lexer.slice(), "3");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+  }
+
+  #[test]
+  fn block_comments() {
+    let mut lexer = Lexer::new("3 /* hi */");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "3");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), "/* hi */");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    // nested block comments
+    let mut lexer = Lexer::new("3 /* hi /* foo */ */");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "3");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), "/* hi /* foo */ */");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    // block comments over multiple lines
+    let mut lexer = Lexer::new("3 /* hi \n */ 4");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "3");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), "/* hi \n */");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "4");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
