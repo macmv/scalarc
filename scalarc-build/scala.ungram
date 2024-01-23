@@ -119,7 +119,7 @@ LambdaExpr = (Bindings | ('implicit')? (id | '_')) '=>' Expr
 AssignDotExpr = SimpleExpr '=' Expr
 
 PostfixExprAscription = PostfixExpr Ascription
-MatchExpr             = PostfixExpr 'match' '{' CaseClauses '}'
+MatchExpr             = PostfixExpr 'match' '{' CaseClause (CaseClause)* '}'
 
 PostfixExpr    = Expr id
 InfixExpr      = lhs:Expr id rhs:Expr
@@ -151,7 +151,7 @@ ParenArguments  = '(' (Expr (',' Expr)*)? ')'
 SpreadArguments = '(' (Expr (',' Expr)*)? PostfixExpr ':' '_' '*' ')'
 BlockArguments  = nl? BlockExpr
 
-BlockExpr      = '{' CaseClauses '}' | '{' (Item (';' Item)*) '}'
+BlockExpr      = '{' CaseClause (CaseClause)* '}' | '{' (Item (';' Item)*) '}'
 Block          = Item (';' Item)* ResultExpr?
 ResultExpr     = Expr
                | (Bindings | ('implicit')? (id | '_') (':' Type)?) '=>' Block
@@ -159,7 +159,6 @@ ResultExpr     = Expr
 Enumerators    = Generator (';' Generator)*
 Generator      = ('case')? PatternSingle '<-' Expr ((';')? Guard | ';' PatternSingle '=' Expr)*
 
-CaseClauses    = CaseClause ( CaseClause )*
 CaseClause     = 'case' Pattern (Guard)? '=>' Block
 Guard          = 'if' PostfixExpr
 

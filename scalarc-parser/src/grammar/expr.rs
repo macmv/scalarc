@@ -1,4 +1,4 @@
-use crate::CompletedMarker;
+use crate::{CompletedMarker, Marker};
 
 use super::*;
 
@@ -119,10 +119,61 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
         }
         _ => break,
       },
+
+      T![match] => match_expr(p, lhs),
+
       _ => break,
     };
   }
   lhs
+}
+
+// test ok
+// 2 match {
+//   case 3 => 4
+// }
+fn match_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
+  let m = lhs.precede(p);
+
+  p.eat(T![match]);
+
+  p.expect(T!['{']);
+  p.eat_newlines();
+
+  if p.at(T!['}']) {
+    p.error_bump("unexpected end of match block");
+    return m.complete(p, MATCH_EXPR);
+  }
+
+  loop {
+    let c = p.start();
+    p.expect(T![case]);
+
+    // TODO: Eat pattern
+    p.bump();
+
+    p.expect(T![=>]);
+
+    expr(p);
+    c.complete(p, CASE_CLAUSE);
+
+    if p.at(T![nl]) {
+      p.eat(T![nl]);
+    } else if p.at(T!['}']) {
+      p.eat(T!['}']);
+      break;
+    } else {
+      p.error("expected newline");
+      p.recover_until(T![nl]);
+    }
+    p.eat_newlines();
+    if p.at(T!['}']) {
+      p.eat(T!['}']);
+      break;
+    }
+  }
+
+  m.complete(p, MATCH_EXPR)
 }
 
 fn call_paren_expr(p: &mut Parser) {
@@ -725,5 +776,90 @@ mod tests {
                 CLOSE_CURLY '}'
       "#],
     );
+  }
+
+  #[test]
+  fn match_exprs() {
+    check(
+      "2 match {
+        case 1 => 3
+        case 2 => 4
+        case _ => 5
+      }",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            MATCH_EXPR
+              LIT_EXPR
+                INT_LIT_KW '2'
+              WHITESPACE ' '
+              MATCH_KW 'match'
+              WHITESPACE ' '
+              OPEN_CURLY '{'
+              NL_KW '\n'
+              WHITESPACE '        '
+              CASE_CLAUSE
+                CASE_KW 'case'
+                WHITESPACE ' '
+                INT_LIT_KW '1'
+                WHITESPACE ' '
+                FAT_ARROW '=>'
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '3'
+                NL_KW '\n'
+              WHITESPACE '        '
+              CASE_CLAUSE
+                CASE_KW 'case'
+                WHITESPACE ' '
+                INT_LIT_KW '2'
+                WHITESPACE ' '
+                FAT_ARROW '=>'
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '4'
+                NL_KW '\n'
+              WHITESPACE '        '
+              CASE_CLAUSE
+                CASE_KW 'case'
+                WHITESPACE ' '
+                IDENT '_'
+                WHITESPACE ' '
+                FAT_ARROW '=>'
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '5'
+                NL_KW '\n'
+              WHITESPACE '      '
+              CLOSE_CURLY '}'
+      "#],
+    );
+
+    check(
+      "2 match { case 1 => 3 }",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            MATCH_EXPR
+              LIT_EXPR
+                INT_LIT_KW '2'
+              WHITESPACE ' '
+              MATCH_KW 'match'
+              WHITESPACE ' '
+              OPEN_CURLY '{'
+              WHITESPACE ' '
+              CASE_CLAUSE
+                CASE_KW 'case'
+                WHITESPACE ' '
+                INT_LIT_KW '1'
+                WHITESPACE ' '
+                FAT_ARROW '=>'
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '3'
+              WHITESPACE ' '
+              CLOSE_CURLY '}'
+      "#],
+    )
   }
 }
