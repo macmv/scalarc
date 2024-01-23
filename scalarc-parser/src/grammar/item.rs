@@ -346,7 +346,7 @@ mod tests {
                 FUN_PARAM
                   IDENT 'a'
                   COLON ':'
-                  TYPE_ARGS
+                  SIMPLE_TYPE
                     error: expected IDENT
                 CLOSE_PAREN ')'
             WHITESPACE ' '
@@ -372,7 +372,7 @@ mod tests {
                   IDENT 'a'
                   COLON ':'
                   WHITESPACE ' '
-                  TYPE_ARGS
+                  SIMPLE_TYPE
                     IDENT 'Int'
                 CLOSE_PAREN ')'
             WHITESPACE ' '
@@ -398,7 +398,7 @@ mod tests {
                   IDENT 'a'
                   COLON ':'
                   WHITESPACE ' '
-                  TYPE_ARGS
+                  SIMPLE_TYPE
                     IDENT 'Int'
                 COMMA ','
                 WHITESPACE ' '
@@ -406,7 +406,7 @@ mod tests {
                   IDENT 'b'
                   COLON ':'
                   WHITESPACE ' '
-                  TYPE_ARGS
+                  SIMPLE_TYPE
                     IDENT 'String'
                 CLOSE_PAREN ')'
             WHITESPACE ' '
@@ -493,7 +493,7 @@ mod tests {
             IDENT 'foo'
             COLON ':'
             WHITESPACE ' '
-            TYPE_ARGS
+            SIMPLE_TYPE
               IDENT 'Int'
             WHITESPACE ' '
             EQ '='
