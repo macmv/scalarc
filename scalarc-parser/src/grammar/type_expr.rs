@@ -37,7 +37,7 @@ pub fn type_expr(p: &mut Parser) {
   }
 }
 
-fn type_params(p: &mut Parser) {
+pub fn type_params(p: &mut Parser) {
   let m = p.start();
   p.eat(T!['[']);
 
