@@ -239,7 +239,7 @@ fn fun_param(p: &mut Parser) {
   p.eat_newlines();
 
   // TODO: Parse types
-  p.expect(T![ident]);
+  super::type_expr::type_expr(p);
 
   m.complete(p, FUN_PARAM);
 }
@@ -255,8 +255,7 @@ fn val_def(p: &mut Parser) {
   if p.at(T![:]) {
     p.eat(T![:]);
 
-    // TODO: Eat type expr
-    p.expect(T![ident]);
+    super::type_expr::type_expr(p);
   }
 
   p.expect(T![=]);
@@ -347,7 +346,8 @@ mod tests {
                 FUN_PARAM
                   IDENT 'a'
                   COLON ':'
-                  error: expected IDENT
+                  TYPE_ARGS
+                    error: expected IDENT
                 CLOSE_PAREN ')'
             WHITESPACE ' '
             EQ '='
@@ -372,7 +372,8 @@ mod tests {
                   IDENT 'a'
                   COLON ':'
                   WHITESPACE ' '
-                  IDENT 'Int'
+                  TYPE_ARGS
+                    IDENT 'Int'
                 CLOSE_PAREN ')'
             WHITESPACE ' '
             EQ '='
@@ -397,14 +398,16 @@ mod tests {
                   IDENT 'a'
                   COLON ':'
                   WHITESPACE ' '
-                  IDENT 'Int'
+                  TYPE_ARGS
+                    IDENT 'Int'
                 COMMA ','
                 WHITESPACE ' '
                 FUN_PARAM
                   IDENT 'b'
                   COLON ':'
                   WHITESPACE ' '
-                  IDENT 'String'
+                  TYPE_ARGS
+                    IDENT 'String'
                 CLOSE_PAREN ')'
             WHITESPACE ' '
             EQ '='
@@ -490,7 +493,8 @@ mod tests {
             IDENT 'foo'
             COLON ':'
             WHITESPACE ' '
-            IDENT 'Int'
+            TYPE_ARGS
+              IDENT 'Int'
             WHITESPACE ' '
             EQ '='
             WHITESPACE ' '
