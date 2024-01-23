@@ -261,6 +261,11 @@ fn val_def(p: &mut Parser) {
 
   p.expect(T![=]);
 
+  // test ok
+  // val foo =
+  //   3
+  p.eat_newlines();
+
   expr::expr(p);
 
   m.complete(p, VAL_DEF);
