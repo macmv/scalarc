@@ -214,6 +214,18 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       Some(m.complete(p, IDENT))
     }
 
+    T![return] => {
+      // test ok
+      // return 3
+      p.eat(T![return]);
+      // test ok
+      // return
+      if !p.at(T![nl]) {
+        expr(p);
+      }
+      Some(m.complete(p, RETURN_EXPR))
+    }
+
     T![new] => {
       p.eat(T![new]);
 
