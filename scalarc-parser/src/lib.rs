@@ -49,6 +49,8 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       "case" => T![case],
       "class" => T![class],
       "return" => T![return],
+      "private" => T![private],
+      "protected" => T![protected],
       "=" => T![=],
       ":" => T![:],
       _ => T![ident],

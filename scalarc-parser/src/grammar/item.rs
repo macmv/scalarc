@@ -1,3 +1,5 @@
+use crate::Marker;
+
 use super::*;
 
 pub fn mod_items(p: &mut Parser) { items(p, false); }
@@ -47,14 +49,26 @@ fn items(p: &mut Parser, end_in_brace: bool) {
 }
 
 fn item(p: &mut Parser) {
+  let m = p.start();
+
+  // test ok
+  // private def foo = 3
+  // protected val bar = 3
   match p.current() {
-    T![import] => import_item(p),
-    T![def] => fun_def(p),
-    T![val] => val_def(p),
-    T![case] | T![class] => class_def(p),
+    T![private] | T![protected] => {
+      p.bump();
+      p.eat_newlines();
+    }
+    _ => {}
+  }
+
+  match p.current() {
+    T![import] => import_item(p, m),
+    T![def] => fun_def(p, m),
+    T![val] => val_def(p, m),
+    T![case] | T![class] => class_def(p, m),
 
     _ => {
-      let m = p.start();
       expr::expr(p);
       m.complete(p, EXPR_ITEM);
     }
@@ -64,9 +78,7 @@ fn item(p: &mut Parser) {
 // test ok
 // import foo.bar.baz
 // import xxx.yyy.zzz
-fn import_item(p: &mut Parser) {
-  let m = p.start();
-
+fn import_item(p: &mut Parser, m: Marker) {
   p.eat(T![import]);
   loop {
     match p.current() {
@@ -122,8 +134,7 @@ fn import_list(p: &mut Parser) {
 
 // test ok
 // class Foo() {}
-fn class_def(p: &mut Parser) {
-  let m = p.start();
+fn class_def(p: &mut Parser, m: Marker) {
   // test ok
   // case class Foo() {}
   if p.current() == T![case] {
@@ -161,9 +172,7 @@ fn item_body(p: &mut Parser) {
 
 // test ok
 // def foo = 3
-fn fun_def(p: &mut Parser) {
-  let m = p.start();
-
+fn fun_def(p: &mut Parser, m: Marker) {
   p.eat(T![def]);
   fun_sig(p);
 
@@ -245,27 +254,39 @@ fn fun_param(p: &mut Parser) {
 }
 
 // test ok
-// def foo = 3
-fn val_def(p: &mut Parser) {
-  let m = p.start();
-
+// val foo = 3
+fn val_def(p: &mut Parser, m: Marker) {
   p.eat(T![val]);
   p.expect(T![ident]);
 
+  let mut found_type = false;
+  let mut found_expr = false;
+
+  // test ok
+  // val foo: Int
+  // val bar: String
   if p.at(T![:]) {
     p.eat(T![:]);
 
+    found_type = true;
     super::type_expr::type_expr(p);
   }
 
-  p.expect(T![=]);
+  if p.at(T![=]) {
+    p.eat(T![=]);
 
-  // test ok
-  // val foo =
-  //   3
-  p.eat_newlines();
+    // test ok
+    // val foo =
+    //   3
+    p.eat_newlines();
 
-  expr::expr(p);
+    found_expr = true;
+    expr::expr(p);
+  }
+
+  if !found_type && !found_expr {
+    p.error("expected type or expr");
+  }
 
   m.complete(p, VAL_DEF);
 }

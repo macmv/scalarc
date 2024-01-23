@@ -9,8 +9,6 @@ pub fn type_expr(p: &mut Parser) {
   let mut lhs = m.complete(p, SIMPLE_TYPE);
 
   loop {
-    p.eat_newlines();
-
     match p.current() {
       T![.] => {
         let m = lhs.precede(p);
@@ -24,7 +22,7 @@ pub fn type_expr(p: &mut Parser) {
         lhs = m.complete(p, GENERIC_TYPE);
       }
 
-      T![,] | T![']'] | T![')'] | T!['}'] | T![=] => {
+      T![,] | T![']'] | T![')'] | T!['}'] | T![=] | T![nl] | EOF => {
         return;
       }
 
