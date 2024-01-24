@@ -5,7 +5,7 @@ use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{AstNode, SyntaxKind},
   node::SyntaxNode,
-  SyntaxNodePtr,
+  SyntaxNodePtr, TextSize,
 };
 
 use crate::HirDatabase;
@@ -17,10 +17,22 @@ pub struct SyntaxId<T> {
 }
 
 /// Maps `SyntaxNode`s to `SyntaxId`s.
-#[derive(Default, Debug, Eq, PartialEq)]
+#[derive(Default, Debug)]
 pub struct SourceMap {
   arena: la_arena::Arena<SyntaxNodePtr>,
   items: HashMap<SyntaxNodePtr, Idx<SyntaxNodePtr>>,
+}
+
+impl PartialEq for SourceMap {
+  fn eq(&self, other: &Self) -> bool { self.arena == other.arena }
+}
+impl Eq for SourceMap {}
+
+#[derive(PartialEq, Eq, Hash, Debug)]
+pub struct SpanMap {
+  file:  FileId,
+  pairs: Box<[(TextSize, SyntaxNodePtr)]>,
+  end:   TextSize,
 }
 
 impl<T> SyntaxId<T> {
@@ -33,6 +45,22 @@ pub fn source_map(db: &dyn HirDatabase, file: FileId) -> Arc<SourceMap> {
   let source = db.parse(file);
   let map = SourceMap::from_source(source.syntax_node());
   Arc::new(map)
+}
+
+pub fn span_map(db: &dyn HirDatabase, file: FileId) -> Arc<SpanMap> {
+  let source = db.source_map(file);
+  let ast = db.parse(file);
+  let pairs = ast
+    .tree()
+    .items()
+    .map(|item| (item.syntax().text_range().start(), source.id(&item).unwrap().get(db, file)))
+    .collect::<Vec<_>>();
+
+  Arc::new(SpanMap {
+    file,
+    pairs: pairs.into_boxed_slice(),
+    end: ast.syntax_node().text_range().end(),
+  })
 }
 
 impl SourceMap {

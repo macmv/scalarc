@@ -25,8 +25,8 @@ pub struct Package {
 
 #[derive(Default, Debug, Eq, PartialEq)]
 pub struct PackageArenas {
-  def: la_arena::Arena<Def>,
-  val: la_arena::Arena<Val>,
+  pub def: la_arena::Arena<Def>,
+  pub val: la_arena::Arena<Val>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -52,8 +52,8 @@ impl crate::ItemTreeNode for Val {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Item {
-  Def(Def),
-  Val(Val),
+  Def(Idx<Def>),
+  Val(Idx<Val>),
 
   Expr(ExprId),
 }
@@ -110,4 +110,11 @@ pub fn file_package(db: &dyn HirDatabase, file_id: FileId) -> Arc<Package> {
   let package = crate::lower::lower(db, file_id);
 
   Arc::new(package)
+}
+
+pub fn workspace_map(db: &dyn HirDatabase) -> Vec<Arc<Package>> {
+  // TODO: Fill in the workspace based off the package sources.
+  let source = db.file_package(FileId::temp_new());
+  dbg!(&source);
+  vec![]
 }

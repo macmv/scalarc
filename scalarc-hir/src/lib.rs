@@ -17,11 +17,17 @@ use tree::Package;
 
 #[salsa::query_group(HirDatabaseStorage)]
 pub trait HirDatabase: InternDatabase {
+  #[salsa::invoke(tree::workspace_map)]
+  fn workspace_map(&self) -> Vec<Arc<Package>>;
+
   #[salsa::invoke(tree::file_package)]
   fn file_package(&self, file_id: FileId) -> Arc<Package>;
 
   #[salsa::invoke(source_map::source_map)]
   fn source_map(&self, file_id: FileId) -> Arc<source_map::SourceMap>;
+
+  #[salsa::invoke(source_map::span_map)]
+  fn span_map(&self, file_id: FileId) -> Arc<source_map::SpanMap>;
 }
 
 #[salsa::query_group(InternDatabaseStorage)]

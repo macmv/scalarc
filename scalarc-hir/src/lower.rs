@@ -60,11 +60,11 @@ impl Lower<'_> {
     let name = val.id_token()?.text().into();
     // let expr = self.lower_expr(val_def.expr()?)?;
 
-    Some(tree::Item::Val(tree::Val {
+    Some(tree::Item::Val(self.arenas.val.alloc(tree::Val {
       name,
       expr: Idx::from_raw(RawIdx::from_u32(0)),
       id: self.source_map.id(&val)?,
-    }))
+    })))
   }
 
   fn lower_literal(&mut self, lit: ast::LitExpr) -> Option<tree::Expr> {
