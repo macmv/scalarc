@@ -107,9 +107,7 @@ pub struct Block {
 }
 
 pub fn file_package(db: &dyn HirDatabase, file_id: FileId) -> Arc<Package> {
-  let ast = db.parse(file_id);
-
-  let package = crate::lower::lower(db, file_id, ast.tree());
+  let package = crate::lower::lower(db, file_id);
 
   Arc::new(package)
 }

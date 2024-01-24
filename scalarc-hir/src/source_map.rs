@@ -23,6 +23,12 @@ pub struct SourceMap {
   items: HashMap<SyntaxNodePtr, Idx<SyntaxNodePtr>>,
 }
 
+impl<T> SyntaxId<T> {
+  pub fn get(&self, db: &dyn HirDatabase, file: FileId) -> SyntaxNodePtr {
+    db.source_map(file).arena[self.raw]
+  }
+}
+
 pub fn source_map(db: &dyn HirDatabase, file: FileId) -> Arc<SourceMap> {
   let source = db.parse(file);
   let map = SourceMap::from_source(source.syntax_node());

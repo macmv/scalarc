@@ -18,9 +18,9 @@ struct Lower<'a> {
   arenas:     PackageArenas,
 }
 
-pub fn lower(db: &dyn HirDatabase, file: FileId, ast: SourceFile) -> Package {
+pub fn lower(db: &dyn HirDatabase, file: FileId) -> Package {
   let mut lower = Lower { db, source_map: &db.source_map(file), arenas: Default::default() };
-  let items = lower.package(ast);
+  let items = lower.package(db.parse(file).tree());
   Package { items, arenas: lower.arenas }
 }
 
