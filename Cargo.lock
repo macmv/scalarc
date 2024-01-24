@@ -134,6 +134,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1a46d1a171d865aa5f83f92695765caa047a9b4cbae2cbf37dbd613a793fd4c"
 
 [[package]]
+name = "la-arena"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3752f229dcc5a481d60f385fa479ff46818033d881d2d801aa27dffcfb5e8306"
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -383,6 +389,14 @@ dependencies = [
  "quote",
  "ungrammar",
  "xshell",
+]
+
+[[package]]
+name = "scalarc-hir"
+version = "0.1.0"
+dependencies = [
+ "la-arena",
+ "scalarc-syntax",
 ]
 
 [[package]]

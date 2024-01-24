@@ -5,6 +5,7 @@ members = [
   "scalarc-build",
   "scalarc-syntax",
   "scalarc-parser",
+  "scalarc-hir",
   "scalarc-typer",
   "scalarc-analysis",
   "scalarc-lsp",
