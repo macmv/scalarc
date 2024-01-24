@@ -6,13 +6,11 @@ extern crate log;
 
 use std::panic::UnwindSafe;
 
-pub use database::FileId;
 pub use diagnostic::Diagnostic;
 
 use database::RootDatabase;
 use salsa::{Cancelled, ParallelDatabase};
-
-use crate::database::SourceDatabase;
+use scalarc_source::{FileId, SourceDatabase};
 
 pub struct AnalysisHost {
   db: RootDatabase,

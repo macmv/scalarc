@@ -1,10 +1,14 @@
 //! Lowers `scalarc_syntax::ast` into` scalarc_hir::tree`.
 
 use crate::tree::{self, ExprId, ItemId};
+use scalarc_source::SourceDatabase;
 use scalarc_syntax::{
   ast::{self},
   SourceFile,
 };
+
+#[salsa::query_group(InternDatabaseStorage)]
+pub trait InternDatabase: SourceDatabase {}
 
 struct Lower {
   item_arena: la_arena::Arena<tree::Item>,
@@ -45,6 +49,7 @@ impl Lower {
       ast::Expr::InfixExpr(e) => self.lower_infix(e)?,
       _ => todo!("lowering for {:?}", expr),
     };
+
     Some(self.expr_arena.alloc(expr))
   }
 
