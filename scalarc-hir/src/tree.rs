@@ -1,4 +1,10 @@
+use std::sync::Arc;
+
 use la_arena::Idx;
+use scalarc_source::FileId;
+use scalarc_syntax::ast;
+
+use crate::{source_map::SyntaxId, HirDatabase};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Name(String);
@@ -10,10 +16,44 @@ impl From<&str> for Name {
 pub type ItemId = Idx<Item>;
 pub type ExprId = Idx<Expr>;
 
+#[derive(Debug, Eq, PartialEq)]
+pub struct Package {
+  pub items: Box<[Item]>,
+
+  pub arenas: PackageArenas,
+}
+
+#[derive(Default, Debug, Eq, PartialEq)]
+pub struct PackageArenas {
+  def: la_arena::Arena<Def>,
+  val: la_arena::Arena<Val>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Def {
+  pub name: Name,
+  pub args: Box<[Name]>,
+  pub body: ExprId,
+
+  pub id: SyntaxId<ast::Def>,
+}
+
+impl crate::ItemTreeNode for Def {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Val {
+  pub name: Name,
+  pub expr: ExprId,
+
+  pub id: SyntaxId<ast::ValDef>,
+}
+
+impl crate::ItemTreeNode for Val {}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Item {
-  Def { name: Name, args: Box<[Name]>, body: ExprId },
-  Val { name: Name, expr: ExprId },
+  Def(Def),
+  Val(Val),
 
   Expr(ExprId),
 }
@@ -64,4 +104,12 @@ impl FloatWrapper {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Block {
   pub items: Box<[ItemId]>,
+}
+
+pub fn file_package(db: &dyn HirDatabase, file_id: FileId) -> Arc<Package> {
+  let ast = db.parse(file_id);
+
+  let package = crate::lower::lower(db, file_id, ast.tree());
+
+  Arc::new(package)
 }

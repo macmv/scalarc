@@ -1,30 +1,31 @@
 //! Lowers `scalarc_syntax::ast` into` scalarc_hir::tree`.
 
-use crate::tree::{self, ExprId, ItemId};
-use scalarc_source::SourceDatabase;
+use crate::{
+  source_map::SourceMap,
+  tree::{self, ExprId, ItemId, Package, PackageArenas},
+  HirDatabase,
+};
+use la_arena::{Idx, RawIdx};
+use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self},
   SourceFile,
 };
 
-#[salsa::query_group(InternDatabaseStorage)]
-pub trait InternDatabase: SourceDatabase {}
-
-struct Lower {
-  item_arena: la_arena::Arena<tree::Item>,
-  expr_arena: la_arena::Arena<tree::Expr>,
+struct Lower<'a> {
+  db:         &'a dyn HirDatabase,
+  source_map: &'a SourceMap,
+  arenas:     PackageArenas,
 }
 
-pub fn lower(ast: SourceFile) -> tree::Block {
-  let item_arena = la_arena::Arena::new();
-  let expr_arena = la_arena::Arena::new();
-
-  let mut lower = Lower { item_arena, expr_arena };
-  lower.source_file(ast)
+pub fn lower(db: &dyn HirDatabase, file: FileId, ast: SourceFile) -> Package {
+  let mut lower = Lower { db, source_map: &db.source_map(file), arenas: Default::default() };
+  let items = lower.package(ast);
+  Package { items, arenas: lower.arenas }
 }
 
-impl Lower {
-  fn source_file(&mut self, ast: SourceFile) -> tree::Block {
+impl Lower<'_> {
+  fn package(&mut self, ast: SourceFile) -> Box<[tree::Item]> {
     let mut items = Vec::new();
     for item in ast.items() {
       if let Some(it) = self.lower_item(item) {
@@ -32,15 +33,15 @@ impl Lower {
       }
     }
 
-    tree::Block { items: items.into_boxed_slice() }
+    Vec::into_boxed_slice(items)
   }
 
-  fn lower_item(&mut self, item: ast::Item) -> Option<ItemId> {
+  fn lower_item(&mut self, item: ast::Item) -> Option<tree::Item> {
     let item = match item {
       ast::Item::ValDef(e) => self.lower_val_def(e)?,
       _ => todo!("lowering for {:?}", item),
     };
-    Some(self.item_arena.alloc(item))
+    Some(item)
   }
 
   fn lower_expr(&mut self, expr: ast::Expr) -> Option<ExprId> {
@@ -50,14 +51,20 @@ impl Lower {
       _ => todo!("lowering for {:?}", expr),
     };
 
-    Some(self.expr_arena.alloc(expr))
+    todo!()
+
+    // Some(self.expr_arena.alloc(expr))
   }
 
-  fn lower_val_def(&mut self, val_def: ast::ValDef) -> Option<tree::Item> {
-    let name = val_def.id_token()?.text().into();
-    let expr = self.lower_expr(val_def.expr()?)?;
+  fn lower_val_def(&mut self, val: ast::ValDef) -> Option<tree::Item> {
+    let name = val.id_token()?.text().into();
+    // let expr = self.lower_expr(val_def.expr()?)?;
 
-    Some(tree::Item::Val { name, expr })
+    Some(tree::Item::Val(tree::Val {
+      name,
+      expr: Idx::from_raw(RawIdx::from_u32(0)),
+      id: self.source_map.id(&val)?,
+    }))
   }
 
   fn lower_literal(&mut self, lit: ast::LitExpr) -> Option<tree::Expr> {

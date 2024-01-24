@@ -4,7 +4,7 @@ mod generated;
 use std::marker::PhantomData;
 
 use crate::node::{SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxToken};
-use scalarc_parser::SyntaxKind;
+pub use scalarc_parser::SyntaxKind;
 
 pub use generated::{nodes::*, tokens::*};
 

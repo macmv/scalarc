@@ -13,7 +13,7 @@ mod tests;
 
 use std::{marker::PhantomData, sync::Arc};
 
-use node::SyntaxNode;
+use node::{Scala, SyntaxNode};
 use rowan::GreenNode;
 use scalarc_parser::SyntaxKind;
 
@@ -28,6 +28,10 @@ pub struct Parse<T> {
   errors: Option<Arc<[SyntaxError]>>,
   _ty:    PhantomData<fn() -> T>,
 }
+
+pub type SyntaxNodePtr = rowan::ast::SyntaxNodePtr<Scala>;
+
+pub use rowan::WalkEvent;
 
 impl<T> Parse<T> {
   pub fn syntax_node(&self) -> SyntaxNode { SyntaxNode::new_root(self.green.clone()) }
