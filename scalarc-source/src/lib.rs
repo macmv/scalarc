@@ -21,6 +21,9 @@ pub struct FileId(u32);
 
 impl FileId {
   pub fn temp_new() -> Self { FileId(0) }
+
+  /// DO NOT USE THIS! Its just for unit tests.
+  pub fn new_raw(id: u32) -> Self { FileId(id) }
 }
 
 #[derive(Debug)]

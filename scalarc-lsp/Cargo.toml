@@ -17,3 +17,4 @@ simple-logging = "2.0.2"
 
 scalarc-analysis.workspace = true
 scalarc-source.workspace = true
+parking_lot = "0.12.1"

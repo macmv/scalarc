@@ -1,9 +1,10 @@
 //! Handles global state and the main loop of the server.
 
 use crossbeam_channel::{select, Receiver, Sender};
+use parking_lot::RwLock;
 use scalarc_analysis::{Analysis, AnalysisHost};
 use scalarc_source::FileId;
-use std::{error::Error, path::PathBuf};
+use std::{error::Error, path::PathBuf, sync::Arc};
 
 use lsp_types::{notification::Notification, Url};
 
@@ -13,7 +14,7 @@ pub struct GlobalState {
   pub sender:    Sender<lsp_server::Message>,
   pub workspace: PathBuf,
 
-  pub files: Files,
+  pub files: Arc<RwLock<Files>>,
 
   pub analysis_host: AnalysisHost,
 
@@ -23,6 +24,7 @@ pub struct GlobalState {
 
 pub(crate) struct GlobalStateSnapshot {
   pub analysis:  Analysis,
+  pub files:     Arc<RwLock<Files>>,
   pub workspace: PathBuf,
 }
 
@@ -38,7 +40,7 @@ impl GlobalState {
     GlobalState {
       sender,
       workspace: workspace.to_file_path().unwrap(),
-      files: Files::new(),
+      files: Arc::new(RwLock::new(Files::new())),
       analysis_host: AnalysisHost::new(),
 
       response_sender: tx,
@@ -97,18 +99,19 @@ impl GlobalState {
   }
 
   fn process_changes(&mut self) {
-    let changes = self.files.take_changes();
+    let mut files = self.files.write();
+    let changes = files.take_changes();
 
     for path in &changes {
       self
         .analysis_host
-        .change(scalarc_analysis::Change { file: FileId::temp_new(), text: self.files.read(path) });
+        .change(scalarc_analysis::Change { file: FileId::temp_new(), text: files.read(path) });
     }
 
     let snap = self.analysis_host.snapshot();
 
     for path in &changes {
-      let src = self.files.read(path);
+      let src = files.read(path);
       let diagnostics = snap.diagnostics(FileId::temp_new()).unwrap();
 
       self
@@ -172,6 +175,7 @@ impl GlobalState {
   pub fn snapshot(&self) -> GlobalStateSnapshot {
     GlobalStateSnapshot {
       analysis:  self.analysis_host.snapshot(),
+      files:     self.files.clone(),
       workspace: self.workspace.clone(),
     }
   }

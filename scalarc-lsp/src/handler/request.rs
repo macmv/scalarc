@@ -1,5 +1,6 @@
-use std::error::Error;
+use std::{error::Error, path::Path};
 
+use scalarc_analysis::FileLocation;
 use scalarc_source::FileId;
 
 use crate::global::GlobalStateSnapshot;
@@ -11,7 +12,8 @@ pub fn handle_completion(
   if let Some(path) = snap.workspace_path(&params.text_document_position.text_document.uri) {
     info!("path: {:?}", path);
 
-    let completions = snap.analysis.completions(FileId::temp_new())?;
+    let completions =
+      snap.analysis.completions(file_position(&snap, params.text_document_position)?)?;
 
     Ok(Some(lsp_types::CompletionResponse::Array(
       completions
@@ -22,4 +24,27 @@ pub fn handle_completion(
   } else {
     Ok(None)
   }
+}
+
+fn file_position(
+  snap: &GlobalStateSnapshot,
+  pos: lsp_types::TextDocumentPositionParams,
+) -> Result<FileLocation, Box<dyn Error>> {
+  let files = snap.files.read();
+
+  let path = Path::new(pos.text_document.uri.path());
+
+  let file = files.read(path);
+  let file_id = snap.files.read().path_to_id(path);
+
+  let mut i = 0;
+  for line in file.lines() {
+    if i == pos.position.line as usize {
+      return Ok(FileLocation { file: file_id, index: i });
+    }
+
+    i += line.len() + 1;
+  }
+
+  Err("position not found".into())
 }

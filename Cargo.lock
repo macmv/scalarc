@@ -410,6 +410,7 @@ dependencies = [
  "log",
  "lsp-server",
  "lsp-types",
+ "parking_lot 0.12.1",
  "scalarc-analysis",
  "scalarc-source",
  "serde_json",

@@ -1,12 +1,15 @@
+pub mod completion;
+pub mod diagnostic;
+
 mod database;
-mod diagnostic;
 
 #[macro_use]
 extern crate log;
 
 use std::panic::UnwindSafe;
 
-pub use diagnostic::Diagnostic;
+use completion::Completion;
+use diagnostic::Diagnostic;
 
 use database::RootDatabase;
 use salsa::{Cancelled, ParallelDatabase};
@@ -38,54 +41,20 @@ pub struct Change {
   pub text: String,
 }
 
+pub struct FileLocation {
+  pub file:  FileId,
+  pub index: usize,
+}
+
 impl ParallelDatabase for RootDatabase {
   fn snapshot(&self) -> salsa::Snapshot<Self> {
     salsa::Snapshot::new(RootDatabase { storage: self.storage.snapshot() })
   }
 }
 
-pub struct Completion {
-  pub label: String,
-}
-
 impl Analysis {
-  pub fn completions(&self, file: FileId) -> Cancellable<Vec<Completion>> {
-    self.with_db(|db| {
-      let ast = db.parse(file);
-
-      let mut completions = vec![];
-
-      for item in ast.tree().items() {
-        match item {
-          scalarc_syntax::ast::Item::Import(i) => {
-            for expr in i.import_exprs() {
-              match expr {
-                scalarc_syntax::ast::ImportExpr::Path(p) => {
-                  if let Some(name) = p.ids().last() {
-                    completions.push(Completion { label: name.text().into() });
-                  }
-                }
-                scalarc_syntax::ast::ImportExpr::ImportSelectors(selectors) => {
-                  for selector in selectors.import_selectors() {
-                    match selector {
-                      scalarc_syntax::ast::ImportSelector::ImportSelectorId(ident) => {
-                        if let Some(id) = ident.id_token() {
-                          completions.push(Completion { label: id.text().into() });
-                        }
-                      }
-                      _ => {}
-                    }
-                  }
-                }
-              }
-            }
-          }
-          _ => {}
-        }
-      }
-
-      completions
-    })
+  pub fn completions(&self, cursor: FileLocation) -> Cancellable<Vec<Completion>> {
+    self.with_db(|db| completion::completions(db, cursor))
   }
 
   pub fn diagnostics(&self, file: FileId) -> Cancellable<Vec<Diagnostic>> {
