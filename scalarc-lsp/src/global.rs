@@ -2,6 +2,7 @@
 
 use crossbeam_channel::{select, Receiver, Sender};
 use scalarc_analysis::{Analysis, AnalysisHost};
+use scalarc_source::FileId;
 use std::{error::Error, path::PathBuf};
 
 use lsp_types::{notification::Notification, Url};
@@ -99,17 +100,16 @@ impl GlobalState {
     let changes = self.files.take_changes();
 
     for path in &changes {
-      self.analysis_host.change(scalarc_analysis::Change {
-        file: scalarc_analysis::FileId::temp_new(),
-        text: self.files.read(path),
-      });
+      self
+        .analysis_host
+        .change(scalarc_analysis::Change { file: FileId::temp_new(), text: self.files.read(path) });
     }
 
     let snap = self.analysis_host.snapshot();
 
     for path in &changes {
       let src = self.files.read(path);
-      let diagnostics = snap.diagnostics(scalarc_analysis::FileId::temp_new()).unwrap();
+      let diagnostics = snap.diagnostics(FileId::temp_new()).unwrap();
 
       self
         .sender

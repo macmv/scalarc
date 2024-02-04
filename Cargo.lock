@@ -411,6 +411,7 @@ dependencies = [
  "lsp-server",
  "lsp-types",
  "scalarc-analysis",
+ "scalarc-source",
  "serde_json",
  "simple-logging",
 ]
