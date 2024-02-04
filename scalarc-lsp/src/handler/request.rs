@@ -37,8 +37,8 @@ fn file_position(
   let file_id = snap.files.read().path_to_id(path);
 
   let mut i = 0;
-  for line in file.lines() {
-    if i == pos.position.line as usize {
+  for (num, line) in file.lines().enumerate() {
+    if num == pos.position.line as usize {
       return Ok(FileLocation { file: file_id, index: i });
     }
 

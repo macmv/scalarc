@@ -40,7 +40,7 @@ impl GlobalState {
     GlobalState {
       sender,
       workspace: workspace.to_file_path().unwrap(),
-      files: Arc::new(RwLock::new(Files::new())),
+      files: Arc::new(RwLock::new(Files::new(workspace.to_file_path().unwrap()))),
       analysis_host: AnalysisHost::new(),
 
       response_sender: tx,

@@ -11,24 +11,48 @@ pub struct Files {
   files:   HashMap<PathBuf, String>,
   ids:     HashMap<PathBuf, FileId>,
   changes: Vec<PathBuf>,
+
+  pub workspace: PathBuf,
 }
 
 impl Files {
-  pub fn new() -> Self { Files { files: HashMap::new(), ids: HashMap::new(), changes: vec![] } }
+  pub fn new(workspace: PathBuf) -> Self {
+    Files { files: HashMap::new(), ids: HashMap::new(), changes: vec![], workspace }
+  }
 
-  pub fn read(&self, path: &Path) -> String { self.files.get(path).cloned().unwrap_or_default() }
+  fn canonicalize(&self, path: &Path) -> Option<PathBuf> {
+    let path = path.to_path_buf();
+    if path.is_absolute() {
+      path.strip_prefix(&self.workspace).ok().map(|p| p.to_path_buf())
+    } else {
+      Some(path)
+    }
+  }
+
+  pub fn read(&self, path: &Path) -> String {
+    let Some(path) = self.canonicalize(path) else { return "".into() };
+    self.files.get(&path).cloned().unwrap_or_default()
+  }
   pub fn write(&mut self, path: &Path, contents: String) {
-    self.intern_path(path);
-    self.files.insert(path.into(), contents);
-    self.changes.push(path.into());
+    let Some(path) = self.canonicalize(path) else { return };
+    self.intern_path(&path);
+    self.files.insert(path.clone(), contents);
+    self.changes.push(path);
   }
 
   pub fn take_changes(&mut self) -> Vec<PathBuf> { self.changes.drain(..).collect() }
 
   pub fn path_to_id(&self, path: &Path) -> FileId {
-    match self.ids.get(path) {
+    let Some(path) = self.canonicalize(path) else {
+      panic!("path not in workspace {}", path.display())
+    };
+
+    match self.ids.get(&path) {
       Some(id) => *id,
-      None => panic!("no such file at {}", path.display()),
+      None => {
+        info!("{:?}", &self.files.keys());
+        panic!("no such file at {}", path.display())
+      }
     }
   }
 
@@ -45,7 +69,7 @@ mod tests {
 
   #[test]
   fn path_to_id() {
-    let mut files = Files::new();
+    let mut files = Files::new(PathBuf::new());
 
     files.write(Path::new("foo"), "bar".to_string());
 

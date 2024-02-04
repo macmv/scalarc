@@ -10,8 +10,12 @@ pub struct Completion {
 pub fn completions(db: &RootDatabase, cursor: FileLocation) -> Vec<Completion> {
   let mut completions = vec![];
 
+  info!("finding completions...");
+
   let ast = db.parse(cursor.file);
   add_imports(&mut completions, &ast);
+
+  info!("got {} completions!", completions.len());
 
   completions
 }
