@@ -95,6 +95,7 @@ pub enum Delimiter {
 
   // Not quite tokens, but used to lex comments.
   Slash,
+  Backslash,
   Star,
 }
 
@@ -144,6 +145,7 @@ impl<'a> Tokenizer<'a> {
       ';' => InnerToken::Delimiter(Delimiter::Semicolon),
       ',' => InnerToken::Delimiter(Delimiter::Comma),
       '/' => InnerToken::Delimiter(Delimiter::Slash),
+      '\\' => InnerToken::Delimiter(Delimiter::Backslash),
       '*' => InnerToken::Delimiter(Delimiter::Star),
 
       '_' => InnerToken::Underscore,
@@ -277,13 +279,15 @@ impl<'a> Lexer<'a> {
       // Operator identifier.
       InnerToken::Operator
       | InnerToken::Delimiter(Delimiter::Slash)
-      | InnerToken::Delimiter(Delimiter::Star) => {
+      | InnerToken::Delimiter(Delimiter::Star)
+      | InnerToken::Delimiter(Delimiter::Backslash) => {
         loop {
           match self.tok.peek()? {
             Some(
               InnerToken::Operator
               | InnerToken::Delimiter(Delimiter::Slash)
-              | InnerToken::Delimiter(Delimiter::Star),
+              | InnerToken::Delimiter(Delimiter::Star)
+              | InnerToken::Delimiter(Delimiter::Backslash),
             ) => {}
             Some(_) | None => break,
           }
@@ -358,10 +362,18 @@ impl<'a> Lexer<'a> {
             _ => {}
           }
 
+          let mut in_escape = second == InnerToken::Delimiter(Delimiter::Backslash);
+
           loop {
             // TODO: Escapes
             match self.tok.eat() {
               Ok(InnerToken::Newline) => return Err(LexError::NewlineInString),
+
+              Ok(InnerToken::Delimiter(Delimiter::Backslash)) => in_escape = !in_escape,
+              // TODO: Only allow certain escapes.
+              // TODO: Parse unicode escapes.
+              Ok(_) if in_escape => in_escape = false,
+
               Ok(InnerToken::Delimiter(Delimiter::DoubleQuote)) | Err(LexError::EOF) => break,
               Ok(_) => {}
               Err(e) => return Err(e),
@@ -568,6 +580,17 @@ mod tests {
     assert_eq!(lexer.next(), Err(LexError::NewlineInString));
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), "      ");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    // Escapes.
+    let mut lexer = Lexer::new("\"foo: \\\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::String)));
+    assert_eq!(lexer.slice(), "\"foo: \\\"\"");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("\"\\\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::String)));
+    assert_eq!(lexer.slice(), "\"\\\"\"");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
