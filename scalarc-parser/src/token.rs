@@ -112,8 +112,11 @@ impl<'a> Tokenizer<'a> {
     if self.index >= self.source.len() {
       Ok(None)
     } else {
+      let Some(c) = self.source[self.index..].chars().next() else {
+        return Err(LexError::EOF);
+      };
       let t = self.eat()?;
-      self.index -= 1;
+      self.index -= c.len_utf8();
       Ok(Some(t))
     }
   }
@@ -148,7 +151,8 @@ impl<'a> Tokenizer<'a> {
       '0'..='9' => InnerToken::Digit,
       '\u{0020}'..='\u{007e}' => InnerToken::Operator,
 
-      _ => return Err(LexError::InvalidChar),
+      // TODO: What to do with non-ascii characters?
+      _ => InnerToken::Operator,
     };
     Ok(t)
   }
@@ -683,7 +687,7 @@ mod tests {
   #[test]
   fn invalid_chars() {
     let mut lexer = Lexer::new("⊥");
-    assert_eq!(lexer.next(), Err(LexError::InvalidChar));
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
