@@ -70,6 +70,7 @@ impl SourceMap {
     fn should_alloc(node: &SyntaxNode) -> bool {
       match node.kind() {
         SyntaxKind::VAL_DEF => true,
+        SyntaxKind::FUN_DEF => true,
         _ => false,
       }
     }

@@ -1,5 +1,8 @@
+use crate::{body::Body, tree::Item};
 use scalarc_source::{FileId, SourceDatabase};
 use std::{fmt, sync::Mutex};
+
+use crate::HirDatabase;
 
 mod incremental;
 
@@ -79,4 +82,15 @@ fn foo() {
   let node = ptr.to_node(&ast.syntax_node());
 
   dbg!(&node);
+}
+
+#[test]
+fn body() {
+  let mut db = TestDB::default();
+  let file = FileId::temp_new();
+  db.set_file_text(file, "def foo = 2 * 3".into());
+  let package = db.file_package(file);
+  let Item::Def(def) = package.items[0] else { panic!() };
+
+  assert_eq!(package.arenas.def[def].name, "foo".into());
 }

@@ -39,6 +39,7 @@ impl Lower<'_> {
   fn lower_item(&mut self, item: ast::Item) -> Option<tree::Item> {
     let item = match item {
       ast::Item::ValDef(e) => self.lower_val_def(e)?,
+      ast::Item::FunDef(f) => self.lower_fun_def(f)?,
       _ => todo!("lowering for {:?}", item),
     };
     Some(item)
@@ -61,9 +62,21 @@ impl Lower<'_> {
     // let expr = self.lower_expr(val_def.expr()?)?;
 
     Some(tree::Item::Val(self.arenas.val.alloc(tree::Val {
+      id: self.source_map.id(&val)?,
       name,
       expr: Idx::from_raw(RawIdx::from_u32(0)),
-      id: self.source_map.id(&val)?,
+    })))
+  }
+
+  fn lower_fun_def(&mut self, f: ast::FunDef) -> Option<tree::Item> {
+    let sig = f.fun_sig()?;
+    let name = sig.id_token()?.text().into();
+
+    Some(tree::Item::Def(self.arenas.def.alloc(tree::Def {
+      id: self.source_map.id(&f)?,
+      args: Box::new([]),
+      name,
+      body: Idx::from_raw(RawIdx::from_u32(0)),
     })))
   }
 

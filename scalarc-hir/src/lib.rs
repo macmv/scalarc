@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests;
 
+pub mod body;
 pub mod lower;
 pub mod tree;
 
@@ -39,10 +40,14 @@ pub trait InternDatabase: SourceDatabase {
 }
 
 macro_rules! intern_key {
-  ($name:ident) => {
+  ($name:ident, $loc:ident, $lookup:ident) => {
     impl salsa::InternKey for $name {
       fn from_intern_id(v: salsa::InternId) -> Self { Self(v) }
       fn as_intern_id(&self) -> salsa::InternId { self.0 }
+    }
+
+    impl $name {
+      pub fn lookup(self, db: &dyn InternDatabase) -> $loc { db.$lookup(self) }
     }
   };
 }
@@ -50,20 +55,18 @@ macro_rules! intern_key {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DefId(salsa::InternId);
 type DefLoc = ItemLoc<tree::Def>;
-intern_key!(DefId);
+intern_key!(DefId, DefLoc, lookup_intern_def);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ValId(salsa::InternId);
 type ValLoc = ItemLoc<tree::Val>;
-intern_key!(ValId);
-
-pub type PackageId = u32;
+intern_key!(ValId, ValLoc, lookup_intern_val);
 
 pub trait ItemTreeNode {}
 
 #[derive(Debug)]
 pub struct ItemLoc<N: ItemTreeNode> {
-  pub container: PackageId,
+  pub container: FileId,
   pub id:        Idx<N>,
 }
 

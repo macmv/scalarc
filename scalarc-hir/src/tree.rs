@@ -31,21 +31,21 @@ pub struct PackageArenas {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Def {
+  pub id: SyntaxId<ast::FunDef>,
+
   pub name: Name,
   pub args: Box<[Name]>,
   pub body: ExprId,
-
-  pub id: SyntaxId<ast::Def>,
 }
 
 impl crate::ItemTreeNode for Def {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Val {
+  pub id: SyntaxId<ast::ValDef>,
+
   pub name: Name,
   pub expr: ExprId,
-
-  pub id: SyntaxId<ast::ValDef>,
 }
 
 impl crate::ItemTreeNode for Val {}
