@@ -3,6 +3,9 @@ pub mod diagnostic;
 
 mod database;
 
+#[cfg(test)]
+mod tests;
+
 #[macro_use]
 extern crate log;
 
