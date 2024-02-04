@@ -11,12 +11,14 @@ pub fn handle_completion(
   if let Some(path) = snap.workspace_path(&params.text_document_position.text_document.uri) {
     info!("path: {:?}", path);
 
-    let _completions = snap.analysis.completions(FileId::temp_new());
+    let completions = snap.analysis.completions(FileId::temp_new())?;
 
-    Ok(Some(lsp_types::CompletionResponse::Array(vec![lsp_types::CompletionItem {
-      label: "Hello, World!".to_string(),
-      ..Default::default()
-    }])))
+    Ok(Some(lsp_types::CompletionResponse::Array(
+      completions
+        .into_iter()
+        .map(|c| lsp_types::CompletionItem { label: c.label, ..Default::default() })
+        .collect(),
+    )))
   } else {
     Ok(None)
   }

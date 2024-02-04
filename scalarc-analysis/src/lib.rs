@@ -44,18 +44,36 @@ impl ParallelDatabase for RootDatabase {
   }
 }
 
+pub struct Completion {
+  pub label: String,
+}
+
 impl Analysis {
-  pub fn completions(&self, file: FileId) -> Cancellable<Vec<()>> {
+  pub fn completions(&self, file: FileId) -> Cancellable<Vec<Completion>> {
     self.with_db(|db| {
-      info!("parsing...");
       let ast = db.parse(file);
 
+      let mut completions = vec![];
+
       for item in ast.tree().items() {
-        info!("item: {:?}", item);
+        match item {
+          scalarc_syntax::ast::Item::Import(i) => {
+            i.import_expr().map(|expr| {
+              if let Some(id) = expr.id_token() {
+                completions.push(Completion { label: id.text().into() });
+              }
+              if let Some(selector) = expr.import_selectors() {
+                if let Some(id) = selector.import_selector().and_then(|v| v.id_token()) {
+                  completions.push(Completion { label: id.text().into() });
+                }
+              }
+            });
+          }
+          _ => {}
+        }
       }
 
-      info!("parsed!");
-      vec![]
+      completions
     })
   }
 
