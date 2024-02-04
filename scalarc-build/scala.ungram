@@ -36,11 +36,14 @@ boundvarid = id
 QualId = id ('.' id)*
 ids = id (',' id)*
 
-Path = StableId | (id '.')? 'this'
-StableId = id
-         | Path '.' id
-         | (id '.')? 'super' (ClassQualifier)? '.' id
-ClassQualifier = '[' id ']'
+Path = id ('.' id)*
+StableId = Path
+
+// Path = StableId | (id '.')? 'this'
+// StableId = id
+//          | Path '.' id
+//          | (id '.')? 'super' (ClassQualifier)? '.' id
+// ClassQualifier = '[' id ']'
 
 // This is the orignal grammar, which is insane.
 // Type              = FunctionArgTypes '=>' Type | InfixType (ExistentialClause)?
@@ -229,10 +232,14 @@ ConstrAnnotation  =  '@' Type Arguments
 ItemBody = nl? '{' SelfType? (Item (';' Item)*) '}'
 SelfType = id (':' Type)? '=>'
 
-Import            = 'import' ImportExpr (',' ImportExpr)*
-ImportExpr        = StableId '.' (id | '_' | ImportSelectors)
-ImportSelectors   = '{' (ImportSelector ',')* (ImportSelector | '_') '}'
-ImportSelector    = id ('=>' id | '=>' '_')?
+Import     = 'import' (ImportExpr (',' ImportExpr)*)
+ImportExpr = Path | ImportSelectors
+
+ImportSelectors      = Path '.' '{' (ImportSelector (',' ImportSelector)*) '}'
+ImportSelector       = ImportSelectorId | ImportSelectorRename | ImportSelectorAll
+ImportSelectorId     = id
+ImportSelectorRename = id '=>' id
+ImportSelectorAll    = '_'
 
 Def = ValDef
     | VarDef

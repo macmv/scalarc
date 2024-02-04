@@ -69,3 +69,46 @@ fn block_expr() {
   let ast::Expr::LitExpr(lit) = string.expr().unwrap() else { panic!() };
   assert_eq!(lit.string_lit_token().unwrap().text(), "\"hello\"");
 }
+
+#[test]
+fn import_path() {
+  let parse = parse_ok("import foo.bar.baz");
+  let file: SourceFile = parse.tree();
+
+  assert_eq!(file.items().count(), 1);
+  let ast::Item::Import(import) = file.items().next().unwrap() else { panic!() };
+  let ast::ImportExpr::Path(expr) = import.import_exprs().next().unwrap() else { panic!() };
+
+  let ids = expr.ids().collect::<Vec<_>>();
+  assert_eq!(ids.len(), 3);
+  assert_eq!(ids[0].text(), "foo");
+  assert_eq!(ids[1].text(), "bar");
+  assert_eq!(ids[2].text(), "baz");
+}
+
+#[test]
+fn import_selector() {
+  let parse = parse_ok("import foo.bar.{ baz, qux }");
+  let file: SourceFile = parse.tree();
+
+  assert_eq!(file.items().count(), 1);
+  let ast::Item::Import(import) = file.items().next().unwrap() else { panic!() };
+  let ast::ImportExpr::ImportSelectors(selectors) = import.import_exprs().next().unwrap() else {
+    panic!()
+  };
+
+  let path = selectors.path().unwrap();
+  let ids = path.ids().collect::<Vec<_>>();
+  assert_eq!(ids.len(), 2);
+  assert_eq!(ids[0].text(), "foo");
+  assert_eq!(ids[1].text(), "bar");
+
+  let selectors = selectors.import_selectors().collect::<Vec<_>>();
+  assert_eq!(selectors.len(), 2);
+
+  let ast::ImportSelector::ImportSelectorId(selector) = &selectors[0] else { panic!() };
+  assert_eq!(selector.id_token().unwrap().text(), "baz");
+
+  let ast::ImportSelector::ImportSelectorId(selector) = &selectors[1] else { panic!() };
+  assert_eq!(selector.id_token().unwrap().text(), "qux");
+}

@@ -80,6 +80,9 @@ fn item(p: &mut Parser) {
 // import xxx.yyy.zzz
 fn import_item(p: &mut Parser, m: Marker) {
   p.eat(T![import]);
+
+  let path = p.start();
+
   loop {
     match p.current() {
       T![ident] => {
@@ -91,9 +94,16 @@ fn import_item(p: &mut Parser, m: Marker) {
         continue;
       }
 
-      T!['{'] => import_list(p),
+      T!['{'] => {
+        let path = path.complete(p, PATH);
+        let selector = path.precede(p);
+        import_list(p, selector);
+        m.complete(p, IMPORT);
+        return;
+      }
 
       T![nl] | EOF => {
+        path.complete(p, PATH);
         m.complete(p, IMPORT);
         return;
       }
@@ -101,6 +111,7 @@ fn import_item(p: &mut Parser, m: Marker) {
       // test err
       // import 3
       _ => {
+        path.abandon(p);
         p.error(format!("expected ident, got {:?}", p.current()));
         p.recover_until(T![nl]);
         m.abandon(p);
@@ -112,12 +123,16 @@ fn import_item(p: &mut Parser, m: Marker) {
 
 // test ok
 // import foo.{ bar, baz }
-fn import_list(p: &mut Parser) {
-  let m = p.start();
+fn import_list(p: &mut Parser, m: Marker) {
   p.eat(T!['{']);
   loop {
     match p.current() {
-      T![ident] => p.eat(T![ident]),
+      T![ident] => {
+        let m = p.start();
+        p.eat(T![ident]);
+        m.complete(p, IMPORT_SELECTOR_ID);
+      }
+
       T![,] => p.eat(T![,]),
 
       T!['}'] => {
