@@ -2,7 +2,7 @@
 
 use crate::{
   source_map::SourceMap,
-  tree::{self, ExprId, ItemId, Package, PackageArenas},
+  tree::{self, ExprId, Package, PackageArenas},
   HirDatabase,
 };
 use la_arena::{Idx, RawIdx};
@@ -46,7 +46,7 @@ impl Lower<'_> {
   }
 
   fn lower_expr(&mut self, expr: ast::Expr) -> Option<ExprId> {
-    let expr = match expr {
+    let _expr = match expr {
       ast::Expr::LitExpr(e) => self.lower_literal(e)?,
       ast::Expr::InfixExpr(e) => self.lower_infix(e)?,
       _ => todo!("lowering for {:?}", expr),

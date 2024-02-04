@@ -1,4 +1,4 @@
-use crate::{CompletedMarker, Marker};
+use crate::CompletedMarker;
 
 use super::*;
 

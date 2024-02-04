@@ -1,7 +1,6 @@
 use std::{error::Error, path::Path};
 
 use scalarc_analysis::FileLocation;
-use scalarc_source::FileId;
 
 use crate::global::GlobalStateSnapshot;
 
