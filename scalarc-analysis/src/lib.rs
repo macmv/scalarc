@@ -58,16 +58,27 @@ impl Analysis {
       for item in ast.tree().items() {
         match item {
           scalarc_syntax::ast::Item::Import(i) => {
-            i.import_expr().map(|expr| {
-              if let Some(id) = expr.id_token() {
-                completions.push(Completion { label: id.text().into() });
-              }
-              if let Some(selector) = expr.import_selectors() {
-                if let Some(id) = selector.import_selector().and_then(|v| v.id_token()) {
-                  completions.push(Completion { label: id.text().into() });
+            for expr in i.import_exprs() {
+              match expr {
+                scalarc_syntax::ast::ImportExpr::Path(p) => {
+                  if let Some(name) = p.ids().last() {
+                    completions.push(Completion { label: name.text().into() });
+                  }
+                }
+                scalarc_syntax::ast::ImportExpr::ImportSelectors(selectors) => {
+                  for selector in selectors.import_selectors() {
+                    match selector {
+                      scalarc_syntax::ast::ImportSelector::ImportSelectorId(ident) => {
+                        if let Some(id) = ident.id_token() {
+                          completions.push(Completion { label: id.text().into() });
+                        }
+                      }
+                      _ => {}
+                    }
+                  }
                 }
               }
-            });
+            }
           }
           _ => {}
         }
