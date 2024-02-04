@@ -413,6 +413,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "scalarc-analysis",
  "scalarc-source",
+ "scalarc-syntax",
  "serde_json",
  "simple-logging",
 ]

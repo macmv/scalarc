@@ -15,6 +15,9 @@ pub fn completions(db: &RootDatabase, cursor: FileLocation) -> Vec<Completion> {
   let ast = db.parse(cursor.file);
   add_imports(&mut completions, &ast);
 
+  let token = ast.syntax_node().token_at_offset(cursor.index);
+  info!("token: {:?}", token);
+
   info!("got {} completions!", completions.len());
 
   completions

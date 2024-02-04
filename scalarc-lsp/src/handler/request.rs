@@ -1,6 +1,7 @@
 use std::{error::Error, path::Path};
 
 use scalarc_analysis::FileLocation;
+use scalarc_syntax::TextSize;
 
 use crate::global::GlobalStateSnapshot;
 
@@ -42,11 +43,11 @@ fn file_position(
 
   let mut i = 0;
   for (num, line) in file.lines().enumerate() {
-    if num == pos.position.line as usize {
-      return Ok(FileLocation { file: file_id, index: i });
+    if num as u32 == pos.position.line {
+      return Ok(FileLocation { file: file_id, index: TextSize::new(i + pos.position.character) });
     }
 
-    i += line.len() + 1;
+    i += line.len() as u32 + 1;
   }
 
   Err("position not found".into())

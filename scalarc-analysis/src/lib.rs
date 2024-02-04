@@ -14,6 +14,7 @@ use diagnostic::Diagnostic;
 use database::RootDatabase;
 use salsa::{Cancelled, ParallelDatabase};
 use scalarc_source::{FileId, SourceDatabase};
+use scalarc_syntax::TextSize;
 
 pub struct AnalysisHost {
   db: RootDatabase,
@@ -43,7 +44,7 @@ pub struct Change {
 
 pub struct FileLocation {
   pub file:  FileId,
-  pub index: usize,
+  pub index: TextSize,
 }
 
 impl ParallelDatabase for RootDatabase {
