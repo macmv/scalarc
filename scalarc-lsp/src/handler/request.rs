@@ -17,7 +17,11 @@ pub fn handle_completion(
     Ok(Some(lsp_types::CompletionResponse::Array(
       completions
         .into_iter()
-        .map(|c| lsp_types::CompletionItem { label: c.label, ..Default::default() })
+        .map(|c| lsp_types::CompletionItem {
+          label: c.label,
+          kind: Some(lsp_types::CompletionItemKind::CLASS),
+          ..Default::default()
+        })
         .collect(),
     )))
   } else {
