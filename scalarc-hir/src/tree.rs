@@ -106,15 +106,21 @@ pub struct Block {
   pub items: Box<[ItemId]>,
 }
 
+/// Returns the package for a given file.
+///
+/// This assumes that each file creates one package, which is definitely not the
+/// case. TODO: Need to rework a bit.
 pub fn file_package(db: &dyn HirDatabase, file_id: FileId) -> Arc<Package> {
   let package = crate::lower::lower(db, file_id);
 
   Arc::new(package)
 }
 
+/// A workspace map is a list of all packages in a workspace. Because packages
+/// are only defined by their top-level items, this will not get re-computed if
+/// the contents of any item or function changes.
 pub fn workspace_map(db: &dyn HirDatabase) -> Vec<Arc<Package>> {
   // TODO: Fill in the workspace based off the package sources.
   let source = db.file_package(FileId::temp_new());
-  dbg!(&source);
-  vec![]
+  vec![source]
 }

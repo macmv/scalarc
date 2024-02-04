@@ -1,6 +1,4 @@
-use crate::tree;
 use scalarc_source::{FileId, SourceDatabase};
-use scalarc_syntax::{Parse, SourceFile};
 use std::{fmt, sync::Mutex};
 
 mod incremental;
@@ -71,17 +69,14 @@ fn foo() {
   // Lower the file into a tree.
   let hir = crate::lower::lower(&db, file);
 
-  /*
   // Grab a Val from the HIR.
   let crate::tree::Item::Val(v) = &hir.items[0] else { panic!() };
 
   // Look it up in the AST.
-  let ptr = v.id.get(&db, file);
+  let val = &hir.arenas.val[*v];
+  let ptr = val.id.get(&db, file);
   let ast = db.parse(file);
   let node = ptr.to_node(&ast.syntax_node());
 
   dbg!(&node);
-  */
-
-  panic!();
 }
