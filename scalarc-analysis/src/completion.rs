@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use scalarc_source::SourceDatabase;
 use scalarc_syntax::{
   ast::AstNode,
-  node::{SyntaxNode, SyntaxToken},
+  node::{NodeOrToken, SyntaxNode, SyntaxToken},
   Parse, SourceFile,
 };
 
@@ -22,13 +22,14 @@ pub fn completions(db: &RootDatabase, cursor: FileLocation) -> Vec<Completion> {
   add_imports(&mut completions, &ast);
 
   let token = ast.syntax_node().token_at_offset(cursor.index);
-  let scopes = scopes_for(&token.left_biased().unwrap().parent().unwrap());
+  let token = token.left_biased().unwrap();
+  let scopes = scopes_for(&token);
 
   let mut names = HashSet::new();
   for scope in scopes {
-    for decl in scope.declarations {
-      if names.insert(decl.clone()) {
-        completions.push(Completion { label: decl });
+    for name in scope.declarations {
+      if names.insert(name.clone()) {
+        completions.push(Completion { label: name });
       }
     }
   }
@@ -74,16 +75,16 @@ struct Scope {
 }
 
 // Returns the scopes around the given token. The first scope is the innermost.
-fn scopes_for(token: &SyntaxNode) -> Vec<Scope> {
+fn scopes_for(token: &SyntaxToken) -> Vec<Scope> {
   let mut scopes = vec![];
 
-  let mut tok = token.clone();
+  let mut n: NodeOrToken = token.clone().into();
 
   loop {
-    scopes.push(collect_scope(&tok));
+    scopes.push(collect_scope(&n));
 
-    if let Some(parent) = tok.parent() {
-      tok = parent;
+    if let Some(parent) = n.parent() {
+      n = parent.into();
     } else {
       break;
     }
@@ -92,14 +93,14 @@ fn scopes_for(token: &SyntaxNode) -> Vec<Scope> {
   scopes
 }
 
-fn collect_scope(tok: &SyntaxNode) -> Scope {
+fn collect_scope(t: &NodeOrToken) -> Scope {
   let mut declarations = vec![];
 
-  for node in tok.children() {
-    match node.kind() {
+  for n in iter_prev_siblings(t) {
+    match n.kind() {
       scalarc_parser::SyntaxKind::VAL_DEF => {
-        let node = scalarc_syntax::ast::ValDef::cast(node).unwrap();
-        if let Some(id) = node.id_token() {
+        let n = scalarc_syntax::ast::ValDef::cast(n).unwrap();
+        if let Some(id) = n.id_token() {
           declarations.push(id.text().into());
         }
       }
@@ -107,5 +108,29 @@ fn collect_scope(tok: &SyntaxNode) -> Scope {
     }
   }
 
+  declarations.reverse();
+
   Scope { declarations }
+}
+
+fn iter_prev_siblings(t: &NodeOrToken) -> impl Iterator<Item = SyntaxNode> {
+  struct Iter {
+    prev: NodeOrToken,
+  }
+
+  impl Iterator for Iter {
+    type Item = SyntaxNode;
+
+    fn next(&mut self) -> Option<SyntaxNode> {
+      loop {
+        let next = self.prev.prev_sibling_or_token()?;
+        self.prev = next.clone();
+        if let Some(node) = next.as_node() {
+          return Some(node.clone());
+        }
+      }
+    }
+  }
+
+  Iter { prev: t.clone() }
 }

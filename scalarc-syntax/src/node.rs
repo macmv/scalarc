@@ -17,3 +17,4 @@ pub type SyntaxElement = rowan::SyntaxElement<Scala>;
 pub type SyntaxNodeChildren = rowan::SyntaxNodeChildren<Scala>;
 pub type SyntaxElementChildren = rowan::SyntaxElementChildren<Scala>;
 pub type PreorderWithTokens = rowan::api::PreorderWithTokens<Scala>;
+pub type NodeOrToken = rowan::NodeOrToken<SyntaxNode, SyntaxToken>;

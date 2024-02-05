@@ -8,26 +8,51 @@ fn simple_completions(db: &RootDatabase, cursor: crate::FileLocation) -> Vec<Str
   completions.into_iter().map(|c| c.label).collect()
 }
 
-#[test]
-fn check_completions() {
-  let src = r#"
-    val x = 1
-    val y = 2
-    val z = 3 + 4
-  "#;
+fn completions_for(src: &str) -> Vec<String> {
+  let cursor = src.find('|').unwrap() as u32;
+  let real_src = src[..cursor as usize].to_string() + &src[cursor as usize + 1..];
 
   let mut db = RootDatabase::default();
   let file = FileId::temp_new();
-  db.set_file_text(file, src.into());
+  db.set_file_text(file, real_src.into());
 
-  /*
-  let completions = simple_completions(&db, crate::FileLocation { file, index: TextSize::new(0) });
-  assert!(completions.is_empty());
-  */
+  simple_completions(&db, crate::FileLocation { file, index: cursor.into() })
+}
 
-  let completions = simple_completions(
-    &db,
-    crate::FileLocation { file, index: TextSize::new(src.len() as u32 - 2) },
+#[test]
+fn check_completions() {
+  assert_eq!(
+    completions_for(
+      r#"
+        val x = 1
+        val y = 2
+        val z = 3 + 4
+        |
+      "#,
+    ),
+    vec!["x", "y", "z"]
   );
-  assert_eq!(completions, vec!["x", "y", "z"]);
+
+  assert_eq!(
+    completions_for(
+      r#"
+        val x = 1
+        val y = 2
+        |
+        val z = 3 + 4
+      "#,
+    ),
+    vec!["x", "y"]
+  );
+
+  assert_eq!(
+    completions_for(
+      r#"
+        val x = 1
+        val y = 2
+        val z = |3 + 4
+      "#,
+    ),
+    vec!["x", "y"]
+  );
 }
