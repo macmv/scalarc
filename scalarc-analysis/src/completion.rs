@@ -11,6 +11,13 @@ use crate::{database::RootDatabase, FileLocation};
 
 pub struct Completion {
   pub label: String,
+  pub kind:  CompletionKind,
+}
+
+pub enum CompletionKind {
+  Class,
+  Val,
+  Var,
 }
 
 pub fn completions(db: &RootDatabase, cursor: FileLocation) -> Vec<Completion> {
@@ -27,9 +34,9 @@ pub fn completions(db: &RootDatabase, cursor: FileLocation) -> Vec<Completion> {
 
   let mut names = HashSet::new();
   for scope in scopes {
-    for name in scope.declarations {
+    for (name, kind) in scope.declarations {
       if names.insert(name.clone()) {
-        completions.push(Completion { label: name });
+        completions.push(Completion { label: name, kind });
       }
     }
   }
@@ -47,7 +54,8 @@ fn add_imports(completions: &mut Vec<Completion>, ast: &Parse<SourceFile>) {
           match expr {
             scalarc_syntax::ast::ImportExpr::Path(p) => {
               if let Some(name) = p.ids().last() {
-                completions.push(Completion { label: name.text().into() });
+                completions
+                  .push(Completion { label: name.text().into(), kind: CompletionKind::Class });
               }
             }
             scalarc_syntax::ast::ImportExpr::ImportSelectors(selectors) => {
@@ -55,7 +63,8 @@ fn add_imports(completions: &mut Vec<Completion>, ast: &Parse<SourceFile>) {
                 match selector {
                   scalarc_syntax::ast::ImportSelector::ImportSelectorId(ident) => {
                     if let Some(id) = ident.id_token() {
-                      completions.push(Completion { label: id.text().into() });
+                      completions
+                        .push(Completion { label: id.text().into(), kind: CompletionKind::Class });
                     }
                   }
                   _ => {}
@@ -71,7 +80,7 @@ fn add_imports(completions: &mut Vec<Completion>, ast: &Parse<SourceFile>) {
 }
 
 struct Scope {
-  declarations: Vec<String>,
+  declarations: Vec<(String, CompletionKind)>,
 }
 
 // Returns the scopes around the given token. The first scope is the innermost.
@@ -101,7 +110,7 @@ fn collect_scope(t: &NodeOrToken) -> Scope {
       scalarc_parser::SyntaxKind::VAL_DEF => {
         let n = scalarc_syntax::ast::ValDef::cast(n).unwrap();
         if let Some(id) = n.id_token() {
-          declarations.push(id.text().into());
+          declarations.push((id.text().into(), CompletionKind::Val));
         }
       }
       _ => {}

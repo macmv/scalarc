@@ -1,6 +1,6 @@
 use std::{error::Error, path::Path};
 
-use scalarc_analysis::FileLocation;
+use scalarc_analysis::{completion::CompletionKind, FileLocation};
 use scalarc_syntax::TextSize;
 
 use crate::global::GlobalStateSnapshot;
@@ -20,7 +20,11 @@ pub fn handle_completion(
         .into_iter()
         .map(|c| lsp_types::CompletionItem {
           label: c.label,
-          kind: Some(lsp_types::CompletionItemKind::CLASS),
+          kind: Some(match c.kind {
+            CompletionKind::Val => lsp_types::CompletionItemKind::VARIABLE,
+            CompletionKind::Var => lsp_types::CompletionItemKind::VARIABLE,
+            CompletionKind::Class => lsp_types::CompletionItemKind::CLASS,
+          }),
           ..Default::default()
         })
         .collect(),
