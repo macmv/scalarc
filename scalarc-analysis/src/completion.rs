@@ -1,5 +1,11 @@
+use std::collections::HashSet;
+
 use scalarc_source::SourceDatabase;
-use scalarc_syntax::{Parse, SourceFile};
+use scalarc_syntax::{
+  ast::AstNode,
+  node::{SyntaxNode, SyntaxToken},
+  Parse, SourceFile,
+};
 
 use crate::{database::RootDatabase, FileLocation};
 
@@ -16,7 +22,16 @@ pub fn completions(db: &RootDatabase, cursor: FileLocation) -> Vec<Completion> {
   add_imports(&mut completions, &ast);
 
   let token = ast.syntax_node().token_at_offset(cursor.index);
-  info!("token: {:?}", token);
+  let scopes = scopes_for(&token.left_biased().unwrap().parent().unwrap());
+
+  let mut names = HashSet::new();
+  for scope in scopes {
+    for decl in scope.declarations {
+      if names.insert(decl.clone()) {
+        completions.push(Completion { label: decl });
+      }
+    }
+  }
 
   info!("got {} completions!", completions.len());
 
@@ -52,4 +67,45 @@ fn add_imports(completions: &mut Vec<Completion>, ast: &Parse<SourceFile>) {
       _ => {}
     }
   }
+}
+
+struct Scope {
+  declarations: Vec<String>,
+}
+
+// Returns the scopes around the given token. The first scope is the innermost.
+fn scopes_for(token: &SyntaxNode) -> Vec<Scope> {
+  let mut scopes = vec![];
+
+  let mut tok = token.clone();
+
+  loop {
+    scopes.push(collect_scope(&tok));
+
+    if let Some(parent) = tok.parent() {
+      tok = parent;
+    } else {
+      break;
+    }
+  }
+
+  scopes
+}
+
+fn collect_scope(tok: &SyntaxNode) -> Scope {
+  let mut declarations = vec![];
+
+  for node in tok.children() {
+    match node.kind() {
+      scalarc_parser::SyntaxKind::VAL_DEF => {
+        let node = scalarc_syntax::ast::ValDef::cast(node).unwrap();
+        if let Some(id) = node.id_token() {
+          declarations.push(id.text().into());
+        }
+      }
+      _ => {}
+    }
+  }
+
+  Scope { declarations }
 }
