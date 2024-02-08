@@ -1,6 +1,6 @@
 //! Handles global state and the main loop of the server.
 
-use crossbeam_channel::{select, Receiver, Sender};
+use crossbeam_channel::{Receiver, Select, Sender};
 use parking_lot::RwLock;
 use scalarc_analysis::{Analysis, AnalysisHost};
 use scalarc_source::FileId;
@@ -31,6 +31,7 @@ pub(crate) struct GlobalStateSnapshot {
 enum Event {
   Message(lsp_server::Message),
   Response(lsp_server::Message),
+  BspMessage(lsp_server::Message),
 }
 
 impl GlobalState {
@@ -48,10 +49,14 @@ impl GlobalState {
     }
   }
 
-  pub fn run(mut self, receiver: Receiver<lsp_server::Message>) -> Result<(), Box<dyn Error>> {
+  pub fn run(
+    mut self,
+    receiver: Receiver<lsp_server::Message>,
+    bsp_receiver: Option<Receiver<lsp_server::Message>>,
+  ) -> Result<(), Box<dyn Error>> {
     // TODO: Spawn a task to fetch bsp status here.
 
-    while let Some(e) = self.next_event(&receiver) {
+    while let Some(e) = self.next_event(&receiver, bsp_receiver.as_ref()) {
       match e {
         Event::Message(lsp_server::Message::Notification(lsp_server::Notification {
           method,
@@ -72,14 +77,25 @@ impl GlobalState {
     Ok(())
   }
 
-  fn next_event(&self, receiver: &Receiver<lsp_server::Message>) -> Option<Event> {
-    select! {
-      recv(receiver) -> msg => {
-        Some(Event::Message(msg.ok()?))
-      },
-      recv(self.response_receiver) -> msg => {
-        Some(Event::Response(msg.unwrap()))
-      }
+  fn next_event(
+    &self,
+    receiver: &Receiver<lsp_server::Message>,
+    bsp_receiver: Option<&Receiver<lsp_server::Message>>,
+  ) -> Option<Event> {
+    let mut sel = Select::new();
+    sel.recv(receiver);
+    sel.recv(&self.response_receiver);
+    if let Some(r) = bsp_receiver {
+      sel.recv(r);
+    }
+
+    let op = sel.select();
+
+    match op.index() {
+      0 => Some(Event::Message(op.recv(receiver).unwrap())),
+      1 => Some(Event::Response(op.recv(&self.response_receiver).unwrap())),
+      2 => Some(Event::BspMessage(op.recv(bsp_receiver.unwrap()).unwrap())),
+      _ => None,
     }
   }
 
@@ -90,6 +106,9 @@ impl GlobalState {
       Event::Message(lsp_server::Message::Response(_)) => (),
       Event::Response(e) => {
         self.sender.send(e)?;
+      }
+      Event::BspMessage(_) => {
+        info!("todo: handle bsp message");
       }
     }
 
