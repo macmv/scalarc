@@ -57,7 +57,13 @@ fn run() -> Result<(), Box<dyn Error>> {
     return Err(e.into());
   }
 
-  let global = global::GlobalState::new(connection.sender, root_uri.unwrap());
+  let root_uri = root_uri.unwrap();
+
+  let _bsp_connection = scalarc_bsp::connect(&PathBuf::from(root_uri.to_file_path().unwrap()))
+    .map_err(|e| error!("failed to connect to bsp server: {}", e))
+    .ok();
+
+  let global = global::GlobalState::new(connection.sender, root_uri);
   global.run(connection.receiver)?;
 
   Ok(())
