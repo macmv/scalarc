@@ -6,7 +6,10 @@ use std::{
   thread,
 };
 
-use crate::{types::BspRequest, BspError};
+use crate::{
+  types::{BspNotification, BspRequest},
+  BspError,
+};
 use crossbeam_channel::{Receiver, Sender};
 use lsp_server::{Message, RequestId};
 
@@ -37,30 +40,42 @@ impl BspClient {
 
     let (writer_sender, writer_receiver) = crossbeam_channel::bounded::<Message>(0);
     let writer = thread::spawn(move || {
-      writer_receiver.into_iter().try_for_each(|it| {
-        info!("sending a message");
-
-        it.write(&mut child_stdin)
-      })?;
+      for msg in writer_receiver {
+        match msg.write(&mut child_stdin) {
+          Ok(_) => {}
+          Err(e) => {
+            error!("failed to write message: {}", e);
+            break;
+          }
+        }
+      }
+      error!("closing writer thread");
       Ok(())
     });
     let (reader_sender, reader_receiver) = crossbeam_channel::bounded::<Message>(0);
-    let reader = thread::spawn(move || {
-      while let Some(msg) = Message::read(&mut child_stdout)? {
-        info!("received a message");
+    let reader = thread::spawn(move || loop {
+      match Message::read(&mut child_stdout) {
+        Ok(Some(msg)) => {
+          let is_exit = match &msg {
+            Message::Notification(n) => n.method == "exit",
+            _ => false,
+          };
 
-        let is_exit = match &msg {
-          Message::Notification(n) => n.method == "exit",
-          _ => false,
-        };
+          reader_sender.send(msg).unwrap();
 
-        reader_sender.send(msg).unwrap();
-
-        if is_exit {
-          break;
+          if is_exit {
+            break Ok(());
+          }
+        }
+        Ok(None) => {
+          error!("closing reader thread");
+          break Ok(());
+        }
+        Err(e) => {
+          error!("failed to read message: {}", e);
+          break Err(e);
         }
       }
-      Ok(())
     });
     let threads = IoThreads { reader, writer };
 
@@ -80,6 +95,16 @@ impl BspClient {
       .unwrap();
 
     id
+  }
+
+  pub fn notify<N: BspNotification>(&self, notification: N) {
+    self
+      .sender
+      .send(Message::Notification(lsp_server::Notification {
+        method: N::METHOD.into(),
+        params: serde_json::to_value(notification).unwrap(),
+      }))
+      .unwrap();
   }
 
   // TODO: Pass in capabilities.

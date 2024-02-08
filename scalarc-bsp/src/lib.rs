@@ -2,7 +2,7 @@ use std::path::Path;
 
 use thiserror::Error;
 
-mod client;
+pub mod client;
 mod discovery;
 pub mod types;
 

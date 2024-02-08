@@ -8,6 +8,10 @@ pub trait BspRequest: Serialize {
   type Result: DeserializeOwned;
 }
 
+pub trait BspNotification: Serialize {
+  const METHOD: &'static str;
+}
+
 impl BspRequest for InitializeBuildParams {
   const METHOD: &'static str = "build/initialize";
 
@@ -161,4 +165,141 @@ pub struct RunProvider {
 #[serde(rename_all = "camelCase")]
 pub struct DebugProvider {
   pub language_ids: Vec<String>,
+}
+
+impl BspRequest for WorkspaceBuildTargetsRequest {
+  const METHOD: &'static str = "workspace/buildTargets";
+
+  type Result = WorkspaceBuildTargetsResult;
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceBuildTargetsRequest;
+
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceBuildTargetsResult {
+  /// The build targets in this workspace that
+  /// contain sources with the given language ids.
+  targets: Vec<BuildTarget>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BuildTarget {
+  /// The target’s unique identifier.
+  id: BuildTargetIdentifier,
+
+  /// A human readable name for this target.
+  /// May be presented in the user interface.
+  /// Should be unique if possible.
+  /// The id.uri is used if None.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  display_name: Option<String>,
+
+  /// The directory where this target belongs to. Multiple build targets are
+  /// allowed to map to the same base directory, and a build target is not
+  /// required to have a base directory. A base directory does not
+  /// determine the sources of a target, see buildTarget/sources.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  base_directory: Option<Url>,
+
+  /// Free-form string tags to categorize or label this build target.
+  /// For example, can be used by the client to:
+  /// - customize how the target should be translated into the client's project
+  ///   model.
+  /// - group together different but related targets in the user interface.
+  /// - display icons or colors in the user interface.
+  /// Pre-defined tags are listed in `BuildTargetTag` but clients and servers
+  /// are free to define new tags for custom purposes. */
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  tags: Vec<BuildTargetTag>,
+
+  /** The set of languages that this target contains.
+   * The ID string for each language is defined in the LSP. */
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  language_ids: Vec<String>,
+
+  /** The direct upstream build target dependencies of this build target */
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  dependencies: Vec<BuildTargetIdentifier>,
+
+  /** The capabilities of this build target. */
+  capabilities: BuildTargetCapabilities,
+}
+
+/// A unique identifier for a target, can use any URI-compatible encoding as
+/// long as it is unique within the workspace. Clients should not infer metadata
+/// out of the URI structure such as the path or query parameters, use
+/// BuildTarget instead.
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BuildTargetIdentifier {
+  /** The target’s Uri */
+  uri: Option<Url>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum BuildTargetTag {
+  /// Target contains source code for producing any kind of application, may
+  /// have but does not require the `canRun` capability.
+  #[serde(rename = "application")]
+  Application,
+
+  /// Target contains source code to measure performance of a program, may
+  /// have but does not require the `canRun` build target capability.
+  #[serde(rename = "benchmark")]
+  Benchmark,
+
+  /// Target contains source code for integration testing purposes, may have
+  /// but does not require the `canTest` capability.
+  /// The difference between "test" and "integration-test" is that
+  /// integration tests traditionally run slower compared to normal tests
+  /// and require more computing resources to execute. */
+  #[serde(rename = "integration-test")]
+  IntegrationTest,
+
+  /// Target contains re-usable functionality for downstream targets. May
+  /// have any combination of capabilities.
+  #[serde(rename = "library")]
+  Library,
+
+  /// Actions on the target such as build and test should only be invoked
+  /// manually and explicitly. For example, triggering a build on all
+  /// targets in the workspace should by default not include this target.
+  /// The original motivation to add the "manual" tag comes from a similar
+  /// functionality that exists in Bazel, where targets with this tag have
+  /// to be specified explicitly on the command line.
+  #[serde(rename = "manual")]
+  Manual,
+
+  /// Target should be ignored by IDEs.
+  #[serde(rename = "no-ide")]
+  NoIde,
+
+  /// Target contains source code for testing purposes, may have but does not
+  /// require the `canTest` capability.
+  #[serde(rename = "test")]
+  Test,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BuildTargetCapabilities {
+  /// This target can be compiled by the BSP server.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  can_compile: Option<bool>,
+
+  /// This target can be tested by the BSP server.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  can_test: Option<bool>,
+
+  /// This target can be run by the BSP server.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  can_run: Option<bool>,
+
+  /// This target can be debugged by the BSP server.
+  #[serde(skip_serializing_if = "Option::is_none")]
+  can_debug: Option<bool>,
 }
