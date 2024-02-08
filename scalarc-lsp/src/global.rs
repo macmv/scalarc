@@ -54,8 +54,6 @@ impl GlobalState {
     receiver: Receiver<lsp_server::Message>,
     bsp_receiver: Option<Receiver<lsp_server::Message>>,
   ) -> Result<(), Box<dyn Error>> {
-    // TODO: Spawn a task to fetch bsp status here.
-
     while let Some(e) = self.next_event(&receiver, bsp_receiver.as_ref()) {
       match e {
         Event::Message(lsp_server::Message::Notification(lsp_server::Notification {
@@ -107,8 +105,10 @@ impl GlobalState {
       Event::Response(e) => {
         self.sender.send(e)?;
       }
-      Event::BspMessage(_) => {
-        info!("todo: handle bsp message");
+      Event::BspMessage(lsp_server::Message::Request(_)) => {}
+      Event::BspMessage(lsp_server::Message::Response(res)) => self.handle_bsp_response(res),
+      Event::BspMessage(lsp_server::Message::Notification(not)) => {
+        self.handle_bsp_notification(not)
       }
     }
 
@@ -181,6 +181,33 @@ impl GlobalState {
       .on_sync::<lsp_notification::DidChangeTextDocument>(
         notification::handle_change_text_document,
       );
+  }
+
+  fn handle_bsp_response(&mut self, res: lsp_server::Response) {
+    let mut dispatcher = BspResponseDispatcher { global: self, res };
+    use crate::handler::bsp_response;
+
+    use scalarc_bsp::types as bsp_types;
+
+    dispatcher.on_sync::<bsp_types::WorkspaceBuildTargetsRequest>(
+      bsp_response::handle_workspace_build_targets,
+    );
+  }
+
+  fn handle_bsp_notification(&mut self, not: lsp_server::Notification) {
+    info!("todo: handle bsp notification {not:#?}");
+
+    let mut dispatcher = BspNotificationDispatcher { global: self, not };
+
+    use scalarc_bsp::types as bsp_types;
+
+    /*
+    dispatcher
+      .on_sync::<bsp_types::DidOpenTextDocument>(notification::handle_open_text_document)
+      .on_sync::<lsp_notification::DidChangeTextDocument>(
+        notification::handle_change_text_document,
+      );
+    */
   }
 
   pub fn workspace_path(&self, uri: &Url) -> Option<PathBuf> {
@@ -310,6 +337,77 @@ impl NotificationDispatcher<'_> {
     }
 
     let params = match serde_json::from_value::<N::Params>(self.not.params.clone()) {
+      Ok(p) => p,
+      Err(e) => {
+        error!("failed to deserialize params: {}", e);
+        return self;
+      }
+    };
+    // TODO: Dispatch this to a thread pool.
+    f(self.global, params).unwrap();
+
+    self
+  }
+}
+
+struct BspResponseDispatcher<'a> {
+  global: &'a mut GlobalState,
+  res:    lsp_server::Response,
+}
+
+impl BspResponseDispatcher<'_> {
+  fn on_sync<R>(
+    &mut self,
+    f: fn(&GlobalState, R::Result) -> Result<(), Box<dyn Error>>,
+  ) -> &mut Self
+  where
+    R: scalarc_bsp::types::BspRequest,
+  {
+    // TODO
+    // if self.res.method != R::METHOD {
+    //   return self;
+    // }
+
+    let result = match serde_json::from_value::<R::Result>(self.res.result.clone().unwrap()) {
+      Ok(p) => p,
+      Err(e) => {
+        error!("failed to deserialize params: {}", e);
+        return self;
+      }
+    };
+
+    // TODO: Dispatch this to a thread pool.
+    let id = self.res.id.clone();
+    let response = f(self.global, result).unwrap();
+    self
+      .global
+      .sender
+      .send(lsp_server::Message::Response(lsp_server::Response {
+        id,
+        result: Some(serde_json::to_value(response).unwrap()),
+        error: None,
+      }))
+      .unwrap();
+
+    self
+  }
+}
+
+struct BspNotificationDispatcher<'a> {
+  global: &'a mut GlobalState,
+  not:    lsp_server::Notification,
+}
+
+impl BspNotificationDispatcher<'_> {
+  fn on_sync<N>(&mut self, f: fn(&mut GlobalState, N) -> Result<(), Box<dyn Error>>) -> &mut Self
+  where
+    N: scalarc_bsp::types::BspNotification,
+  {
+    if self.not.method != N::METHOD {
+      return self;
+    }
+
+    let params = match serde_json::from_value::<N>(self.not.params.clone()) {
       Ok(p) => p,
       Err(e) => {
         error!("failed to deserialize params: {}", e);

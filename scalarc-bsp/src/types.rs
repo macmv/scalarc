@@ -8,7 +8,7 @@ pub trait BspRequest: Serialize {
   type Result: DeserializeOwned;
 }
 
-pub trait BspNotification: Serialize {
+pub trait BspNotification: Serialize + DeserializeOwned {
   const METHOD: &'static str;
 }
 
