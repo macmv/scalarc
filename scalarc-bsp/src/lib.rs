@@ -19,7 +19,7 @@ pub enum BspError {
   NoSbtServer,
 }
 
-pub fn connect(dir: &Path) -> Result<client::BspClient, BspError> {
+pub fn connect(dir: &Path) -> Result<client::BspConnection, BspError> {
   let configs = discovery::find_bsp_servers(dir);
 
   if configs.is_empty() {
@@ -29,7 +29,7 @@ pub fn connect(dir: &Path) -> Result<client::BspClient, BspError> {
   for config in configs {
     // Prefer sbt for now. TODO: Might want to make this configurable.
     if config.name == "sbt" {
-      return Ok(client::BspClient::new(config));
+      return Ok(client::BspConnection::spawn(config));
     }
   }
 
