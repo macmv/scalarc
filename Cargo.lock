@@ -386,7 +386,10 @@ version = "0.1.0"
 name = "scalarc-bsp"
 version = "0.1.0"
 dependencies = [
+ "crossbeam-channel",
  "log",
+ "lsp-server",
+ "lsp-types",
  "serde",
  "serde_json",
  "thiserror",

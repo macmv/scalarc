@@ -1,5 +1,5 @@
 use scalarc_source::{FileId, SourceDatabase};
-use scalarc_syntax::TextSize;
+
 
 use crate::{completion::completions, database::RootDatabase};
 

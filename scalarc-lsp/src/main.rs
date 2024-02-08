@@ -59,9 +59,22 @@ fn run() -> Result<(), Box<dyn Error>> {
 
   let root_uri = root_uri.unwrap();
 
-  let _bsp_connection = scalarc_bsp::connect(&PathBuf::from(root_uri.to_file_path().unwrap()))
-    .map_err(|e| error!("failed to connect to bsp server: {}", e))
-    .ok();
+  let root_file = root_uri.to_file_path().unwrap();
+
+  let bsp_client = match scalarc_bsp::connect(&root_file) {
+    Ok(c) => {
+      let res = c.send_initialize(root_uri.clone())?;
+      let res: scalarc_bsp::types::InitializeBuildResult = serde_json::from_value(res).unwrap();
+
+      info!("got initialize response: {:#?}", res);
+
+      Some(c)
+    }
+    Err(e) => {
+      error!("failed to connect to BSP server: {}", e);
+      None
+    }
+  };
 
   let global = global::GlobalState::new(connection.sender, root_uri);
   global.run(connection.receiver)?;
