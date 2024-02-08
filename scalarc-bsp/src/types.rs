@@ -1,6 +1,18 @@
 use lsp_types::Url;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
+
+pub trait BspRequest: Serialize {
+  const METHOD: &'static str;
+
+  type Result: DeserializeOwned;
+}
+
+impl BspRequest for InitializeBuildParams {
+  const METHOD: &'static str = "build/initialize";
+
+  type Result = InitializeBuildResult;
+}
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]

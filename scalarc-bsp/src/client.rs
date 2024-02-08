@@ -1,10 +1,18 @@
-use std::{io, io::BufReader, process::Command, thread};
+use std::{
+  io,
+  io::BufReader,
+  process::Command,
+  sync::atomic::{AtomicI32, Ordering},
+  thread,
+};
 
-use crate::BspError;
+use crate::{types::BspRequest, BspError};
 use crossbeam_channel::{Receiver, Sender};
-use lsp_server::Message;
+use lsp_server::{Message, RequestId};
 
 pub struct BspClient {
+  id: AtomicI32,
+
   pub sender:   Sender<lsp_server::Message>,
   pub receiver: Receiver<lsp_server::Message>,
 
@@ -56,28 +64,36 @@ impl BspClient {
     });
     let threads = IoThreads { reader, writer };
 
-    BspClient { sender: writer_sender, receiver: reader_receiver, threads }
+    BspClient { id: AtomicI32::new(1), sender: writer_sender, receiver: reader_receiver, threads }
   }
 
-  pub fn send_initialize(&self, root_uri: lsp_types::Url) -> Result<serde_json::Value, BspError> {
+  pub fn request<R: BspRequest>(&self, params: R) -> RequestId {
+    let id: RequestId = self.id.fetch_add(1, Ordering::SeqCst).into();
+
     self
       .sender
       .send(Message::Request(lsp_server::Request {
-        id:     1.into(),
-        method: "build/initialize".to_string(),
-        params: serde_json::to_value(crate::types::InitializeBuildParams {
-          display_name: "scalarc".to_string(),
-          version: "1.0.0".to_string(),
-          root_uri: Some(root_uri),
-          ..Default::default()
-        })
-        .unwrap(),
+        id:     id.clone(),
+        method: R::METHOD.into(),
+        params: serde_json::to_value(params).unwrap(),
       }))
       .unwrap();
 
+    id
+  }
+
+  // TODO: Pass in capabilities.
+  pub fn send_initialize(&self, root_uri: lsp_types::Url) -> Result<serde_json::Value, BspError> {
+    let id = self.request(crate::types::InitializeBuildParams {
+      display_name: "scalarc".to_string(),
+      version: "1.0.0".to_string(),
+      root_uri: Some(root_uri),
+      ..Default::default()
+    });
+
     loop {
       match self.receiver.recv() {
-        Ok(Message::Response(res)) if res.id.to_string() == "1" => {
+        Ok(Message::Response(res)) if res.id == id => {
           self
             .sender
             .send(Message::Notification(lsp_server::Notification {
