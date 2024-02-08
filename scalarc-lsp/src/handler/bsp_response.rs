@@ -7,7 +7,7 @@ pub fn handle_workspace_build_targets(
   snap: &GlobalState,
   result: bsp_types::WorkspaceBuildTargetsResult,
 ) -> Result<(), Box<dyn Error>> {
-  info!("got build targets: {:?}", result);
+  // info!("got build targets: {:?}", result);
 
   Ok(())
 }

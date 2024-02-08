@@ -1,6 +1,7 @@
 use lsp_types::Url;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 pub trait BspRequest: Serialize {
   const METHOD: &'static str;
@@ -302,4 +303,62 @@ pub struct BuildTargetCapabilities {
   /// This target can be debugged by the BSP server.
   #[serde(skip_serializing_if = "Option::is_none")]
   can_debug: Option<bool>,
+}
+
+impl BspNotification for LogMessageParams {
+  const METHOD: &'static str = "build/logMessage";
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct LogMessageParams {
+  /// The message type.
+  #[serde(rename = "type")]
+  pub ty: MessageType,
+
+  /// The task id if any.
+  pub task: Option<TaskId>,
+
+  /// The request id that originated this notification.
+  /// The originId field helps clients know which request originated a
+  /// notification in case several requests are handled by the
+  /// client at the same time. It will only be populated if the client
+  /// defined it in the request that triggered this notification.
+  pub origin_id: Option<String>,
+
+  /// The actual message.
+  pub message: String,
+}
+
+#[derive(Debug, Default, Serialize_repr, Deserialize_repr, Clone, PartialEq)]
+#[repr(u8)]
+pub enum MessageType {
+  /// An error message.
+  Error   = 1,
+
+  /// A warning message.
+  Warning = 2,
+
+  /// An information message.
+  Info    = 3,
+
+  /// A log message.
+  #[default]
+  Log     = 4,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskId {
+  /// A unique identifier.
+  id: String,
+
+  /// The parent task ids, if any. A non-empty parents field means
+  /// this task is a sub-task of every parent task id. The child-parent
+  /// relationship of tasks makes it possible to render tasks in
+  /// a tree-like user interface or inspect what caused a certain task
+  /// execution.
+  /// OriginId should not be included in the parents field, there is a separate
+  /// field for that.
+  parents: Option<Vec<String>>,
 }

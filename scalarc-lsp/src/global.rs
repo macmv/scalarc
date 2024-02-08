@@ -185,8 +185,8 @@ impl GlobalState {
 
   fn handle_bsp_response(&mut self, res: lsp_server::Response) {
     let mut dispatcher = BspResponseDispatcher { global: self, res };
-    use crate::handler::bsp_response;
 
+    use crate::handler::bsp_response;
     use scalarc_bsp::types as bsp_types;
 
     dispatcher.on_sync::<bsp_types::WorkspaceBuildTargetsRequest>(
@@ -195,19 +195,12 @@ impl GlobalState {
   }
 
   fn handle_bsp_notification(&mut self, not: lsp_server::Notification) {
-    info!("todo: handle bsp notification {not:#?}");
-
     let mut dispatcher = BspNotificationDispatcher { global: self, not };
 
+    use crate::handler::bsp_notification;
     use scalarc_bsp::types as bsp_types;
 
-    /*
-    dispatcher
-      .on_sync::<bsp_types::DidOpenTextDocument>(notification::handle_open_text_document)
-      .on_sync::<lsp_notification::DidChangeTextDocument>(
-        notification::handle_change_text_document,
-      );
-    */
+    dispatcher.on_sync::<bsp_types::LogMessageParams>(bsp_notification::handle_log_message);
   }
 
   pub fn workspace_path(&self, uri: &Url) -> Option<PathBuf> {
