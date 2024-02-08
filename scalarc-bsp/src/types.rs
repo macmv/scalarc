@@ -183,28 +183,28 @@ pub struct WorkspaceBuildTargetsRequest;
 pub struct WorkspaceBuildTargetsResult {
   /// The build targets in this workspace that
   /// contain sources with the given language ids.
-  targets: Vec<BuildTarget>,
+  pub targets: Vec<BuildTarget>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildTarget {
   /// The target’s unique identifier.
-  id: BuildTargetIdentifier,
+  pub id: BuildTargetIdentifier,
 
   /// A human readable name for this target.
   /// May be presented in the user interface.
   /// Should be unique if possible.
   /// The id.uri is used if None.
   #[serde(skip_serializing_if = "Option::is_none")]
-  display_name: Option<String>,
+  pub display_name: Option<String>,
 
   /// The directory where this target belongs to. Multiple build targets are
   /// allowed to map to the same base directory, and a build target is not
   /// required to have a base directory. A base directory does not
   /// determine the sources of a target, see buildTarget/sources.
   #[serde(skip_serializing_if = "Option::is_none")]
-  base_directory: Option<Url>,
+  pub base_directory: Option<Url>,
 
   /// Free-form string tags to categorize or label this build target.
   /// For example, can be used by the client to:
@@ -215,19 +215,19 @@ pub struct BuildTarget {
   /// Pre-defined tags are listed in `BuildTargetTag` but clients and servers
   /// are free to define new tags for custom purposes. */
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  tags: Vec<BuildTargetTag>,
+  pub tags: Vec<BuildTargetTag>,
 
   /** The set of languages that this target contains.
    * The ID string for each language is defined in the LSP. */
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  language_ids: Vec<String>,
+  pub language_ids: Vec<String>,
 
   /** The direct upstream build target dependencies of this build target */
   #[serde(skip_serializing_if = "Vec::is_empty")]
-  dependencies: Vec<BuildTargetIdentifier>,
+  pub dependencies: Vec<BuildTargetIdentifier>,
 
   /** The capabilities of this build target. */
-  capabilities: BuildTargetCapabilities,
+  pub capabilities: BuildTargetCapabilities,
 }
 
 /// A unique identifier for a target, can use any URI-compatible encoding as
@@ -238,7 +238,7 @@ pub struct BuildTarget {
 #[serde(rename_all = "camelCase")]
 pub struct BuildTargetIdentifier {
   /** The target’s Uri */
-  uri: Option<Url>,
+  pub uri: Option<Url>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
