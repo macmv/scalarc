@@ -77,7 +77,17 @@ impl BspClient {
 
     loop {
       match self.receiver.recv() {
-        Ok(Message::Response(res)) if res.id.to_string() == "1" => return Ok(res.result.unwrap()),
+        Ok(Message::Response(res)) if res.id.to_string() == "1" => {
+          self
+            .sender
+            .send(Message::Notification(lsp_server::Notification {
+              method: "build/initialized".to_string(),
+              params: serde_json::json!(null),
+            }))
+            .unwrap();
+
+          return Ok(res.result.unwrap());
+        }
         Ok(msg) => {
           return Err(BspError::InitializeError(format!(
             "expected initialize response, got {:?}",
