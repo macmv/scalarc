@@ -34,6 +34,22 @@ pub fn handle_completion(
   }
 }
 
+pub fn handle_semantic_tokens_full(
+  snap: GlobalStateSnapshot,
+  params: lsp_types::SemanticTokensParams,
+) -> Result<Option<lsp_types::SemanticTokensResult>, Box<dyn Error>> {
+  if let Some(path) = snap.workspace_path(&params.text_document.uri) {
+    let _file_id = snap.files.read().path_to_id(&path);
+
+    Ok(Some(lsp_types::SemanticTokensResult::Tokens(lsp_types::SemanticTokens {
+      data:      vec![],
+      result_id: None,
+    })))
+  } else {
+    Ok(None)
+  }
+}
+
 fn file_position(
   snap: &GlobalStateSnapshot,
   pos: lsp_types::TextDocumentPositionParams,
