@@ -415,6 +415,7 @@ dependencies = [
  "salsa",
  "scalarc-source",
  "scalarc-syntax",
+ "url",
 ]
 
 [[package]]
@@ -451,8 +452,10 @@ dependencies = [
 name = "scalarc-source"
 version = "0.1.0"
 dependencies = [
+ "la-arena",
  "salsa",
  "scalarc-syntax",
+ "url",
 ]
 
 [[package]]

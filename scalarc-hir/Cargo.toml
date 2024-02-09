@@ -11,3 +11,4 @@ salsa = "0.17.0-pre.2"
 
 scalarc-source.workspace = true
 scalarc-syntax.workspace = true
+url = "2.5.0"

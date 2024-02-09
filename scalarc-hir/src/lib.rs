@@ -13,8 +13,9 @@ use std::{
 };
 
 use la_arena::Idx;
-use scalarc_source::{FileId, SourceDatabase};
+use scalarc_source::{FileId, SourceDatabase, TargetID};
 use tree::Package;
+use url::Url;
 
 #[salsa::query_group(HirDatabaseStorage)]
 pub trait HirDatabase: InternDatabase {
@@ -86,5 +87,19 @@ impl<N: ItemTreeNode> Hash for ItemLoc<N> {
   fn hash<H: Hasher>(&self, state: &mut H) {
     self.container.hash(state);
     self.id.hash(state);
+  }
+}
+
+pub struct Target {
+  id: TargetID,
+}
+
+impl Target {
+  pub fn bsp_id(&self, db: &dyn HirDatabase) -> Url {
+    db.workspace().targets[self.id].bsp_id.clone()
+  }
+
+  pub fn dependencies(&self, db: &dyn HirDatabase) -> Vec<Target> {
+    db.workspace().targets[self.id].dependencies.iter().map(|id| Target { id: *id }).collect()
   }
 }
