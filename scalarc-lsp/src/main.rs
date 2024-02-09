@@ -83,7 +83,7 @@ fn run() -> Result<(), Box<dyn Error>> {
   // TODO: Close the bsp server on an exit request.
   let bsp_receiver = bsp_client.as_ref().map(|c| c.receiver.clone());
 
-  let global = global::GlobalState::new(connection.sender, root_uri);
+  let global = global::GlobalState::new(connection.sender, bsp_client, root_uri);
   global.run(connection.receiver, bsp_receiver)?;
 
   Ok(())

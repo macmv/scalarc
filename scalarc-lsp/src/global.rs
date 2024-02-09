@@ -3,6 +3,7 @@
 use crossbeam_channel::{Receiver, Select, Sender};
 use parking_lot::RwLock;
 use scalarc_analysis::{Analysis, AnalysisHost};
+use scalarc_bsp::client::BspClient;
 use scalarc_source::FileId;
 use std::{error::Error, path::PathBuf, sync::Arc};
 
@@ -17,6 +18,7 @@ pub struct GlobalState {
   pub files: Arc<RwLock<Files>>,
 
   pub analysis_host: AnalysisHost,
+  pub bsp_client:    Option<BspClient>,
 
   response_sender:   Sender<lsp_server::Message>,
   response_receiver: Receiver<lsp_server::Message>,
@@ -35,7 +37,11 @@ enum Event {
 }
 
 impl GlobalState {
-  pub fn new(sender: Sender<lsp_server::Message>, workspace: Url) -> Self {
+  pub fn new(
+    sender: Sender<lsp_server::Message>,
+    bsp_client: Option<BspClient>,
+    workspace: Url,
+  ) -> Self {
     let (tx, rx) = crossbeam_channel::bounded(0);
 
     GlobalState {
@@ -43,6 +49,7 @@ impl GlobalState {
       workspace: workspace.to_file_path().unwrap(),
       files: Arc::new(RwLock::new(Files::new(workspace.to_file_path().unwrap()))),
       analysis_host: AnalysisHost::new(),
+      bsp_client,
 
       response_sender: tx,
       response_receiver: rx,
@@ -189,9 +196,11 @@ impl GlobalState {
     use crate::handler::bsp_response;
     use scalarc_bsp::types as bsp_types;
 
-    dispatcher.on_sync::<bsp_types::WorkspaceBuildTargetsRequest>(
-      bsp_response::handle_workspace_build_targets,
-    );
+    dispatcher
+      .on_sync::<bsp_types::WorkspaceBuildTargetsRequest>(
+        bsp_response::handle_workspace_build_targets,
+      )
+      .on_sync::<bsp_types::SourcesParams>(bsp_response::handle_sources);
   }
 
   fn handle_bsp_notification(&mut self, not: lsp_server::Notification) {
