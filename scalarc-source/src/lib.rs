@@ -28,7 +28,7 @@ impl FileId {
   pub fn new_raw(id: u32) -> Self { FileId(id) }
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct Workspace {
   pub root: PathBuf,
 

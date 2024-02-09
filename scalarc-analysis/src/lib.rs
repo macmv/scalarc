@@ -31,7 +31,11 @@ pub struct Analysis {
 pub type Cancellable<T> = Result<T, Cancelled>;
 
 impl AnalysisHost {
-  pub fn new() -> Self { AnalysisHost { db: RootDatabase::default() } }
+  pub fn new() -> Self {
+    let mut db = RootDatabase::default();
+    db.set_workspace(Default::default());
+    AnalysisHost { db }
+  }
 
   pub fn snapshot(&self) -> Analysis { Analysis { db: self.db.snapshot() } }
 
