@@ -4,6 +4,10 @@ use la_arena::{Arena, Idx};
 use scalarc_syntax::{Parse, SourceFile};
 use url::Url;
 
+mod source_root;
+
+pub use source_root::SourceRootId;
+
 #[salsa::query_group(SourceDatabaseStorage)]
 pub trait SourceDatabase: std::fmt::Debug {
   /// The current workspace.
@@ -16,6 +20,11 @@ pub trait SourceDatabase: std::fmt::Debug {
 
   /// Parses the file into the syntax tree.
   fn parse(&self, file_id: FileId) -> Parse<SourceFile>;
+
+  #[salsa::input]
+  fn file_source_root(&self, file_id: FileId) -> SourceRootId;
+  #[salsa::invoke(source_root::source_root_target)]
+  fn source_root_target(&self, id: SourceRootId) -> Option<TargetId>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -42,16 +51,17 @@ pub struct Workspace {
 /// Targets can have overlapping sources.
 #[derive(Debug)]
 pub struct TargetData {
-  pub id:           TargetID,
-  pub dependencies: Vec<TargetID>,
+  pub id:           TargetId,
+  pub dependencies: Vec<TargetId>,
 
-  pub bsp_id: Url,
+  pub source_root: SourceRootId,
+  pub bsp_id:      Url,
 
   /// A list of directories which contain the source files for this target.
   pub sources: Vec<PathBuf>,
 }
 
-pub type TargetID = Idx<TargetData>;
+pub type TargetId = Idx<TargetData>;
 
 fn parse(db: &dyn SourceDatabase, file_id: FileId) -> Parse<SourceFile> {
   let text = db.file_text(file_id);

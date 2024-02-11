@@ -13,7 +13,7 @@ use std::{
 };
 
 use la_arena::Idx;
-use scalarc_source::{FileId, SourceDatabase, TargetID};
+use scalarc_source::{FileId, SourceDatabase, TargetId};
 use tree::Package;
 use url::Url;
 
@@ -91,7 +91,7 @@ impl<N: ItemTreeNode> Hash for ItemLoc<N> {
 }
 
 pub struct Target {
-  id: TargetID,
+  id: TargetId,
 }
 
 impl Target {
