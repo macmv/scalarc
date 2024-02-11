@@ -320,7 +320,7 @@ pub struct SourcesParams {
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SourcesResult {
-  items: Vec<SourcesItem>,
+  pub items: Vec<SourcesItem>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]

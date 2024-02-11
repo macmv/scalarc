@@ -3,7 +3,7 @@
 use crossbeam_channel::{Receiver, Select, Sender};
 use parking_lot::RwLock;
 use scalarc_analysis::{Analysis, AnalysisHost};
-use scalarc_bsp::client::BspClient;
+use scalarc_bsp::{client::BspClient, types as bsp_types};
 use scalarc_source::FileId;
 use std::{error::Error, path::PathBuf, sync::Arc};
 
@@ -19,6 +19,9 @@ pub struct GlobalState {
 
   pub analysis_host: AnalysisHost,
   pub bsp_client:    Option<BspClient>,
+
+  // Temporary state between BSP requests.
+  pub bsp_targets: Option<bsp_types::WorkspaceBuildTargetsResult>,
 
   response_sender:   Sender<lsp_server::Message>,
   response_receiver: Receiver<lsp_server::Message>,
@@ -50,6 +53,7 @@ impl GlobalState {
       files: Arc::new(RwLock::new(Files::new(workspace.to_file_path().unwrap()))),
       analysis_host: AnalysisHost::new(),
       bsp_client,
+      bsp_targets: None,
 
       response_sender: tx,
       response_receiver: rx,
@@ -194,20 +198,18 @@ impl GlobalState {
     let mut dispatcher = BspResponseDispatcher { global: self, res };
 
     use crate::handler::bsp_response;
-    use scalarc_bsp::types as bsp_types;
 
     dispatcher
-      .on_sync::<bsp_types::WorkspaceBuildTargetsRequest>(
+      .on_sync_mut::<bsp_types::WorkspaceBuildTargetsRequest>(
         bsp_response::handle_workspace_build_targets,
       )
-      .on_sync::<bsp_types::SourcesParams>(bsp_response::handle_sources);
+      .on_sync_mut::<bsp_types::SourcesParams>(bsp_response::handle_sources);
   }
 
   fn handle_bsp_notification(&mut self, not: lsp_server::Notification) {
     let mut dispatcher = BspNotificationDispatcher { global: self, not };
 
     use crate::handler::bsp_notification;
-    use scalarc_bsp::types as bsp_types;
 
     dispatcher.on_sync::<bsp_types::LogMessageParams>(bsp_notification::handle_log_message);
   }
@@ -358,9 +360,9 @@ struct BspResponseDispatcher<'a> {
 }
 
 impl BspResponseDispatcher<'_> {
-  fn on_sync<R>(
+  fn on_sync_mut<R>(
     &mut self,
-    f: fn(&GlobalState, R::Result) -> Result<(), Box<dyn Error>>,
+    f: fn(&mut GlobalState, R::Result) -> Result<(), Box<dyn Error>>,
   ) -> &mut Self
   where
     R: scalarc_bsp::types::BspRequest,

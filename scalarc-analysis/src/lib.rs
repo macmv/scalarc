@@ -39,6 +39,10 @@ impl AnalysisHost {
 
   pub fn snapshot(&self) -> Analysis { Analysis { db: self.db.snapshot() } }
 
+  pub fn set_workspace(&mut self, workspace: scalarc_source::Workspace) {
+    self.db.set_workspace(workspace.into());
+  }
+
   pub fn change(&mut self, change: Change) {
     self.db.set_file_text(change.file, change.text.into());
   }

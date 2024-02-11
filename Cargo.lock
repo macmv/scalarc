@@ -423,6 +423,7 @@ name = "scalarc-lsp"
 version = "0.1.0"
 dependencies = [
  "crossbeam-channel",
+ "la-arena",
  "log",
  "lsp-server",
  "lsp-types",

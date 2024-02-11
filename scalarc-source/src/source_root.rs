@@ -6,9 +6,12 @@ use crate::{SourceDatabase, TargetId};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SourceRootId(pub u32);
 
-pub fn source_root_target(db: &dyn SourceDatabase, id: SourceRootId) -> Option<TargetId> {
+pub fn source_root_targets(db: &dyn SourceDatabase, id: SourceRootId) -> Vec<TargetId> {
   let workspace = db.workspace();
-  let target =
-    workspace.targets.iter().find(|(_, target)| target.source_root == id).map(|(id, _)| id);
-  target
+  workspace
+    .targets
+    .iter()
+    .filter(|(_, target)| target.sources.contains(&id))
+    .map(|(id, _)| id)
+    .collect()
 }

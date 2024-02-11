@@ -4,6 +4,7 @@ mod files;
 mod global;
 mod handler;
 mod info;
+mod search;
 
 #[macro_use]
 extern crate log;
