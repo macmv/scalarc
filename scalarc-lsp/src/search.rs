@@ -47,8 +47,17 @@ pub fn workspace_from_sources(
   // Fill in dependencies
   for target in bsp_targets.targets {
     let id = name_to_id[&target.id.uri.clone().unwrap()];
-    targets[id].dependencies =
-      target.dependencies.iter().map(|t| name_to_id[t.uri.as_ref().unwrap()]).collect();
+    targets[id].dependencies = target
+      .dependencies
+      .iter()
+      .filter_map(|t| {
+        let id = name_to_id.get(t.uri.as_ref().unwrap()).copied();
+        if id.is_none() {
+          warn!("unknown dependency {:?}", t.uri);
+        }
+        id
+      })
+      .collect();
   }
 
   let mut source_id = 0;
