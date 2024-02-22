@@ -163,12 +163,29 @@ fn class_def(p: &mut Parser, m: Marker) {
 
   // test ok
   // class Foo {}
+  // class Foo() {}
   if p.current() == T!['('] {
     fun_params(p);
   }
 
   // test ok
+  // class Foo extends AnyVal {}
+  if p.current() == T![extends] {
+    p.eat(T![extends]);
+    super::type_expr::type_expr(p);
+  }
+
+  // test pl
+  // class foo extends AnyVal with Bar
+  // class foo extends AnyVal with Bar with Baz
+  while p.current() == T![with] {
+    p.eat(T![with]);
+    super::type_expr::type_expr(p);
+  }
+
+  // test ok
   // class Foo
+  // class Foo {}
   if p.current() == T!['{'] {
     item_body(p);
   }
@@ -330,11 +347,12 @@ mod tests {
           IMPORT
             IMPORT_KW 'import'
             WHITESPACE ' '
-            IDENT 'foo'
-            DOT '.'
-            IDENT 'bar'
-            DOT '.'
-            IDENT 'baz'
+            PATH
+              IDENT 'foo'
+              DOT '.'
+              IDENT 'bar'
+              DOT '.'
+              IDENT 'baz'
       "#],
     );
 
@@ -345,15 +363,18 @@ mod tests {
           IMPORT
             IMPORT_KW 'import'
             WHITESPACE ' '
-            IDENT 'foo'
-            DOT '.'
             IMPORT_SELECTORS
+              PATH
+                IDENT 'foo'
+                DOT '.'
               OPEN_CURLY '{'
               WHITESPACE ' '
-              IDENT 'bar'
+              IMPORT_SELECTOR_ID
+                IDENT 'bar'
               COMMA ','
               WHITESPACE ' '
-              IDENT 'baz'
+              IMPORT_SELECTOR_ID
+                IDENT 'baz'
               WHITESPACE ' '
               CLOSE_CURLY '}'
       "#],
@@ -547,6 +568,111 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '3'
+      "#],
+    );
+  }
+
+  #[test]
+  fn class_def() {
+    check(
+      "class Foo() {}",
+      expect![@r#"
+        SOURCE_FILE
+          CLASS_DEF
+            CLASS_KW 'class'
+            WHITESPACE ' '
+            IDENT 'Foo'
+            FUN_PARAMS
+              OPEN_PAREN '('
+              CLOSE_PAREN ')'
+            WHITESPACE ' '
+            ITEM_BODY
+              OPEN_CURLY '{'
+              CLOSE_CURLY '}'
+      "#],
+    );
+
+    check(
+      "class Foo() extends AnyVal {}",
+      expect![@r#"
+        SOURCE_FILE
+          CLASS_DEF
+            CLASS_KW 'class'
+            WHITESPACE ' '
+            IDENT 'Foo'
+            FUN_PARAMS
+              OPEN_PAREN '('
+              CLOSE_PAREN ')'
+            WHITESPACE ' '
+            EXTENDS_KW 'extends'
+            WHITESPACE ' '
+            SIMPLE_TYPE
+              IDENT 'AnyVal'
+            WHITESPACE ' '
+            ITEM_BODY
+              OPEN_CURLY '{'
+              CLOSE_CURLY '}'
+      "#],
+    );
+
+    check(
+      "class Foo() extends AnyVal with Foo {}",
+      expect![@r#"
+        SOURCE_FILE
+          CLASS_DEF
+            CLASS_KW 'class'
+            WHITESPACE ' '
+            IDENT 'Foo'
+            FUN_PARAMS
+              OPEN_PAREN '('
+              CLOSE_PAREN ')'
+            WHITESPACE ' '
+            EXTENDS_KW 'extends'
+            WHITESPACE ' '
+            SIMPLE_TYPE
+              IDENT 'AnyVal'
+            WHITESPACE ' '
+            WITH_KW 'with'
+            WHITESPACE ' '
+            SIMPLE_TYPE
+              IDENT 'Foo'
+            WHITESPACE ' '
+            ITEM_BODY
+              OPEN_CURLY '{'
+              CLOSE_CURLY '}'
+      "#],
+    );
+
+    check(
+      "class Foo() extends AnyVal with Foo with Baz {}",
+      expect![@r#"
+        SOURCE_FILE
+          CLASS_DEF
+            CLASS_KW 'class'
+            WHITESPACE ' '
+            IDENT 'Foo'
+            FUN_PARAMS
+              OPEN_PAREN '('
+              CLOSE_PAREN ')'
+            WHITESPACE ' '
+            EXTENDS_KW 'extends'
+            WHITESPACE ' '
+            SIMPLE_TYPE
+              IDENT 'AnyVal'
+            WHITESPACE ' '
+            WITH_KW 'with'
+            WHITESPACE ' '
+            SIMPLE_TYPE
+              IDENT 'Foo'
+            WHITESPACE ' '
+            WITH_KW 'with'
+            WHITESPACE ' '
+            SIMPLE_TYPE
+              IDENT 'Baz'
+            WHITESPACE ' '
+            ITEM_BODY
+              OPEN_CURLY '{'
+              CLOSE_CURLY '}'
       "#],
     );
   }

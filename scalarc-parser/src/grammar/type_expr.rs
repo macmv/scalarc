@@ -26,6 +26,11 @@ pub fn type_expr(p: &mut Parser) {
         return;
       }
 
+      // This is for class definitions. Not sure if correct or not.
+      T!['{'] | T![with] => {
+        return;
+      }
+
       _ => {
         p.error(format!("expected type, got {:?}", p.current()));
         p.recover_until_any(&[T![nl], T![,], T![')'], T!['}'], T![=]]);
