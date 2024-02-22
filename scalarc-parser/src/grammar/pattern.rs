@@ -4,9 +4,17 @@ use super::*;
 
 pub fn pattern(p: &mut Parser) { pattern_inner(p); }
 
+// Patterns like `1 | 2`
 fn pattern_inner(p: &mut Parser) -> Option<CompletedMarker> {
-  let _ = atom_pattern(p)?;
+  let mut lhs = atom_pattern(p)?;
 
+  while p.slice() == "|" {
+    let m = lhs.precede(p);
+    p.eat(IDENT);
+    p.eat_newlines();
+    atom_pattern(p)?;
+    lhs = m.complete(p, UNION_PATTERN);
+  }
   None
 }
 
@@ -26,11 +34,12 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
     IDENT => {
       p.eat(IDENT);
 
-      if p.current() == T!['('] {
-        arg_pattern(p);
-        Some(m.complete(p, ARG_PATTERN))
-      } else {
-        Some(m.complete(p, IDENT_PATTERN))
+      match p.current() {
+        T!['('] => {
+          arg_pattern(p);
+          Some(m.complete(p, ARG_PATTERN))
+        }
+        _ => Some(m.complete(p, IDENT_PATTERN)),
       }
     }
 
@@ -129,6 +138,67 @@ mod tests {
                 LIT_PATTERN
                   INT_LIT_KW '2'
                 CLOSE_PAREN ')'
+            WHITESPACE ' '
+            FAT_ARROW '=>'
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '1'
+      "#],
+    );
+
+    check(
+      "case 1 | Seq(1, 2) => 1",
+      expect![@r#"
+        SOURCE_FILE
+          CASE_ITEM
+            CASE_KW 'case'
+            WHITESPACE ' '
+            UNION_PATTERN
+              LIT_PATTERN
+                INT_LIT_KW '1'
+              WHITESPACE ' '
+              IDENT '|'
+              WHITESPACE ' '
+              ARG_PATTERN
+                IDENT 'Seq'
+                PATTERN_ARGS
+                  OPEN_PAREN '('
+                  LIT_PATTERN
+                    INT_LIT_KW '1'
+                  COMMA ','
+                  WHITESPACE ' '
+                  LIT_PATTERN
+                    INT_LIT_KW '2'
+                  CLOSE_PAREN ')'
+            WHITESPACE ' '
+            FAT_ARROW '=>'
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '1'
+      "#],
+    );
+
+    check(
+      "case 1 | 2 | 3 => 1",
+      expect![@r#"
+        SOURCE_FILE
+          CASE_ITEM
+            CASE_KW 'case'
+            WHITESPACE ' '
+            UNION_PATTERN
+              UNION_PATTERN
+                LIT_PATTERN
+                  INT_LIT_KW '1'
+                WHITESPACE ' '
+                IDENT '|'
+                WHITESPACE ' '
+                LIT_PATTERN
+                  INT_LIT_KW '2'
+              WHITESPACE ' '
+              IDENT '|'
+              WHITESPACE ' '
+              LIT_PATTERN
+                INT_LIT_KW '3'
             WHITESPACE ' '
             FAT_ARROW '=>'
             WHITESPACE ' '
