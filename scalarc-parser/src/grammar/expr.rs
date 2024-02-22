@@ -49,13 +49,11 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
         let m2 = lhs.precede(p);
         p.eat(T![ident]);
 
-        // test ok
-        //
-        // // this is one expression
+        // this is one expression
         // 2 +
         //   3
         //
-        // // these are two expressions
+        // these are two expressions
         // 2 +
         //
         //   3
