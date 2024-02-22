@@ -82,7 +82,13 @@ fn collect_tests(s: &str, location: &Path) -> Vec<Test> {
     let ok = match line.split(" ").nth(2).unwrap_or("") {
       "ok" => true,
       "err" => false,
-      other => panic!("invalid test annotation: {}", other),
+      other => {
+        panic!(
+          "invalid test annotation: {} at {}",
+          other,
+          format!("{}:{}", location.display(), i + 1)
+        )
+      }
     };
 
     in_test = Some((i + 1, ok));
