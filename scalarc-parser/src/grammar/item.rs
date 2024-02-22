@@ -344,7 +344,16 @@ pub fn case_item(p: &mut Parser, m: Marker) {
 
   p.expect(T![=>]);
 
-  expr::expr(p);
+  p.eat_newlines();
+
+  // An expression after the `=>` is optional.
+  //
+  // test ok
+  // case 3 =>
+  if !(p.at(T!['}']) || p.at(T![nl]) || p.at(EOF)) {
+    expr::expr(p);
+  }
+
   m.complete(p, CASE_ITEM);
 }
 
