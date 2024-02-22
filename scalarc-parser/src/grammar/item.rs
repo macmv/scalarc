@@ -66,7 +66,11 @@ fn item(p: &mut Parser) {
     T![import] => import_item(p, m),
     T![def] => fun_def(p, m),
     T![val] => val_def(p, m),
-    T![case] | T![class] => class_def(p, m),
+
+    T![class] => class_def(p, m),
+    T![case] if p.peek() == T![class] => class_def(p, m),
+
+    T![case] => case_item(p, m),
 
     _ => {
       expr::expr(p);
@@ -332,6 +336,16 @@ fn val_def(p: &mut Parser, m: Marker) {
   }
 
   m.complete(p, VAL_DEF);
+}
+
+pub fn case_item(p: &mut Parser, m: Marker) {
+  p.expect(T![case]);
+  super::pattern::pattern(p);
+
+  p.expect(T![=>]);
+
+  expr::expr(p);
+  m.complete(p, CASE_ITEM);
 }
 
 #[cfg(test)]

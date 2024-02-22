@@ -147,15 +147,8 @@ fn match_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
 
   loop {
     let c = p.start();
-    p.expect(T![case]);
 
-    // TODO: Eat pattern
-    p.bump();
-
-    p.expect(T![=>]);
-
-    expr(p);
-    c.complete(p, CASE_CLAUSE);
+    super::item::case_item(p, c);
 
     if p.at(T![nl]) {
       p.eat(T![nl]);

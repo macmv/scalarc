@@ -7,6 +7,7 @@ use crate::{
 
 mod expr;
 mod item;
+mod pattern;
 mod type_expr;
 
 pub mod entry_point;

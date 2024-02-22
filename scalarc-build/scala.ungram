@@ -122,7 +122,7 @@ LambdaExpr = ('todo') '=>' Expr
 AssignDotExpr = SimpleExpr '=' Expr
 
 PostfixExprAscription = PostfixExpr Ascription
-MatchExpr             = PostfixExpr 'match' '{' CaseClause (CaseClause)* '}'
+MatchExpr             = PostfixExpr 'match' '{' CaseItem (CaseItem)* '}'
 
 PostfixExpr    = Expr id
 InfixExpr      = lhs:Expr id rhs:Expr
@@ -154,39 +154,12 @@ ParenArguments  = '(' (Expr (',' Expr)*)? ')'
 SpreadArguments = '(' (Expr (',' Expr)*)? PostfixExpr ':' '_' '*' ')'
 BlockArguments  = nl? BlockExpr
 
-BlockExpr      = '{' CaseClause (CaseClause)* '}' | '{' (Item (';' Item)*) '}'
+BlockExpr      = '{' (Item (';' Item)*) '}'
 Block          = Item (';' Item)* ResultExpr?
 ResultExpr     = Expr
 
 Enumerators    = Generator (';' Generator)*
 Generator      = ('case')? Pattern '<-' Expr ((';')? Guard | ';' Pattern '=' Expr)*
-
-CaseClause     = 'case' Pattern (Guard)? '=>' Block
-Guard          = 'if' PostfixExpr
-
-Pattern = 'todo'
-
-// // this is Pattern
-// Pattern        = PatternSingle ( '|' PatternSingle )*
-// // this is Pattern1
-// PatternSingle  = boundvarid ':' TypePat
-//                | '_' ':' TypePat
-//                | PatternAt
-// // this is Pattern2
-// PatternAt      = id ('@' PatternNamed)?
-//                | PatternNamed
-// // this is PatternNamed
-// PatternNamed   = SimplePattern
-//                | SimplePattern ( id (nl)? SimplePattern )*
-// SimplePattern  = '_'
-//                | varid
-//                | LitExpr
-//                | StableId
-//                | StableId '(' (Patterns)? ')'
-//                | StableId '(' (Patterns ',')? (id '@')? '_' '*' ')'
-//                | '(' (Patterns)? ')'
-// Patterns       = Pattern (',' Patterns)?
-//                | '_' '*'
 
 TypeParamClause = 'todo'
 
@@ -258,6 +231,7 @@ Item = ExprItem
   | LazyItem
   | ImplicitItem
   | AnnotatedItem
+  | CaseItem
   | ValDef
   | VarDef
   | FunDef
@@ -273,6 +247,25 @@ ExprItem = Expr
 LazyItem = 'lazy' Item
 ImplicitItem = 'implicit' Item
 AnnotatedItem = Annotation* Item
+
+CaseItem = 'case' Pattern Guard? '=>' Block
+Guard    = 'if' Expr
+
+Pattern = UnionPattern
+  | BoundPattern
+  | AtPattern
+  | ArgPattern
+  | LitPattern
+  | IdentPattern
+
+Patterns = Pattern (',' Pattern)*
+
+UnionPattern = Pattern ('|' Pattern)*
+BoundPattern = id ':' Type
+AtPattern    = id '@' Pattern
+ArgPattern   = id '(' Patterns ')'
+LitPattern   = LitExpr
+IdentPattern = id
 
 // TODO: Need to merge this with ValDef and VarDef
 // PatDef      = ('val' | 'var') PatternAt (',' PatternAt)* (':' Type)? '=' Expr
