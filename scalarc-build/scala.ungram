@@ -252,7 +252,7 @@ CaseItem = 'case' Pattern Guard? '=>' Block
 Guard    = 'if' Expr
 
 Pattern = UnionPattern
-  | BoundPattern
+  | TypePattern
   | AtPattern
   | ArgPattern
   | LitPattern
@@ -261,7 +261,7 @@ Pattern = UnionPattern
 PatternArgs = '(' (Pattern (',' Pattern)*) ')'
 
 UnionPattern = Pattern ('|' Pattern)*
-BoundPattern = id ':' Type
+TypePattern = id ':' Type
 AtPattern    = id '@' Pattern
 ArgPattern   = id PatternArgs
 LitPattern   = LitExpr

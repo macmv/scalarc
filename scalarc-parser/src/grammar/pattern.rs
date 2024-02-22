@@ -39,6 +39,13 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
           arg_pattern(p);
           Some(m.complete(p, ARG_PATTERN))
         }
+
+        T![:] => {
+          p.eat(T![:]);
+          super::type_expr::type_expr(p);
+          Some(m.complete(p, TYPE_PATTERN))
+        }
+
         _ => Some(m.complete(p, IDENT_PATTERN)),
       }
     }
@@ -199,6 +206,27 @@ mod tests {
               WHITESPACE ' '
               LIT_PATTERN
                 INT_LIT_KW '3'
+            WHITESPACE ' '
+            FAT_ARROW '=>'
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '1'
+      "#],
+    );
+
+    check(
+      "case foo: Int => 1",
+      expect![@r#"
+        SOURCE_FILE
+          CASE_ITEM
+            CASE_KW 'case'
+            WHITESPACE ' '
+            TYPE_PATTERN
+              IDENT 'foo'
+              COLON ':'
+              WHITESPACE ' '
+              SIMPLE_TYPE
+                IDENT 'Int'
             WHITESPACE ' '
             FAT_ARROW '=>'
             WHITESPACE ' '

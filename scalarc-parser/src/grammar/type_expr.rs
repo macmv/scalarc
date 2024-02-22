@@ -22,14 +22,13 @@ pub fn type_expr(p: &mut Parser) {
         lhs = m.complete(p, GENERIC_TYPE);
       }
 
-      T![,] | T![']'] | T![')'] | T!['}'] | T![=] | T![nl] | EOF => {
-        return;
-      }
+      T![,] | T![']'] | T![')'] | T!['}'] | T![=] | T![nl] | EOF => return,
 
       // This is for class definitions. Not sure if correct or not.
-      T!['{'] | T![with] => {
-        return;
-      }
+      T!['{'] | T![with] => return,
+
+      // This is for patterns
+      T![=>] => return,
 
       _ => {
         p.error(format!("expected type, got {:?}", p.current()));
