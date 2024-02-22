@@ -179,7 +179,7 @@ fn class_def(p: &mut Parser, m: Marker) {
     super::type_expr::type_expr(p);
   }
 
-  // test pl
+  // test ok
   // class foo extends AnyVal with Bar
   // class foo extends AnyVal with Bar with Baz
   while p.current() == T![with] {
