@@ -48,6 +48,11 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
 
         let m = lhs.precede(p);
         p.eat(T![ident]);
+
+        // test ok
+        // 2 +
+        //   3
+        p.eat_newlines();
         expr_bp(p, r_bp);
         lhs = m.complete(p, INFIX_EXPR);
       }
@@ -358,6 +363,21 @@ mod tests {
           WHITESPACE '  '
           LIT_EXPR
             INT_LIT_KW '56'
+      "#],
+    );
+
+    check_expr(
+      "2 +\n 3",
+      expect![@r#"
+        INFIX_EXPR
+          LIT_EXPR
+            INT_LIT_KW '2'
+          WHITESPACE ' '
+          IDENT '+'
+          NL_KW '\n'
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '3'
       "#],
     );
   }
