@@ -46,6 +46,12 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
           Some(m.complete(p, TYPE_PATTERN))
         }
 
+        T![ident] if p.slice() == "@" => {
+          p.eat(T![ident]);
+          pattern(p);
+          Some(m.complete(p, AT_PATTERN))
+        }
+
         _ => Some(m.complete(p, IDENT_PATTERN)),
       }
     }
@@ -227,6 +233,37 @@ mod tests {
               WHITESPACE ' '
               SIMPLE_TYPE
                 IDENT 'Int'
+            WHITESPACE ' '
+            FAT_ARROW '=>'
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '1'
+      "#],
+    );
+
+    check(
+      "case list @ Seq(1, 2) => 1",
+      expect![@r#"
+        SOURCE_FILE
+          CASE_ITEM
+            CASE_KW 'case'
+            WHITESPACE ' '
+            AT_PATTERN
+              IDENT 'list'
+              WHITESPACE ' '
+              IDENT '@'
+              WHITESPACE ' '
+              ARG_PATTERN
+                IDENT 'Seq'
+                PATTERN_ARGS
+                  OPEN_PAREN '('
+                  LIT_PATTERN
+                    INT_LIT_KW '1'
+                  COMMA ','
+                  WHITESPACE ' '
+                  LIT_PATTERN
+                    INT_LIT_KW '2'
+                  CLOSE_PAREN ')'
             WHITESPACE ' '
             FAT_ARROW '=>'
             WHITESPACE ' '
