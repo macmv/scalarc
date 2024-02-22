@@ -46,15 +46,29 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
           return;
         }
 
-        let m = lhs.precede(p);
+        let m2 = lhs.precede(p);
         p.eat(T![ident]);
 
         // test ok
+        //
+        // // this is one expression
         // 2 +
         //   3
-        p.eat_newlines();
+        //
+        // // these are two expressions
+        // 2 +
+        //
+        //   3
+        if p.eat_newlines() >= 2 {
+          m2.abandon(p);
+          m.abandon(p);
+          p.error(format!("expected expression, got expression separator {:?}", p.current()));
+          p.recover_until_any(&[T![nl], T![,], T![')'], T!['}']]);
+          return;
+        };
+
         expr_bp(p, r_bp);
-        lhs = m.complete(p, INFIX_EXPR);
+        lhs = m2.complete(p, INFIX_EXPR);
       }
 
       T![nl] | T![,] | T![')'] | T!['}'] | EOF => {
@@ -378,6 +392,21 @@ mod tests {
           WHITESPACE ' '
           LIT_EXPR
             INT_LIT_KW '3'
+      "#],
+    );
+
+    check_expr(
+      "2 +\n\n 3",
+      expect![@r#"
+        LIT_EXPR
+          INT_LIT_KW '2'
+        WHITESPACE ' '
+        IDENT '+'
+        NL_KW '\n'
+        NL_KW '\n'
+        error: expected expression, got expression separator INT_LIT_KW
+        WHITESPACE ' '
+        INT_LIT_KW '3'
       "#],
     );
   }

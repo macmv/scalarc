@@ -262,12 +262,14 @@ impl Parser<'_> {
     }
   }
 
-  pub fn eat_newlines(&mut self) {
+  pub fn eat_newlines(&mut self) -> u32 {
+    let mut newlines = 0;
     loop {
       if self.at(T![nl]) {
         self.eat(T![nl]);
+        newlines += 1;
       } else {
-        break;
+        break newlines;
       }
     }
   }
