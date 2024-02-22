@@ -791,10 +791,11 @@ mod tests {
               OPEN_CURLY '{'
               NL_KW '\n'
               WHITESPACE '        '
-              CASE_CLAUSE
+              CASE_ITEM
                 CASE_KW 'case'
                 WHITESPACE ' '
-                INT_LIT_KW '1'
+                LIT_PATTERN
+                  INT_LIT_KW '1'
                 WHITESPACE ' '
                 FAT_ARROW '=>'
                 WHITESPACE ' '
@@ -802,10 +803,11 @@ mod tests {
                   INT_LIT_KW '3'
                 NL_KW '\n'
               WHITESPACE '        '
-              CASE_CLAUSE
+              CASE_ITEM
                 CASE_KW 'case'
                 WHITESPACE ' '
-                INT_LIT_KW '2'
+                LIT_PATTERN
+                  INT_LIT_KW '2'
                 WHITESPACE ' '
                 FAT_ARROW '=>'
                 WHITESPACE ' '
@@ -813,10 +815,11 @@ mod tests {
                   INT_LIT_KW '4'
                 NL_KW '\n'
               WHITESPACE '        '
-              CASE_CLAUSE
+              CASE_ITEM
                 CASE_KW 'case'
                 WHITESPACE ' '
-                IDENT '_'
+                IDENT_PATTERN
+                  IDENT '_'
                 WHITESPACE ' '
                 FAT_ARROW '=>'
                 WHITESPACE ' '
@@ -841,10 +844,11 @@ mod tests {
               WHITESPACE ' '
               OPEN_CURLY '{'
               WHITESPACE ' '
-              CASE_CLAUSE
+              CASE_ITEM
                 CASE_KW 'case'
                 WHITESPACE ' '
-                INT_LIT_KW '1'
+                LIT_PATTERN
+                  INT_LIT_KW '1'
                 WHITESPACE ' '
                 FAT_ARROW '=>'
                 WHITESPACE ' '
