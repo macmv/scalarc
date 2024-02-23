@@ -99,7 +99,11 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
       // hi(3)
       T!['('] => {
         let call = lhs.precede(p);
+
+        let m = p.start();
         call_paren_expr(p);
+        m.complete(p, PAREN_ARGUMENTS);
+
         call.complete(p, CALL_EXPR)
       }
       // test ok
@@ -187,7 +191,6 @@ fn match_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
 }
 
 fn call_paren_expr(p: &mut Parser) {
-  let args = p.start();
   p.eat(T!['(']);
   // test ok
   // hi(
@@ -200,7 +203,6 @@ fn call_paren_expr(p: &mut Parser) {
   // hi()
   if p.at(T![')']) {
     p.eat(T![')']);
-    args.complete(p, PAREN_ARGUMENTS);
     return;
   }
 
@@ -228,7 +230,6 @@ fn call_paren_expr(p: &mut Parser) {
   }
 
   p.expect(T![')']);
-  args.complete(p, PAREN_ARGUMENTS);
 }
 
 fn call_block_expr(p: &mut Parser) {
@@ -307,7 +308,9 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       // new Iterator()
       // new Iterator("hello")
       if p.at(T!['(']) {
+        let m = p.start();
         call_paren_expr(p);
+        m.complete(p, PAREN_ARGUMENTS);
       }
 
       // test ok
@@ -328,6 +331,15 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       // }
       super::item::block_items(p);
       Some(m.complete(p, BLOCK_EXPR))
+    }
+
+    T!['('] => {
+      // test ok
+      // ()
+      // (1 to 100)
+      // (1, 2)
+      call_paren_expr(p);
+      Some(m.complete(p, TUPLE_EXPR))
     }
 
     _ => {
@@ -905,5 +917,36 @@ mod tests {
               CLOSE_CURLY '}'
       "#],
     )
+  }
+
+  #[test]
+  fn tuple_exprs() {
+    check(
+      "()",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            TUPLE_EXPR
+              OPEN_PAREN '('
+              CLOSE_PAREN ')'
+      "#],
+    );
+
+    check(
+      "(2, 3)",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            TUPLE_EXPR
+              OPEN_PAREN '('
+              LIT_EXPR
+                INT_LIT_KW '2'
+              COMMA ','
+              WHITESPACE ' '
+              LIT_EXPR
+                INT_LIT_KW '3'
+              CLOSE_PAREN ')'
+      "#],
+    );
   }
 }
