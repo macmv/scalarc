@@ -167,20 +167,16 @@ fn match_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
   }
 
   loop {
+    if p.at(EOF) {
+      p.error("unexpected end of file");
+      break;
+    }
+
     let c = p.start();
 
+    // case_item eats a newline and handles errors.
     super::item::case_item(p, c);
 
-    if p.at(T![nl]) {
-      p.eat(T![nl]);
-    } else if p.at(T!['}']) {
-      p.eat(T!['}']);
-      break;
-    } else {
-      p.error("expected newline");
-      p.recover_until(T![nl]);
-    }
-    p.eat_newlines();
     if p.at(T!['}']) {
       p.eat(T!['}']);
       break;
@@ -858,9 +854,11 @@ mod tests {
                 WHITESPACE ' '
                 FAT_ARROW '=>'
                 WHITESPACE ' '
-                LIT_EXPR
-                  INT_LIT_KW '3'
-                NL_KW '\n'
+                BLOCK
+                  EXPR_ITEM
+                    LIT_EXPR
+                      INT_LIT_KW '3'
+                    NL_KW '\n'
               WHITESPACE '        '
               CASE_ITEM
                 CASE_KW 'case'
@@ -870,9 +868,11 @@ mod tests {
                 WHITESPACE ' '
                 FAT_ARROW '=>'
                 WHITESPACE ' '
-                LIT_EXPR
-                  INT_LIT_KW '4'
-                NL_KW '\n'
+                BLOCK
+                  EXPR_ITEM
+                    LIT_EXPR
+                      INT_LIT_KW '4'
+                    NL_KW '\n'
               WHITESPACE '        '
               CASE_ITEM
                 CASE_KW 'case'
@@ -882,9 +882,11 @@ mod tests {
                 WHITESPACE ' '
                 FAT_ARROW '=>'
                 WHITESPACE ' '
-                LIT_EXPR
-                  INT_LIT_KW '5'
-                NL_KW '\n'
+                BLOCK
+                  EXPR_ITEM
+                    LIT_EXPR
+                      INT_LIT_KW '5'
+                    NL_KW '\n'
               WHITESPACE '      '
               CLOSE_CURLY '}'
       "#],
@@ -911,12 +913,58 @@ mod tests {
                 WHITESPACE ' '
                 FAT_ARROW '=>'
                 WHITESPACE ' '
-                LIT_EXPR
-                  INT_LIT_KW '3'
+                BLOCK
+                  EXPR_ITEM
+                    LIT_EXPR
+                      INT_LIT_KW '3'
               WHITESPACE ' '
               CLOSE_CURLY '}'
       "#],
-    )
+    );
+
+    check(
+      "2 match { case 0 => 1\n case 2 => 3 }",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            MATCH_EXPR
+              LIT_EXPR
+                INT_LIT_KW '2'
+              WHITESPACE ' '
+              MATCH_KW 'match'
+              WHITESPACE ' '
+              OPEN_CURLY '{'
+              WHITESPACE ' '
+              CASE_ITEM
+                CASE_KW 'case'
+                WHITESPACE ' '
+                LIT_PATTERN
+                  INT_LIT_KW '0'
+                WHITESPACE ' '
+                FAT_ARROW '=>'
+                WHITESPACE ' '
+                BLOCK
+                  EXPR_ITEM
+                    LIT_EXPR
+                      INT_LIT_KW '1'
+                    NL_KW '\n'
+              WHITESPACE ' '
+              CASE_ITEM
+                CASE_KW 'case'
+                WHITESPACE ' '
+                LIT_PATTERN
+                  INT_LIT_KW '2'
+                WHITESPACE ' '
+                FAT_ARROW '=>'
+                WHITESPACE ' '
+                BLOCK
+                  EXPR_ITEM
+                    LIT_EXPR
+                      INT_LIT_KW '3'
+              WHITESPACE ' '
+              CLOSE_CURLY '}'
+      "#],
+    );
   }
 
   #[test]

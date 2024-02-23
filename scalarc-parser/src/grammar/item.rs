@@ -2,17 +2,24 @@ use crate::Marker;
 
 use super::*;
 
-pub fn mod_items(p: &mut Parser) { items(p, false); }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum BlockTerminator {
+  Nothing,
+  Brace,
+  Case,
+}
+
+pub fn mod_items(p: &mut Parser) { items(p, BlockTerminator::Nothing); }
 pub fn block_items(p: &mut Parser) {
   p.eat(T!['{']);
-  items(p, true);
+  items(p, BlockTerminator::Brace);
 }
 
 // test ok
 // class Foo {
 //   def bar = 3
 // }
-fn items(p: &mut Parser, end_in_brace: bool) {
+fn items(p: &mut Parser, terminator: BlockTerminator) {
   let mut is_first = true;
   'items: loop {
     // Eat trailing newlines, and update `found_newline` to make sure there is a
@@ -23,20 +30,35 @@ fn items(p: &mut Parser, end_in_brace: bool) {
         found_newline = true;
         p.eat(T![nl]);
       } else if p.at(EOF) {
-        if end_in_brace {
+        if terminator == BlockTerminator::Brace {
           p.error("missing closing '}'");
         }
         break 'items;
       } else if p.at(T!['}']) {
-        if !end_in_brace {
-          p.error_bump("unexpected '}'");
-        } else {
-          p.bump();
-          break 'items;
+        match terminator {
+          BlockTerminator::Brace => {
+            p.eat(T!['}']);
+            break 'items;
+          }
+          BlockTerminator::Nothing => {
+            p.error_bump("unexpected '}'");
+          }
+          BlockTerminator::Case => {
+            break 'items;
+          }
         }
       } else {
         break;
       }
+    }
+
+    if p.at(T![case]) && terminator == BlockTerminator::Case {
+      if is_first {
+        p.error("expected case expression");
+      } else if !found_newline {
+        p.error("expected newline");
+      }
+      break 'items;
     }
 
     if !found_newline && !is_first {
@@ -201,7 +223,7 @@ fn item_body(p: &mut Parser) {
   let m = p.start();
   p.eat(T!['{']);
 
-  items(p, true);
+  items(p, BlockTerminator::Brace);
 
   m.complete(p, ITEM_BODY);
 }
@@ -351,7 +373,9 @@ pub fn case_item(p: &mut Parser, m: Marker) {
   // test ok
   // case 3 =>
   if !(p.at(T!['}']) || p.at(T![nl]) || p.at(EOF)) {
-    expr::expr(p);
+    let m = p.start();
+    items(p, BlockTerminator::Case);
+    m.complete(p, BLOCK);
   }
 
   m.complete(p, CASE_ITEM);
