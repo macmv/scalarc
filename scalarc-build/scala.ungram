@@ -27,6 +27,15 @@ LitExpr = ('-')? 'int_lit'
         | 'symbol_lit'
         | 'null'
 
+LitPattern = ('-')? 'int_lit'
+           | ('-')? 'float_lit'
+           | 'true' | 'false'
+           | 'character_lit'
+           | 'string_lit'
+           | 'interpolated_string'
+           | 'symbol_lit'
+           | 'null'
+
 id = 'ident'
 nl = 'nl'
 
@@ -122,7 +131,7 @@ LambdaExpr = ('todo') '=>' Expr
 AssignDotExpr = SimpleExpr '=' Expr
 
 PostfixExprAscription = PostfixExpr Ascription
-MatchExpr             = PostfixExpr 'match' '{' CaseItem (CaseItem)* '}'
+MatchExpr             = Expr 'match' '{' CaseItem (CaseItem)* '}'
 
 PostfixExpr    = Expr id
 InfixExpr      = lhs:Expr id rhs:Expr
@@ -155,7 +164,7 @@ SpreadArguments = '(' (Expr (',' Expr)*)? PostfixExpr ':' '_' '*' ')'
 BlockArguments  = nl? BlockExpr
 
 BlockExpr      = '{' (Item (';' Item)*) '}'
-Block          = Item (';' Item)* ResultExpr?
+Block          = Item (';' Item)*
 ResultExpr     = Expr
 
 Enumerators    = Generator (';' Generator)*
@@ -264,7 +273,6 @@ UnionPattern = Pattern ('|' Pattern)*
 TypePattern = id ':' Type
 AtPattern    = id '@' Pattern
 ArgPattern   = id PatternArgs
-LitPattern   = LitExpr
 IdentPattern = id
 
 // TODO: Need to merge this with ValDef and VarDef

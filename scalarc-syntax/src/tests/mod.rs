@@ -112,3 +112,46 @@ fn import_selector() {
   let ast::ImportSelector::ImportSelectorId(selector) = &selectors[1] else { panic!() };
   assert_eq!(selector.id_token().unwrap().text(), "qux");
 }
+
+#[test]
+fn match_expr() {
+  let parse = parse_ok("2 match { case 0 => 1\n case 2 => 3 }");
+  let file: SourceFile = parse.tree();
+
+  assert_eq!(file.items().count(), 1);
+  let ast::Item::ExprItem(expr) = file.items().next().unwrap() else { panic!() };
+
+  let ast::Expr::MatchExpr(m) = expr.expr().unwrap() else { panic!() };
+
+  let ast::Expr::LitExpr(lit) = m.expr().unwrap() else { panic!() };
+  assert_eq!(lit.int_lit_token().unwrap().text(), "2");
+
+  let cases = m.case_items().collect::<Vec<_>>();
+  assert_eq!(cases.len(), 2);
+
+  let case = &cases[0];
+
+  // case _0_ => 1
+  let ast::Pattern::LitPattern(lit) = case.pattern().unwrap() else { panic!() };
+  assert_eq!(lit.int_lit_token().unwrap().text(), "0");
+
+  // case 0 => _1_
+  let items = case.block().unwrap().items().collect::<Vec<_>>();
+  assert_eq!(items.len(), 1);
+  let ast::Item::ExprItem(expr) = &items[0] else { panic!() };
+  let ast::Expr::LitExpr(lit) = expr.expr().unwrap() else { panic!() };
+  assert_eq!(lit.int_lit_token().unwrap().text(), "1");
+
+  let case = &cases[1];
+
+  // case _2_ => 3
+  let ast::Pattern::LitPattern(lit) = case.pattern().unwrap() else { panic!() };
+  assert_eq!(lit.int_lit_token().unwrap().text(), "2");
+
+  // case 2 => _3_
+  let items = case.block().unwrap().items().collect::<Vec<_>>();
+  assert_eq!(items.len(), 1);
+  let ast::Item::ExprItem(expr) = &items[0] else { panic!() };
+  let ast::Expr::LitExpr(lit) = expr.expr().unwrap() else { panic!() };
+  assert_eq!(lit.int_lit_token().unwrap().text(), "3");
+}
