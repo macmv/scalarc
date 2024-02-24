@@ -39,8 +39,8 @@ LitPattern = ('-')? 'int_lit'
 // Special token for strings.
 any = 'any'
 
-DoubleQuoteString = '"' any* '"'
-TrippleQuoteString = '"""' any* '"""'
+DoubleQuotedString = '"' any* '"'
+TrippleQuotedString = '"""' any* '"""'
 
 id = 'ident'
 nl = 'nl'
@@ -147,12 +147,14 @@ SimpleExpr = NewClassExpr
            | NewItemExpr
            | BlockExpr
            | PostfixUnderscoreExpr
-           | LitExpr
            | Path
            | UnderscoreExpr
            | TupleExpr
            | FieldExpr
            | CallExpr
+           | LitExpr
+           | DoubleQuotedString
+           | TrippleQuotedString
 
 NewClassExpr = 'new' ClassTemplate
 NewItemExpr  = 'new' ItemBody

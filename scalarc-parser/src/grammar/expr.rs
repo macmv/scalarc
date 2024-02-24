@@ -277,7 +277,7 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
 
       double_quote_string(p);
 
-      Some(m.complete(p, LIT_EXPR))
+      Some(m.complete(p, DOUBLE_QUOTED_STRING))
     }
 
     T![return] => {
@@ -402,7 +402,7 @@ mod tests {
     check_expr(
       "\"hi\"",
       expect![@r#"
-        LIT_EXPR
+        DOUBLE_QUOTED_STRING
           DOUBLE_QUOTE '"'
           IDENT 'hi'
           DOUBLE_QUOTE '"'
@@ -412,7 +412,7 @@ mod tests {
     check_expr(
       "\"foo \\\" bar {{\"",
       expect![@r#"
-        LIT_EXPR
+        DOUBLE_QUOTED_STRING
           DOUBLE_QUOTE '"'
           IDENT 'foo'
           WHITESPACE ' '
