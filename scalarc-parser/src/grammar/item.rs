@@ -17,6 +17,7 @@ pub fn block_items(p: &mut Parser) {
 
 // test ok
 // class Foo {
+//   def foo
 //   def bar = 3
 // }
 fn items(p: &mut Parser, terminator: BlockTerminator) {
@@ -229,13 +230,16 @@ fn item_body(p: &mut Parser) {
 }
 
 // test ok
+// def bar
 // def foo = 3
 fn fun_def(p: &mut Parser, m: Marker) {
   p.eat(T![def]);
   fun_sig(p);
 
-  p.expect(T![=]);
-  expr::expr(p);
+  if p.at(T![=]) {
+    p.eat(T![=]);
+    expr::expr(p);
+  }
 
   m.complete(p, FUN_DEF);
 }
