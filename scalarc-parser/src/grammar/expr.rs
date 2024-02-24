@@ -272,6 +272,14 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       Some(m.complete(p, IDENT))
     }
 
+    DOUBLE_QUOTE => {
+      p.eat(DOUBLE_QUOTE);
+
+      double_quote_string(p);
+
+      Some(m.complete(p, LIT_EXPR))
+    }
+
     T![return] => {
       // test ok
       // return 3
@@ -347,6 +355,36 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
   }
 }
 
+fn double_quote_string(p: &mut Parser) {
+  // test ok
+  // "hello"
+  loop {
+    match p.current() {
+      DOUBLE_QUOTE => {
+        p.eat(DOUBLE_QUOTE);
+        break;
+      }
+      // test err
+      // "hello
+      EOF => {
+        p.error("unexpected end of file");
+        break;
+      }
+      // test ok
+      // "hello\"world"
+      IDENT if p.slice() == "\\" => {
+        p.bump();
+
+        // TODO: Parse unicode escapes and such.
+        p.bump();
+      }
+      _ => {
+        p.bump();
+      }
+    }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use crate::tests::{check, check_expr};
@@ -365,7 +403,27 @@ mod tests {
       "\"hi\"",
       expect![@r#"
         LIT_EXPR
-          STRING_LIT_KW '"hi"'
+          DOUBLE_QUOTE '"'
+          IDENT 'hi'
+          DOUBLE_QUOTE '"'
+      "#],
+    );
+
+    check_expr(
+      "\"foo \\\" bar {{\"",
+      expect![@r#"
+        LIT_EXPR
+          DOUBLE_QUOTE '"'
+          IDENT 'foo'
+          WHITESPACE ' '
+          IDENT '\'
+          DOUBLE_QUOTE '"'
+          WHITESPACE ' '
+          IDENT 'bar'
+          WHITESPACE ' '
+          OPEN_CURLY '{'
+          OPEN_CURLY '{'
+          DOUBLE_QUOTE '"'
       "#],
     );
   }
