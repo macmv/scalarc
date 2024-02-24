@@ -238,6 +238,18 @@ fn fun_def(p: &mut Parser, m: Marker) {
 
   if p.at(T![=]) {
     p.eat(T![=]);
+
+    // test ok
+    // def foo =
+    //   2
+    if p.eat_newlines() >= 2 {
+      // test err
+      // def foo =
+      //
+      //   3
+      p.error("expected expr");
+    }
+
     expr::expr(p);
   }
 
