@@ -146,8 +146,10 @@ mod tests {
             WHITESPACE ' '
             FAT_ARROW '=>'
             WHITESPACE ' '
-            LIT_EXPR
-              INT_LIT_KW '1'
+            BLOCK
+              EXPR_ITEM
+                LIT_EXPR
+                  INT_LIT_KW '1'
       "#],
     );
 
@@ -172,8 +174,10 @@ mod tests {
             WHITESPACE ' '
             FAT_ARROW '=>'
             WHITESPACE ' '
-            LIT_EXPR
-              INT_LIT_KW '1'
+            BLOCK
+              EXPR_ITEM
+                LIT_EXPR
+                  INT_LIT_KW '1'
       "#],
     );
 
@@ -204,8 +208,10 @@ mod tests {
             WHITESPACE ' '
             FAT_ARROW '=>'
             WHITESPACE ' '
-            LIT_EXPR
-              INT_LIT_KW '1'
+            BLOCK
+              EXPR_ITEM
+                LIT_EXPR
+                  INT_LIT_KW '1'
       "#],
     );
 
@@ -233,8 +239,10 @@ mod tests {
             WHITESPACE ' '
             FAT_ARROW '=>'
             WHITESPACE ' '
-            LIT_EXPR
-              INT_LIT_KW '1'
+            BLOCK
+              EXPR_ITEM
+                LIT_EXPR
+                  INT_LIT_KW '1'
       "#],
     );
 
@@ -254,8 +262,10 @@ mod tests {
             WHITESPACE ' '
             FAT_ARROW '=>'
             WHITESPACE ' '
-            LIT_EXPR
-              INT_LIT_KW '1'
+            BLOCK
+              EXPR_ITEM
+                LIT_EXPR
+                  INT_LIT_KW '1'
       "#],
     );
 
@@ -285,8 +295,10 @@ mod tests {
             WHITESPACE ' '
             FAT_ARROW '=>'
             WHITESPACE ' '
-            LIT_EXPR
-              INT_LIT_KW '1'
+            BLOCK
+              EXPR_ITEM
+                LIT_EXPR
+                  INT_LIT_KW '1'
       "#],
     );
   }
