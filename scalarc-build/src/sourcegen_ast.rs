@@ -559,6 +559,9 @@ fn token_name(name: &str) -> &str {
     "~" => "tilde",
     "_" => "underscore",
 
+    "\"" => "double_quote",
+    "\"\"\"" => "tripple_quote",
+
     _ if name.chars().all(|c| c.is_ascii_lowercase() || c == '_') => name,
     _ => panic!("unknown token {name}"),
   }

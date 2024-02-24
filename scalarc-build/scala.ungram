@@ -36,6 +36,12 @@ LitPattern = ('-')? 'int_lit'
            | 'symbol_lit'
            | 'null'
 
+// Special token for strings.
+any = 'any'
+
+DoubleQuoteString = '"' any* '"'
+TrippleQuoteString = '"""' any* '"""'
+
 id = 'ident'
 nl = 'nl'
 
