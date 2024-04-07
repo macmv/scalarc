@@ -355,7 +355,7 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
   }
 }
 
-fn double_quote_string(p: &mut Parser) {
+pub fn double_quote_string(p: &mut Parser) {
   // test ok
   // "hello"
   loop {
@@ -495,13 +495,17 @@ mod tests {
       "\"hi\" + \"there\"",
       expect![@r#"
         INFIX_EXPR
-          LIT_EXPR
-            STRING_LIT_KW '"hi"'
+          DOUBLE_QUOTED_STRING
+            DOUBLE_QUOTE '"'
+            IDENT 'hi'
+            DOUBLE_QUOTE '"'
           WHITESPACE ' '
           IDENT '+'
           WHITESPACE ' '
-          LIT_EXPR
-            STRING_LIT_KW '"there"'
+          DOUBLE_QUOTED_STRING
+            DOUBLE_QUOTE '"'
+            IDENT 'there'
+            DOUBLE_QUOTE '"'
       "#],
     );
   }

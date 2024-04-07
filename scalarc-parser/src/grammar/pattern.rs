@@ -34,9 +34,12 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
 
     // test ok
     // case "hello" | "bye" =>
-    STRING_LIT_KW => {
-      p.eat(STRING_LIT_KW);
-      Some(m.complete(p, LIT_PATTERN))
+    DOUBLE_QUOTE => {
+      p.eat(DOUBLE_QUOTE);
+
+      expr::double_quote_string(p);
+
+      Some(m.complete(p, DOUBLE_QUOTED_STRING))
     }
 
     IDENT => {

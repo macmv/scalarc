@@ -66,8 +66,8 @@ fn block_expr() {
 
   let ast::Item::ExprItem(string) = block.items().nth(1).unwrap() else { panic!() };
 
-  let ast::Expr::LitExpr(lit) = string.expr().unwrap() else { panic!() };
-  assert_eq!(lit.string_lit_token().unwrap().text(), "\"hello\"");
+  let ast::Expr::DoubleQuotedString(lit) = string.expr().unwrap() else { panic!() };
+  assert_eq!(lit.syntax.text(), "\"hello\"");
 }
 
 #[test]
