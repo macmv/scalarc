@@ -372,7 +372,11 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, ast: &AstSrc) -> String {
       let token = name;
       let name = token_name(name);
 
-      if "{}[]()".contains(token) {
+      if token == "\"" {
+        punctuation_values.push(quote!("\""));
+      } else if token == "\"\"\"" {
+        punctuation_values.push(quote!("\"\"\""));
+      } else if "{}[]()".contains(token) {
         let c = token.chars().next().unwrap();
         punctuation_values.push(quote!(#c));
       } else {
@@ -571,10 +575,14 @@ impl Field {
   fn is_many(&self) -> bool { matches!(self, Field::Node { cardinality: Cardinality::Many, .. }) }
   fn token_kind(&self) -> Option<proc_macro2::TokenStream> {
     match self {
-      Field::Token(token) => {
-        let token: proc_macro2::TokenStream = token.parse().unwrap();
-        Some(quote! { T![#token] })
-      }
+      Field::Token(token) => match token.as_str() {
+        "\"" => Some(quote! { T!["\""] }),
+        "\"\"\"" => Some(quote! { T!["\"\"\""] }),
+        _ => {
+          let token: proc_macro2::TokenStream = token.parse().unwrap();
+          Some(quote! { T![#token] })
+        }
+      },
       Field::Node { ty, .. } if TOKEN_SHORTHANDS.contains(&ty.as_str()) => match ty.as_str() {
         "semi" => Some(quote! { T![;] }),
         "id" => Some(quote! { T![ident] }),
