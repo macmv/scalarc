@@ -118,6 +118,8 @@ Expr = IfExpr
      | BlockExpr
      | PostfixUnderscoreExpr
      | LitExpr
+     | DoubleQuotedString
+     | TrippleQuotedString
      | Path
      | UnderscoreExpr
      | TupleExpr
