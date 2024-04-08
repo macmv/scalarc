@@ -27,7 +27,7 @@ impl Files {
     }
   }
 
-  fn canonicalize(&self, path: &Path) -> Option<PathBuf> {
+  pub fn canonicalize(&self, path: &Path) -> Option<PathBuf> {
     let path = path.to_path_buf();
     if path.is_absolute() {
       path.strip_prefix(&self.workspace).ok().map(|p| p.to_path_buf())
@@ -56,10 +56,7 @@ impl Files {
   pub fn create(&mut self, path: &Path) -> FileId {
     let path = self.canonicalize(path).unwrap();
     self.intern_path(&path);
-
-    let id = self.ids[&path];
-    self.reverse_ids.insert(id, path.clone());
-    id
+    self.ids[&path]
   }
 
   pub fn path_to_id(&self, path: &Path) -> FileId {

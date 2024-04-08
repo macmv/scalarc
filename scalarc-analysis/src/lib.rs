@@ -9,15 +9,16 @@ mod tests;
 #[macro_use]
 extern crate log;
 
-use std::panic::UnwindSafe;
+use std::{panic::UnwindSafe, sync::Arc};
 
 use completion::Completion;
 use diagnostic::Diagnostic;
 
 use database::RootDatabase;
 use salsa::{Cancelled, ParallelDatabase};
-use scalarc_source::{FileId, SourceDatabase, SourceRootId};
+use scalarc_source::{FileId, SourceDatabase, SourceRootId, Workspace};
 use scalarc_syntax::TextSize;
+use std::path::Path;
 
 pub struct AnalysisHost {
   db: RootDatabase,
@@ -40,11 +41,22 @@ impl AnalysisHost {
   pub fn snapshot(&self) -> Analysis { Analysis { db: self.db.snapshot() } }
 
   pub fn set_workspace(&mut self, workspace: scalarc_source::Workspace) {
+    for (id, _) in workspace.sources.iter() {
+      self.db.set_source_root_files(id, vec![]);
+    }
+
     self.db.set_workspace(workspace.into());
   }
 
+  pub fn workspace(&self) -> Arc<Workspace> { self.db.workspace() }
+
   pub fn change(&mut self, change: Change) {
     self.db.set_file_text(change.file, change.text.into());
+  }
+
+  pub fn has_file(&self, _file: FileId) -> bool {
+    // FIXME
+    false
   }
 
   pub fn add_file(&mut self, file: FileId, source: SourceRootId) {

@@ -72,5 +72,5 @@ pub fn workspace_from_sources(
 
   info!("targets: {:#?}", &targets);
 
-  scalarc_source::Workspace { root: Default::default(), targets }
+  scalarc_source::Workspace { root: Default::default(), targets, sources }
 }

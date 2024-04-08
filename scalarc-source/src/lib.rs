@@ -45,6 +45,7 @@ pub struct Workspace {
   pub root: PathBuf,
 
   pub targets: Arena<TargetData>,
+  pub sources: Arena<PathBuf>,
 }
 
 /// Targets are similar to packages, but are slightly more granular. For

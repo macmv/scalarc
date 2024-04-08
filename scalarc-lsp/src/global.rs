@@ -135,6 +135,32 @@ impl GlobalState {
       self
         .analysis_host
         .change(scalarc_analysis::Change { file: file_id, text: files.read(file_id) });
+
+      // This is re-computed on each change, because it makes the workspace structure
+      // a lot simpler. Instead of the workspace storing all the files within the
+      // source, we can just store a list of source roots, and then compute which
+      // source root each file is in when its created.
+      if !self.analysis_host.has_file(file_id) {
+        let path = files.id_to_path(file_id);
+        if let Some(source) = self
+          .analysis_host
+          .workspace()
+          .sources
+          .iter()
+          .filter_map(|(id, s)| {
+            let s = files.canonicalize(s)?;
+            if path.starts_with(s) {
+              Some(id)
+            } else {
+              None
+            }
+          })
+          .next()
+        {
+          self.analysis_host.add_file(file_id, source);
+          info!("new file at {} has id {file_id:?} and source {source:?}", path.display());
+        }
+      }
     }
 
     let snap = self.analysis_host.snapshot();
