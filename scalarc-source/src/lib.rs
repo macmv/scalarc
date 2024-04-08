@@ -23,8 +23,8 @@ pub trait SourceDatabase: std::fmt::Debug {
 
   #[salsa::input]
   fn file_source_root(&self, file_id: FileId) -> SourceRootId;
-  #[salsa::invoke(source_root::source_root_targets)]
-  fn source_root_targets(&self, id: SourceRootId) -> Vec<TargetId>;
+  #[salsa::invoke(source_root::source_root_target)]
+  fn source_root_target(&self, id: SourceRootId) -> TargetId;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -48,7 +48,7 @@ pub struct Workspace {
 /// example, one project may have a target for its main sources, and a target
 /// for its test sources.
 ///
-/// Targets can have overlapping sources.
+/// Target sources are unique to each target.
 #[derive(Debug)]
 pub struct TargetData {
   pub dependencies: Vec<TargetId>,

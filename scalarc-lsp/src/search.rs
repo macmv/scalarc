@@ -31,6 +31,7 @@ pub fn workspace_from_sources(
   bsp_sources: bsp_types::SourcesResult,
 ) -> scalarc_source::Workspace {
   let mut targets = Arena::new();
+  let mut sources = Arena::new();
   let mut name_to_id = HashMap::new();
   let mut file_to_source_map = FileToSourceMap::new();
 
@@ -60,16 +61,10 @@ pub fn workspace_from_sources(
       .collect();
   }
 
-  let mut source_id = 0;
-
-  for sources in bsp_sources.items {
-    let id = name_to_id[&sources.target.uri.clone().unwrap()];
-    for source in sources.sources {
-      let source_id = {
-        let id = scalarc_source::SourceRootId(source_id);
-        source_id += 1;
-        id
-      };
+  for bsp_sources in bsp_sources.items {
+    let id = name_to_id[&bsp_sources.target.uri.clone().unwrap()];
+    for source in bsp_sources.sources {
+      let source_id = sources.alloc(source.uri.to_file_path().unwrap());
       file_to_source_map.insert(source.uri.to_file_path().unwrap(), source_id);
       targets[id].sources.push(source_id);
     }
