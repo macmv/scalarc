@@ -1,7 +1,5 @@
 use scalarc_source::{FileId, SourceDatabase};
 
-use crate::HirDatabase;
-
 use super::TestDB;
 
 fn check_workspace_recomputed(initial: &str, changed: &str) {
@@ -11,7 +9,7 @@ fn check_workspace_recomputed(initial: &str, changed: &str) {
 
   {
     let events = db.log_executed(|| {
-      db.workspace_map();
+      // db.workspace_map();
     });
     dbg!(&events);
     assert!(format!("{events:?}").contains("workspace_map"), "{events:#?}")
@@ -20,7 +18,7 @@ fn check_workspace_recomputed(initial: &str, changed: &str) {
 
   {
     let events = db.log_executed(|| {
-      db.workspace_map();
+      // db.workspace_map();
     });
     dbg!(&events);
     assert!(!format!("{events:?}").contains("workspace_map"), "{events:#?}")

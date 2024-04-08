@@ -1,36 +1,17 @@
 #[cfg(test)]
 mod tests;
 
-pub mod body;
-pub mod lower;
 pub mod tree;
 
-mod source_map;
-
-use std::{
-  hash::{Hash, Hasher},
-  sync::Arc,
-};
+use std::hash::{Hash, Hasher};
 
 use la_arena::Idx;
 use scalarc_source::{FileId, SourceDatabase, TargetId};
-use tree::Package;
 use url::Url;
 
+// TODO: Implement.
 #[salsa::query_group(HirDatabaseStorage)]
-pub trait HirDatabase: InternDatabase {
-  #[salsa::invoke(tree::workspace_map)]
-  fn workspace_map(&self) -> Vec<Arc<Package>>;
-
-  #[salsa::invoke(tree::file_package)]
-  fn file_package(&self, file_id: FileId) -> Arc<Package>;
-
-  #[salsa::invoke(source_map::source_map)]
-  fn source_map(&self, file_id: FileId) -> Arc<source_map::SourceMap>;
-
-  #[salsa::invoke(source_map::span_map)]
-  fn span_map(&self, file_id: FileId) -> Arc<source_map::SpanMap>;
-}
+pub trait HirDatabase: InternDatabase {}
 
 #[salsa::query_group(InternDatabaseStorage)]
 pub trait InternDatabase: SourceDatabase {

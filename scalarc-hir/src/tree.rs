@@ -1,10 +1,6 @@
-use std::sync::Arc;
+// TODO: Actually use any of this.
 
 use la_arena::Idx;
-use scalarc_source::FileId;
-use scalarc_syntax::ast;
-
-use crate::{source_map::SyntaxId, HirDatabase};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Name(String);
@@ -31,8 +27,6 @@ pub struct PackageArenas {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Def {
-  pub id: SyntaxId<ast::FunDef>,
-
   pub name: Name,
   pub args: Box<[Name]>,
   pub body: ExprId,
@@ -42,8 +36,6 @@ impl crate::ItemTreeNode for Def {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Val {
-  pub id: SyntaxId<ast::ValDef>,
-
   pub name: Name,
   pub expr: ExprId,
 }
@@ -58,6 +50,7 @@ pub enum Item {
   Expr(ExprId),
 }
 
+/// A high level representation of an expression. Mostly used for typechecking.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expr {
   If { cond: ExprId, then_branch: ExprId, else_branch: Option<ExprId> },
@@ -104,23 +97,4 @@ impl FloatWrapper {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Block {
   pub items: Box<[ItemId]>,
-}
-
-/// Returns the package for a given file.
-///
-/// This assumes that each file creates one package, which is definitely not the
-/// case. TODO: Need to rework a bit.
-pub fn file_package(db: &dyn HirDatabase, file_id: FileId) -> Arc<Package> {
-  let package = crate::lower::lower(db, file_id);
-
-  Arc::new(package)
-}
-
-/// A workspace map is a list of all packages in a workspace. Because packages
-/// are only defined by their top-level items, this will not get re-computed if
-/// the contents of any item or function changes.
-pub fn workspace_map(db: &dyn HirDatabase) -> Vec<Arc<Package>> {
-  // TODO: Fill in the workspace based off the package sources.
-  let source = db.file_package(FileId::temp_new());
-  vec![source]
 }
