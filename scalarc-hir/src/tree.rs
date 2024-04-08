@@ -2,8 +2,13 @@
 
 use la_arena::Idx;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Name(String);
+
+impl Name {
+  pub fn as_str(&self) -> &str { &self.0 }
+  pub fn into_string(self) -> String { self.0 }
+}
 
 impl From<&str> for Name {
   fn from(s: &str) -> Self { Name(s.to_owned()) }

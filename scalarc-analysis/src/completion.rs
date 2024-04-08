@@ -26,6 +26,17 @@ pub fn completions(db: &RootDatabase, cursor: FileLocation) -> Vec<Completion> {
 
   info!("finding completions...");
 
+  let source_root = db.file_source_root(cursor.file);
+  let target = db.source_root_target(source_root);
+  let definitions = db.definitions_for_target(target);
+
+  for (mut path, _) in definitions.items {
+    completions.push(Completion {
+      label: path.elems.pop().unwrap().into_string(),
+      kind:  CompletionKind::Class,
+    });
+  }
+
   let ast = db.parse(cursor.file);
   add_imports(&mut completions, &ast);
 
