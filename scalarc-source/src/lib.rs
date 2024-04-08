@@ -23,6 +23,9 @@ pub trait SourceDatabase: std::fmt::Debug {
 
   #[salsa::input]
   fn file_source_root(&self, file_id: FileId) -> SourceRootId;
+  #[salsa::input]
+  fn source_root_files(&self, id: SourceRootId) -> Vec<FileId>;
+
   #[salsa::invoke(source_root::source_root_target)]
   fn source_root_target(&self, id: SourceRootId) -> TargetId;
 }

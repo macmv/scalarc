@@ -16,7 +16,7 @@ use diagnostic::Diagnostic;
 
 use database::RootDatabase;
 use salsa::{Cancelled, ParallelDatabase};
-use scalarc_source::{FileId, SourceDatabase};
+use scalarc_source::{FileId, SourceDatabase, SourceRootId};
 use scalarc_syntax::TextSize;
 
 pub struct AnalysisHost {
@@ -45,6 +45,14 @@ impl AnalysisHost {
 
   pub fn change(&mut self, change: Change) {
     self.db.set_file_text(change.file, change.text.into());
+  }
+
+  pub fn add_file(&mut self, file: FileId, source: SourceRootId) {
+    self.db.set_file_source_root(file, source);
+
+    let mut files = self.db.source_root_files(source);
+    files.push(file);
+    self.db.set_source_root_files(source, files);
   }
 }
 
