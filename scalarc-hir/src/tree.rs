@@ -32,15 +32,11 @@ pub struct Def {
   pub body: ExprId,
 }
 
-impl crate::ItemTreeNode for Def {}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Val {
   pub name: Name,
   pub expr: ExprId,
 }
-
-impl crate::ItemTreeNode for Val {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Item {
