@@ -89,6 +89,7 @@ pub enum Delimiter {
   Backtick,
   SingleQuote,
   DoubleQuote,
+  TrippleQuote,
   Dot,
   Semicolon,
   Comma,
@@ -113,12 +114,27 @@ impl<'a> Tokenizer<'a> {
     if self.index >= self.source.len() {
       Ok(None)
     } else {
-      let Some(c) = self.source[self.index..].chars().next() else {
-        return Err(LexError::EOF);
-      };
-      let t = self.eat()?;
-      self.index -= c.len_utf8();
-      Ok(Some(t))
+      let chars = self.source[self.index..].chars().take(1);
+      let t1 = self.eat();
+      for c in chars {
+        self.index -= c.len_utf8();
+      }
+      Ok(Some(t1?))
+    }
+  }
+
+  pub fn peek2(&mut self) -> Result<Option<InnerToken>> {
+    if self.index >= self.source.len() {
+      Ok(None)
+    } else {
+      let chars = self.source[self.index..].chars().take(2);
+      let t1 = self.eat();
+      let t2 = self.eat();
+      for c in chars {
+        self.index -= c.len_utf8();
+      }
+      t1?;
+      Ok(Some(t2?))
     }
   }
 
@@ -327,60 +343,15 @@ impl<'a> Lexer<'a> {
 
       // Double quoted strings.
       InnerToken::Delimiter(Delimiter::DoubleQuote) => {
-        let second = self.tok.eat()?;
-        let third = self.tok.peek();
+        let second = self.tok.peek();
+        let third = self.tok.peek2();
 
-        if second == first && third == Ok(Some(first)) {
-          // Tripple quoted strings.
+        if second == Ok(Some(first)) && third == Ok(Some(first)) {
           self.tok.eat()?;
-
-          let mut quote_len = 0;
-
-          loop {
-            // TODO: Escapes
-            match self.tok.eat() {
-              Err(LexError::EOF) => break,
-              Ok(InnerToken::Delimiter(Delimiter::DoubleQuote)) => quote_len += 1,
-              Ok(_) => quote_len = 0,
-              Err(e) => return Err(e),
-            }
-
-            if quote_len == 3 {
-              break;
-            }
-          }
-
-          self.ok(start, Token::Literal(Literal::String))
-        } else if second == first {
-          // Empty string.
-          self.ok(start, Token::Literal(Literal::String))
+          self.tok.eat()?;
+          self.ok(start, Token::Delimiter(Delimiter::TrippleQuote))
         } else {
-          // One-line, double quoted string.
-
-          match second {
-            InnerToken::Newline => return Err(LexError::NewlineInString),
-            _ => {}
-          }
-
-          let mut in_escape = second == InnerToken::Delimiter(Delimiter::Backslash);
-
-          loop {
-            // TODO: Escapes
-            match self.tok.eat() {
-              Ok(InnerToken::Newline) => return Err(LexError::NewlineInString),
-
-              Ok(InnerToken::Delimiter(Delimiter::Backslash)) => in_escape = !in_escape,
-              // TODO: Only allow certain escapes.
-              // TODO: Parse unicode escapes.
-              Ok(_) if in_escape => in_escape = false,
-
-              Ok(InnerToken::Delimiter(Delimiter::DoubleQuote)) | Err(LexError::EOF) => break,
-              Ok(_) => {}
-              Err(e) => return Err(e),
-            }
-          }
-
-          self.ok(start, Token::Literal(Literal::String))
+          self.ok(start, Token::Delimiter(Delimiter::DoubleQuote))
         }
       }
 
@@ -552,15 +523,21 @@ mod tests {
   #[test]
   fn strings() {
     let mut lexer = Lexer::new("\"\"");
-    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::String)));
-    assert_eq!(lexer.slice(), "\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     let mut lexer = Lexer::new(r#" "hi" "#);
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
-    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::String)));
-    assert_eq!(lexer.slice(), "\"hi\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "hi");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
     assert_eq!(lexer.next(), Err(LexError::EOF));
@@ -572,25 +549,51 @@ mod tests {
     );
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
-    assert_eq!(lexer.next(), Err(LexError::NewlineInString));
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "hello");
+    assert_eq!(lexer.next(), Ok(Token::Newline));
+    assert_eq!(lexer.slice(), "\n");
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), "           ");
     assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "world");
-    assert_eq!(lexer.next(), Err(LexError::NewlineInString));
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
+    assert_eq!(lexer.next(), Ok(Token::Newline));
+    assert_eq!(lexer.slice(), "\n");
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), "      ");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     // Escapes.
     let mut lexer = Lexer::new("\"foo: \\\"\"");
-    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::String)));
-    assert_eq!(lexer.slice(), "\"foo: \\\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "foo");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
+    assert_eq!(lexer.slice(), ":");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
+    assert_eq!(lexer.slice(), "\\");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
     assert_eq!(lexer.next(), Err(LexError::EOF));
 
     let mut lexer = Lexer::new("\"\\\"\"");
-    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::String)));
-    assert_eq!(lexer.slice(), "\"\\\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Operator)));
+    assert_eq!(lexer.slice(), "\\");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
@@ -601,8 +604,12 @@ mod tests {
     assert_eq!(lexer.slice(), " ");
     assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "s");
-    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::String)));
-    assert_eq!(lexer.slice(), "\"hi\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "hi");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
     assert_eq!(lexer.next(), Err(LexError::EOF));
@@ -613,8 +620,12 @@ mod tests {
     let mut lexer = Lexer::new(r#" """hi""" "#);
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
-    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::String)));
-    assert_eq!(lexer.slice(), "\"\"\"hi\"\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::TrippleQuote)));
+    assert_eq!(lexer.slice(), "\"\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "hi");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::TrippleQuote)));
+    assert_eq!(lexer.slice(), "\"\"\"");
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
     assert_eq!(lexer.next(), Err(LexError::EOF));
@@ -622,8 +633,18 @@ mod tests {
     let mut lexer = Lexer::new(r#" """h""i""" "#);
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
-    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::String)));
-    assert_eq!(lexer.slice(), "\"\"\"h\"\"i\"\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::TrippleQuote)));
+    assert_eq!(lexer.slice(), "\"\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "h");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::DoubleQuote)));
+    assert_eq!(lexer.slice(), "\"");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "i");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::TrippleQuote)));
+    assert_eq!(lexer.slice(), "\"\"\"");
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
     assert_eq!(lexer.next(), Err(LexError::EOF));
@@ -635,8 +656,18 @@ mod tests {
     );
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
-    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::String)));
-    assert_eq!(lexer.slice(), "\"\"\"hello\n             world\"\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::TrippleQuote)));
+    assert_eq!(lexer.slice(), "\"\"\"");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "hello");
+    assert_eq!(lexer.next(), Ok(Token::Newline));
+    assert_eq!(lexer.slice(), "\n");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), "             ");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "world");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::TrippleQuote)));
+    assert_eq!(lexer.slice(), "\"\"\"");
     assert_eq!(lexer.next(), Ok(Token::Newline));
     assert_eq!(lexer.slice(), "\n");
     assert_eq!(lexer.next(), Ok(Token::Whitespace));

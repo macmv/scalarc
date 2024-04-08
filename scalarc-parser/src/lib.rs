@@ -68,6 +68,8 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
     Token::Delimiter(token::Delimiter::Dot) => T![.],
     Token::Delimiter(token::Delimiter::Semicolon) => T![;],
     Token::Delimiter(token::Delimiter::Comma) => T![,],
+    Token::Delimiter(token::Delimiter::DoubleQuote) => SyntaxKind::DOUBLE_QUOTE,
+    Token::Delimiter(token::Delimiter::TrippleQuote) => SyntaxKind::TRIPPLE_QUOTE,
     Token::Group(token::Group::OpenParen) => T!['('],
     Token::Group(token::Group::CloseParen) => T![')'],
     Token::Group(token::Group::OpenBracket) => T!['['],
