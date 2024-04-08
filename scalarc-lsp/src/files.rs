@@ -8,16 +8,23 @@ use std::{
 use scalarc_source::FileId;
 
 pub struct Files {
-  files:   HashMap<PathBuf, String>,
-  ids:     HashMap<PathBuf, FileId>,
-  changes: Vec<PathBuf>,
+  files:       HashMap<PathBuf, String>,
+  ids:         HashMap<PathBuf, FileId>,
+  reverse_ids: HashMap<FileId, PathBuf>,
+  changes:     Vec<FileId>,
 
   pub workspace: PathBuf,
 }
 
 impl Files {
   pub fn new(workspace: PathBuf) -> Self {
-    Files { files: HashMap::new(), ids: HashMap::new(), changes: vec![], workspace }
+    Files {
+      files: HashMap::new(),
+      ids: HashMap::new(),
+      reverse_ids: HashMap::new(),
+      changes: vec![],
+      workspace,
+    }
   }
 
   fn canonicalize(&self, path: &Path) -> Option<PathBuf> {
@@ -29,18 +36,31 @@ impl Files {
     }
   }
 
-  pub fn read(&self, path: &Path) -> String {
+  pub fn read(&self, id: FileId) -> String {
+    let path = self.reverse_ids.get(&id).unwrap();
+
     let Some(path) = self.canonicalize(path) else { return "".into() };
     self.files.get(&path).cloned().unwrap_or_default()
   }
-  pub fn write(&mut self, path: &Path, contents: String) {
+  pub fn write(&mut self, id: FileId, contents: String) {
+    let path = self.reverse_ids.get(&id).unwrap();
+
     let Some(path) = self.canonicalize(path) else { return };
     self.intern_path(&path);
     self.files.insert(path.clone(), contents);
-    self.changes.push(path);
+    self.changes.push(id);
   }
 
-  pub fn take_changes(&mut self) -> Vec<PathBuf> { self.changes.drain(..).collect() }
+  pub fn take_changes(&mut self) -> Vec<FileId> { self.changes.drain(..).collect() }
+
+  pub fn create(&mut self, path: &Path) -> FileId {
+    let path = self.canonicalize(path).unwrap();
+    self.intern_path(&path);
+
+    let id = self.ids[&path];
+    self.reverse_ids.insert(id, path.clone());
+    id
+  }
 
   pub fn path_to_id(&self, path: &Path) -> FileId {
     let Some(path) = self.canonicalize(path) else {
@@ -56,9 +76,18 @@ impl Files {
     }
   }
 
+  pub fn id_to_path(&self, file_id: FileId) -> &Path {
+    match self.reverse_ids.get(&file_id) {
+      Some(id) => id,
+      None => panic!("no such file with id {file_id:?}"),
+    }
+  }
+
   fn intern_path(&mut self, path: &Path) {
     if !self.ids.contains_key(path) {
-      self.ids.insert(path.into(), FileId::new_raw(self.ids.len() as u32));
+      let id = FileId::new_raw(self.ids.len() as u32);
+      self.ids.insert(path.into(), id);
+      self.reverse_ids.insert(id, path.into());
     }
   }
 }
@@ -71,7 +100,8 @@ mod tests {
   fn path_to_id() {
     let mut files = Files::new(PathBuf::new());
 
-    files.write(Path::new("foo"), "bar".to_string());
+    let id = files.create(Path::new("foo"));
+    files.write(id, "bar".to_string());
 
     let id = files.path_to_id(Path::new("foo"));
     assert_eq!(id, FileId::new_raw(0));

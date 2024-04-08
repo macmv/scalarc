@@ -4,7 +4,6 @@ use crossbeam_channel::{Receiver, Select, Sender};
 use parking_lot::RwLock;
 use scalarc_analysis::{Analysis, AnalysisHost};
 use scalarc_bsp::{client::BspClient, types as bsp_types};
-use scalarc_source::FileId;
 use std::{error::Error, path::PathBuf, sync::Arc};
 
 use lsp_types::{notification::Notification, Url};
@@ -132,24 +131,25 @@ impl GlobalState {
     let mut files = self.files.write();
     let changes = files.take_changes();
 
-    for path in &changes {
+    for &file_id in &changes {
       self
         .analysis_host
-        .change(scalarc_analysis::Change { file: FileId::temp_new(), text: files.read(path) });
+        .change(scalarc_analysis::Change { file: file_id, text: files.read(file_id) });
     }
 
     let snap = self.analysis_host.snapshot();
 
-    for path in &changes {
-      let src = files.read(path);
-      let diagnostics = snap.diagnostics(FileId::temp_new()).unwrap();
+    for &file_id in &changes {
+      let src = files.read(file_id);
+      let diagnostics = snap.diagnostics(file_id).unwrap();
 
       self
         .sender
         .send(lsp_server::Message::Notification(lsp_server::Notification {
           method: lsp_types::notification::PublishDiagnostics::METHOD.into(),
           params: serde_json::to_value(lsp_types::PublishDiagnosticsParams {
-            uri:         Url::from_file_path(self.workspace.join(path)).unwrap(),
+            uri:         Url::from_file_path(self.workspace.join(files.id_to_path(file_id)))
+              .unwrap(),
             diagnostics: diagnostics
               .into_iter()
               .map(|d| lsp_types::Diagnostic {

@@ -7,7 +7,9 @@ pub fn handle_open_text_document(
   params: lsp_types::DidOpenTextDocumentParams,
 ) -> Result<(), Box<dyn Error>> {
   if let Some(path) = global.workspace_path(&params.text_document.uri) {
-    global.files.write().write(&path, params.text_document.text.clone());
+    let mut w = global.files.write();
+    let file_id = w.create(&path);
+    w.write(file_id, params.text_document.text.clone());
   }
 
   Ok(())
@@ -18,12 +20,13 @@ pub fn handle_change_text_document(
   params: lsp_types::DidChangeTextDocumentParams,
 ) -> Result<(), Box<dyn Error>> {
   if let Some(path) = global.workspace_path(&params.text_document.uri) {
-    let file = global.files.read().read(&path);
+    let file_id = global.files.read().path_to_id(&path);
+    let file = global.files.read().read(file_id);
 
     let new_file = apply_changes(file.clone(), &params.content_changes);
 
     if file != new_file {
-      global.files.write().write(&path, new_file.clone());
+      global.files.write().write(file_id, new_file.clone());
     }
   }
 

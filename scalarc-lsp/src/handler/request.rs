@@ -57,9 +57,8 @@ fn file_position(
   let files = snap.files.read();
 
   let path = Path::new(pos.text_document.uri.path());
-
-  let file = files.read(path);
-  let file_id = snap.files.read().path_to_id(path);
+  let file_id = files.path_to_id(path);
+  let file = files.read(file_id);
 
   let mut i = 0;
   for (num, line) in file.lines().enumerate() {
