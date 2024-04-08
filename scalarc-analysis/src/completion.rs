@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use scalarc_hir::HirDatabase;
 use scalarc_source::SourceDatabase;
 use scalarc_syntax::{
   ast::AstNode,

@@ -373,6 +373,7 @@ version = "0.1.0"
 dependencies = [
  "log",
  "salsa",
+ "scalarc-hir",
  "scalarc-parser",
  "scalarc-source",
  "scalarc-syntax",
@@ -412,6 +413,7 @@ name = "scalarc-hir"
 version = "0.1.0"
 dependencies = [
  "la-arena",
+ "log",
  "salsa",
  "scalarc-source",
  "scalarc-syntax",

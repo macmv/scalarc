@@ -1,8 +1,6 @@
 use std::fmt;
 
-use scalarc_source::SourceDatabaseStorage;
-
-#[salsa::database(SourceDatabaseStorage)]
+#[salsa::database(scalarc_source::SourceDatabaseStorage, scalarc_hir::HirDatabaseStorage)]
 #[derive(Default)]
 pub struct RootDatabase {
   pub(crate) storage: salsa::Storage<Self>,
