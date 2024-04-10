@@ -69,12 +69,12 @@ pub fn handle_goto_definition(
   params: lsp_types::GotoDefinitionParams,
 ) -> Result<Option<lsp_types::GotoDefinitionResponse>, Box<dyn Error>> {
   let pos = file_position(&snap, params.text_document_position_params)?;
-  let line_index = snap.analysis.line_index(pos.file)?;
   let definition = snap.analysis.definition_for_name(pos)?;
 
   if let Some(def) = definition {
     let files = snap.files.read();
 
+    let line_index = snap.analysis.line_index(def.pos.file)?;
     let start = line_index.line_col(def.pos.range.start());
     let end = line_index.line_col(def.pos.range.end());
 
