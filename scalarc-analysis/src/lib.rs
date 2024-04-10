@@ -54,11 +54,6 @@ impl AnalysisHost {
   pub fn change(&mut self, change: Change) {
     self.db.set_file_text(change.file, change.text.into());
   }
-
-  pub fn has_file(&self, _file: FileId) -> bool {
-    // FIXME
-    false
-  }
 }
 
 pub struct Change {
