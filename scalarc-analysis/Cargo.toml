@@ -11,5 +11,6 @@ scalarc-syntax.workspace = true
 scalarc-source.workspace = true
 scalarc-hir.workspace = true
 scalarc-parser.workspace = true
+line-index = "0.1.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -48,7 +48,7 @@ pub fn handle_semantic_tokens_full(
     let file_id = snap.files.read().path_to_id(&path);
     let highlight = snap.analysis.highlight(file_id)?;
 
-    let tokens = to_semantic_tokens(snap, file_id, &highlight);
+    let tokens = to_semantic_tokens(snap, file_id, &highlight)?;
     info!("tokens: {:?}", tokens);
 
     Ok(Some(lsp_types::SemanticTokensResult::Tokens(lsp_types::SemanticTokens {
@@ -65,13 +65,17 @@ pub fn handle_goto_definition(
   params: lsp_types::GotoDefinitionParams,
 ) -> Result<Option<lsp_types::GotoDefinitionResponse>, Box<dyn Error>> {
   let pos = file_position(&snap, params.text_document_position_params)?;
+  let line_index = snap.analysis.line_index(pos.file)?;
   let definition = snap.analysis.definition_for_name(pos)?;
 
   if let Some(def) = definition {
     let files = snap.files.read();
 
-    let start = index_to_pos(&snap, def.pos.file, def.pos.range.start())?;
-    let end = index_to_pos(&snap, def.pos.file, def.pos.range.end())?;
+    let start = line_index.line_col(def.pos.range.start());
+    let end = line_index.line_col(def.pos.range.end());
+
+    let start = lsp_types::Position { line: start.line, character: start.col };
+    let end = lsp_types::Position { line: end.line, character: end.col };
 
     Ok(Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_types::Location::new(
       lsp_types::Url::parse(&format!(
@@ -111,7 +115,9 @@ fn to_semantic_tokens(
   snap: GlobalStateSnapshot,
   file: FileId,
   highlight: &Highlight,
-) -> Vec<lsp_types::SemanticToken> {
+) -> Result<Vec<lsp_types::SemanticToken>, Box<dyn Error>> {
+  let line_index = snap.analysis.line_index(file)?;
+
   let mut tokens = Vec::new();
 
   let mut line = 0;
@@ -122,16 +128,16 @@ fn to_semantic_tokens(
   for h in highlight.tokens.iter() {
     let range = h.range;
 
-    let pos = index_to_pos(&snap, file, range.start()).unwrap();
+    let pos = line_index.line_col(range.start());
 
     let delta_line = pos.line - line;
     if delta_line != 0 {
       col = 0;
     }
-    let delta_start = pos.character - col;
+    let delta_start = pos.col - col;
 
     line = pos.line;
-    col = pos.character;
+    col = pos.col;
 
     tokens.push(lsp_types::SemanticToken {
       delta_line,
@@ -142,7 +148,7 @@ fn to_semantic_tokens(
     });
   }
 
-  tokens
+  Ok(tokens)
 }
 
 fn file_position(
@@ -162,25 +168,6 @@ fn file_position(
     }
 
     i += line.len() as u32 + 1;
-  }
-
-  Err("position not found".into())
-}
-
-fn index_to_pos(
-  snap: &GlobalStateSnapshot,
-  file_id: FileId,
-  mut index: TextSize,
-) -> Result<lsp_types::Position, Box<dyn Error>> {
-  let files = snap.files.read();
-  let file = files.read(file_id);
-
-  for (num, line) in file.lines().enumerate() {
-    if u32::from(index) < line.len() as u32 {
-      return Ok(lsp_types::Position { line: num as u32, character: index.into() });
-    }
-
-    index -= TextSize::new(line.len() as u32 + 1);
   }
 
   Err("position not found".into())

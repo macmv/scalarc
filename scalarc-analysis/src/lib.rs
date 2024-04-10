@@ -15,8 +15,9 @@ use std::{panic::UnwindSafe, sync::Arc};
 use completion::Completion;
 use diagnostic::Diagnostic;
 
-use database::RootDatabase;
+use database::{LineIndexDatabase, RootDatabase};
 use highlight::Highlight;
+use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
 use scalarc_hir::{Definition, FileLocation, HirDatabase, Path};
 use scalarc_parser::T;
@@ -124,6 +125,10 @@ impl Analysis {
         _ => None,
       }
     })
+  }
+
+  pub fn line_index(&self, file: FileId) -> Cancellable<Arc<LineIndex>> {
+    self.with_db(|db| db.line_index(file))
   }
 
   fn with_db<T>(&self, f: impl FnOnce(&RootDatabase) -> T + UnwindSafe) -> Cancellable<T> {

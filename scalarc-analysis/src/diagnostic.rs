@@ -1,10 +1,8 @@
-use std::ops::Range;
-
-use scalarc_syntax::SyntaxError;
+use scalarc_syntax::{SyntaxError, TextRange};
 
 pub struct Diagnostic {
   pub message: String,
-  pub span:    Range<u32>,
+  pub span:    TextRange,
 }
 
 impl Diagnostic {
