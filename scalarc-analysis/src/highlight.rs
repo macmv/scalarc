@@ -48,8 +48,10 @@ struct Highlighter {
   // Arguments in the current scope.
   params: Vec<String>,
 
-  // Locals in the current scope. TODO: This needs a stack too.
-  locals: Vec<String>,
+  // Stack of block scopes.
+  local_frames: Vec<usize>,
+  // Locals in the current scope.
+  locals:       Vec<String>,
 
   hl: Highlight,
 }
@@ -70,10 +72,11 @@ impl Highlight {
 impl Highlighter {
   pub fn new() -> Self {
     Highlighter {
-      frames: vec![],
-      params: vec![],
-      locals: vec![],
-      hl:     Highlight { tokens: vec![] },
+      frames:       vec![],
+      params:       vec![],
+      local_frames: vec![],
+      locals:       vec![],
+      hl:           Highlight { tokens: vec![] },
     }
   }
 
@@ -82,6 +85,13 @@ impl Highlighter {
   pub fn pop(&mut self) {
     let idx = self.frames.pop().expect("empty stack");
     self.params.truncate(idx);
+  }
+
+  pub fn push_block(&mut self) { self.local_frames.push(self.locals.len()); }
+
+  pub fn pop_block(&mut self) {
+    let idx = self.local_frames.pop().expect("empty stack");
+    self.locals.truncate(idx);
   }
 
   pub fn visit_item(&mut self, item: ast::Item) {
@@ -167,9 +177,11 @@ impl Highlighter {
         self.highlight(lit.syntax().text_range(), HighlightKind::Number);
       }
       ast::Expr::BlockExpr(b) => {
+        self.push_block();
         for item in b.items() {
           self.visit_item(item);
         }
+        self.pop_block();
       }
       ast::Expr::InfixExpr(i) => {
         info!("infix: {:#?}", i.syntax());

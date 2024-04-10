@@ -13,6 +13,8 @@ object Main extends App {
     x + 1
   }
 
+  y + 3
+
   val x = 1
 }
 
