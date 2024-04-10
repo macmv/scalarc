@@ -66,7 +66,9 @@ pub fn semantic_tokens_legend() -> lsp_types::SemanticTokensLegend {
       HighlightKind::Class => SemanticTokenType::new("class"),
       HighlightKind::Function => SemanticTokenType::new("function"),
       HighlightKind::Keyword => SemanticTokenType::new("keyword"),
+      HighlightKind::Number => SemanticTokenType::new("number"),
       HighlightKind::Parameter => SemanticTokenType::new("parameter"),
+      HighlightKind::Type => SemanticTokenType::new("type"),
       HighlightKind::Variable => SemanticTokenType::new("variable"),
     }
   }
@@ -95,6 +97,7 @@ fn to_semantic_tokens(
     let range = h.range;
 
     let (l, c) = range_to_line_col(&snap, file, range.start()).unwrap();
+    info!("l: {l}, c: {c}");
 
     let delta_line = l - line;
     if delta_line != 0 {
@@ -151,13 +154,12 @@ fn range_to_line_col(
   let files = snap.files.read();
   let file = files.read(file_id);
 
-  let mut i = 0;
   for (num, line) in file.lines().enumerate() {
     if u32::from(index) < line.len() as u32 {
       return Ok((num as u32, index.into()));
     }
 
-    index -= TextSize::new(line.len() as u32);
+    index -= TextSize::new(line.len() as u32 + 1);
   }
 
   Err("position not found".into())
