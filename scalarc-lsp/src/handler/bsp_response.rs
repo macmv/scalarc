@@ -1,7 +1,7 @@
 use crate::global::GlobalState;
 use std::error::Error;
 
-use scalarc_bsp::types as bsp_types;
+use scalarc_bsp::types::{self as bsp_types, BspRequest};
 
 pub fn handle_workspace_build_targets(
   state: &mut GlobalState,
@@ -13,9 +13,10 @@ pub fn handle_workspace_build_targets(
     state.bsp_targets = Some(result.clone());
 
     // Grab all the sources!
-    c.request(bsp_types::SourcesParams {
+    let id = c.request(bsp_types::SourcesParams {
       targets: result.targets.iter().map(|t| t.id.clone()).collect(),
     });
+    state.bsp_requests.insert(id, bsp_types::SourcesParams::METHOD);
   }
 
   Ok(())

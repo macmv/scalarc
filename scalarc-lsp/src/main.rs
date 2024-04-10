@@ -1,5 +1,7 @@
 use std::{error::Error, fs, path::PathBuf};
 
+use scalarc_bsp::types::BspRequest;
+
 mod files;
 mod global;
 mod handler;
@@ -69,8 +71,6 @@ fn run() -> Result<(), Box<dyn Error>> {
 
       // info!("got initialize response: {:#?}", res);
 
-      c.request(scalarc_bsp::types::WorkspaceBuildTargetsRequest);
-
       Some(c)
     }
     Err(e) => {
@@ -84,7 +84,13 @@ fn run() -> Result<(), Box<dyn Error>> {
   // TODO: Close the bsp server on an exit request.
   let bsp_receiver = bsp_client.as_ref().map(|c| c.receiver.clone());
 
-  let global = global::GlobalState::new(connection.sender, bsp_client, root_uri);
+  let mut global = global::GlobalState::new(connection.sender, bsp_client, root_uri);
+
+  if let Some(c) = &global.bsp_client {
+    let id = c.request(scalarc_bsp::types::WorkspaceBuildTargetsRequest);
+    global.bsp_requests.insert(id, scalarc_bsp::types::WorkspaceBuildTargetsRequest::METHOD);
+  }
+
   global.run(connection.receiver, bsp_receiver)?;
 
   Ok(())

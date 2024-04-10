@@ -1,10 +1,11 @@
 //! Handles global state and the main loop of the server.
 
 use crossbeam_channel::{Receiver, Select, Sender};
+use lsp_server::RequestId;
 use parking_lot::RwLock;
 use scalarc_analysis::{Analysis, AnalysisHost};
 use scalarc_bsp::{client::BspClient, types as bsp_types};
-use std::{error::Error, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
 
 use lsp_types::{notification::Notification, Url};
 
@@ -21,6 +22,11 @@ pub struct GlobalState {
 
   // Temporary state between BSP requests.
   pub bsp_targets: Option<bsp_types::WorkspaceBuildTargetsResult>,
+
+  // FIXME: This really shouldn't live here. Not sure where else to put it.
+  //
+  // Also it should timeout requests that failed to reply.
+  pub bsp_requests: HashMap<RequestId, &'static str>,
 
   response_sender:   Sender<lsp_server::Message>,
   response_receiver: Receiver<lsp_server::Message>,
@@ -53,6 +59,7 @@ impl GlobalState {
       analysis_host: AnalysisHost::new(),
       bsp_client,
       bsp_targets: None,
+      bsp_requests: HashMap::new(),
 
       response_sender: tx,
       response_receiver: rx,
@@ -256,6 +263,18 @@ struct RequestDispatcher<'a> {
 }
 
 impl RequestDispatcher<'_> {
+  fn log_error<R>(&self, e: impl Error)
+  where
+    R: lsp_types::request::Request,
+  {
+    error!(
+      "in request dispatcher for {}: failed to deserialize params: {} from the request {:#?}",
+      R::METHOD,
+      e,
+      self.req
+    );
+  }
+
   fn on_sync<R>(
     &mut self,
     f: fn(&GlobalState, R::Params) -> Result<R::Result, Box<dyn Error>>,
@@ -270,7 +289,7 @@ impl RequestDispatcher<'_> {
     let params = match serde_json::from_value::<R::Params>(self.req.params.clone()) {
       Ok(p) => p,
       Err(e) => {
-        error!("failed to deserialize params: {}", e);
+        self.log_error::<R>(e);
         return self;
       }
     };
@@ -305,7 +324,7 @@ impl RequestDispatcher<'_> {
     let params = match serde_json::from_value::<R::Params>(self.req.params.clone()) {
       Ok(p) => p,
       Err(e) => {
-        error!("failed to deserialize params: {}", e);
+        self.log_error::<R>(e);
         return self;
       }
     };
@@ -336,6 +355,18 @@ struct NotificationDispatcher<'a> {
 }
 
 impl NotificationDispatcher<'_> {
+  fn log_error<N>(&self, e: impl Error)
+  where
+    N: lsp_types::notification::Notification,
+  {
+    error!(
+      "in notification dispatcher for {}: failed to deserialize params: {} from the notification {:#?}",
+      N::METHOD,
+      e,
+      self.not
+    );
+  }
+
   fn on_sync<N>(
     &mut self,
     f: fn(&mut GlobalState, N::Params) -> Result<(), Box<dyn Error>>,
@@ -350,7 +381,7 @@ impl NotificationDispatcher<'_> {
     let params = match serde_json::from_value::<N::Params>(self.not.params.clone()) {
       Ok(p) => p,
       Err(e) => {
-        error!("failed to deserialize params: {}", e);
+        self.log_error::<N>(e);
         return self;
       }
     };
@@ -367,6 +398,18 @@ struct BspResponseDispatcher<'a> {
 }
 
 impl BspResponseDispatcher<'_> {
+  fn log_error<R>(&self, e: impl Error)
+  where
+    R: scalarc_bsp::types::BspRequest,
+  {
+    error!(
+      "in BSP response dispatcher for {}: failed to deserialize params: {} from the response {:#?}",
+      R::METHOD,
+      e,
+      self.res
+    );
+  }
+
   fn on_sync_mut<R>(
     &mut self,
     f: fn(&mut GlobalState, R::Result) -> Result<(), Box<dyn Error>>,
@@ -374,33 +417,36 @@ impl BspResponseDispatcher<'_> {
   where
     R: scalarc_bsp::types::BspRequest,
   {
-    // TODO
-    // if self.res.method != R::METHOD {
-    //   return self;
-    // }
+    match self.global.bsp_requests.get(&self.res.id) {
+      Some(&method) if method == R::METHOD => {
+        self.global.bsp_requests.remove(&self.res.id);
 
-    let result = match serde_json::from_value::<R::Result>(self.res.result.clone().unwrap()) {
-      Ok(p) => p,
-      Err(e) => {
-        error!("failed to deserialize params: {}", e);
-        return self;
+        let result = match serde_json::from_value::<R::Result>(self.res.result.clone().unwrap()) {
+          Ok(p) => p,
+          Err(e) => {
+            self.log_error::<R>(e);
+            return self;
+          }
+        };
+
+        // TODO: Dispatch this to a thread pool.
+        let id = self.res.id.clone();
+        let response = f(self.global, result).unwrap();
+        self
+          .global
+          .sender
+          .send(lsp_server::Message::Response(lsp_server::Response {
+            id,
+            result: Some(serde_json::to_value(response).unwrap()),
+            error: None,
+          }))
+          .unwrap();
+
+        self
       }
-    };
 
-    // TODO: Dispatch this to a thread pool.
-    let id = self.res.id.clone();
-    let response = f(self.global, result).unwrap();
-    self
-      .global
-      .sender
-      .send(lsp_server::Message::Response(lsp_server::Response {
-        id,
-        result: Some(serde_json::to_value(response).unwrap()),
-        error: None,
-      }))
-      .unwrap();
-
-    self
+      _ => self,
+    }
   }
 }
 
@@ -410,6 +456,18 @@ struct BspNotificationDispatcher<'a> {
 }
 
 impl BspNotificationDispatcher<'_> {
+  fn log_error<N>(&self, e: impl Error)
+  where
+    N: scalarc_bsp::types::BspNotification,
+  {
+    error!(
+      "in BSP notification dispatcher for {}: failed to deserialize params: {} from the request {:#?}",
+      N::METHOD,
+      e,
+      self.not
+    );
+  }
+
   fn on_sync<N>(&mut self, f: fn(&mut GlobalState, N) -> Result<(), Box<dyn Error>>) -> &mut Self
   where
     N: scalarc_bsp::types::BspNotification,
@@ -421,7 +479,7 @@ impl BspNotificationDispatcher<'_> {
     let params = match serde_json::from_value::<N>(self.not.params.clone()) {
       Ok(p) => p,
       Err(e) => {
-        error!("failed to deserialize params: {}", e);
+        self.log_error::<N>(e);
         return self;
       }
     };
