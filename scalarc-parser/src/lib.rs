@@ -48,6 +48,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       "new" => T![new],
       "case" => T![case],
       "class" => T![class],
+      "object" => T![object],
       "extends" => T![extends],
       "with" => T![with],
       "return" => T![return],

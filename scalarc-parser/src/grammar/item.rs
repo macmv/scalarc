@@ -90,8 +90,8 @@ fn item(p: &mut Parser) {
     T![def] => fun_def(p, m),
     T![val] => val_def(p, m),
 
-    T![class] => class_def(p, m),
-    T![case] if p.peek() == T![class] => class_def(p, m),
+    T![class] | T![object] => class_def(p, m),
+    T![case] if matches!(p.peek(), T![class] | T![object]) => class_def(p, m),
 
     T![case] => case_item(p, m),
 
@@ -179,11 +179,20 @@ fn import_list(p: &mut Parser, m: Marker) {
 fn class_def(p: &mut Parser, m: Marker) {
   // test ok
   // case class Foo() {}
+  // case object Foo {}
   if p.current() == T![case] {
     p.eat(T![case]);
-    p.expect(T![class]);
-  } else {
-    p.eat(T![class]);
+  }
+
+  match p.current() {
+    // test ok
+    // object Foo
+    T![object] => p.eat(T![object]),
+
+    // test ok
+    // class Foo
+    T![class] => p.eat(T![class]),
+    _ => p.error("expected class or object"),
   }
 
   p.expect(T![ident]);
