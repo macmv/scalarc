@@ -1,4 +1,4 @@
-use std::{error::Error, path::Path};
+use std::{error::Error, iter::once, path::Path};
 
 use lsp_types::SemanticTokenType;
 use scalarc_analysis::{
@@ -7,7 +7,7 @@ use scalarc_analysis::{
   FileLocation,
 };
 use scalarc_source::FileId;
-use scalarc_syntax::TextSize;
+use scalarc_syntax::{TextSize, T};
 
 use crate::global::GlobalStateSnapshot;
 
@@ -55,6 +55,46 @@ pub fn handle_semantic_tokens_full(
       data:      tokens,
       result_id: None,
     })))
+  } else {
+    Ok(None)
+  }
+}
+
+pub fn handle_goto_definition(
+  snap: GlobalStateSnapshot,
+  params: lsp_types::GotoDefinitionParams,
+) -> Result<Option<lsp_types::GotoDefinitionResponse>, Box<dyn Error>> {
+  let pos = file_position(&snap, params.text_document_position_params)?;
+
+  let ast = snap.analysis.parse(pos.file)?;
+
+  let node = ast
+    .syntax_node()
+    .token_at_offset(pos.index)
+    .max_by_key(|token| match token.kind() {
+      T![ident] => 10,
+      _ => 1,
+    })
+    .unwrap();
+
+  let definition = match node.kind() {
+    T![ident] => {
+      let name = node.text().to_string();
+      snap.analysis.definition_for_name(pos.file, &name)?
+    }
+    _ => None,
+  };
+
+  if let Some(loc) = definition {
+    let files = snap.files.read();
+    Ok(Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_types::Location::new(
+      lsp_types::Url::parse(&format!(
+        "file://{}",
+        files.workspace.join(files.id_to_path(loc.file)).display()
+      ))
+      .unwrap(),
+      lsp_types::Range::new(lsp_types::Position::new(0, 0), lsp_types::Position::new(0, 0)),
+    ))))
   } else {
     Ok(None)
   }

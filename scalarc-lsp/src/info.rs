@@ -18,6 +18,13 @@ pub fn server_capabilities() -> lsp_types::ServerCapabilities {
       ),
     ),
 
+    definition_provider: Some(lsp_types::OneOf::Right(lsp_types::DefinitionOptions {
+      work_done_progress_options: lsp_types::WorkDoneProgressOptions {
+        // TODO: This would be neat to implement. Not sure how though.
+        work_done_progress: Some(false),
+      },
+    })),
+
     ..Default::default()
   }
 }

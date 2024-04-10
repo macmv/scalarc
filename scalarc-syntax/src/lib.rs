@@ -4,6 +4,7 @@ pub mod node;
 use ast::AstNode;
 pub use ast::SourceFile;
 pub use error::SyntaxError;
+pub use scalarc_parser::T;
 
 mod error;
 mod parse;

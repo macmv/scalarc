@@ -18,6 +18,7 @@ use diagnostic::Diagnostic;
 use database::RootDatabase;
 use highlight::Highlight;
 use salsa::{Cancelled, ParallelDatabase};
+use scalarc_hir::{HirDatabase, Path};
 use scalarc_source::{FileId, SourceDatabase, Workspace};
 use scalarc_syntax::TextSize;
 
@@ -90,6 +91,26 @@ impl Analysis {
     self.with_db(|db| {
       let ast = db.parse(file);
       Highlight::from_ast(ast)
+    })
+  }
+
+  pub fn parse(
+    &self,
+    file: FileId,
+  ) -> Cancellable<scalarc_syntax::Parse<scalarc_syntax::SourceFile>> {
+    self.with_db(|db| db.parse(file))
+  }
+
+  pub fn definition_for_name(&self, file: FileId, name: &str) -> Cancellable<Option<FileLocation>> {
+    self.with_db(|db| {
+      // TODO: This function should really accept a path, not a name.
+      let path = Path { elems: vec![name.into()] };
+
+      let source_root = db.file_source_root(file);
+      let target = db.source_root_target(source_root);
+      let definitions = db.definitions_for_target(target);
+
+      definitions.items.get(&path).map(|&file| FileLocation { file, index: 0.into() })
     })
   }
 

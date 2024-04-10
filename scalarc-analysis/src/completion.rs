@@ -42,6 +42,7 @@ pub fn completions(db: &RootDatabase, cursor: FileLocation) -> Vec<Completion> {
 
   let token = ast.syntax_node().token_at_offset(cursor.index);
   let token = token.left_biased().unwrap();
+  // FIXME: This should use HIR
   let scopes = scopes_for(&token);
 
   let mut names = HashSet::new();

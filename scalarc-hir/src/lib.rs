@@ -14,7 +14,7 @@ pub mod tree;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefinitionMap {
-  pub items: HashMap<Path, ()>,
+  pub items: HashMap<Path, FileId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -59,12 +59,12 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
       Item::ObjectDef(c) => {
         let name = c.id_token()?.text().into();
 
-        Some((Path { elems: vec![name] }, ()))
+        Some((Path { elems: vec![name] }, file))
       }
       Item::ClassDef(c) => {
         let name = c.id_token()?.text().into();
 
-        Some((Path { elems: vec![name] }, ()))
+        Some((Path { elems: vec![name] }, file))
       }
       _ => None,
     })
