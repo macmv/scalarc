@@ -1,7 +1,7 @@
 use std::{error::Error, path::Path};
 
 use scalarc_analysis::{completion::CompletionKind, FileLocation};
-use scalarc_syntax::TextSize;
+use scalarc_syntax::{Parse, SourceFile, TextSize};
 
 use crate::global::GlobalStateSnapshot;
 
@@ -39,14 +39,39 @@ pub fn handle_semantic_tokens_full(
   params: lsp_types::SemanticTokensParams,
 ) -> Result<Option<lsp_types::SemanticTokensResult>, Box<dyn Error>> {
   if let Some(path) = snap.workspace_path(&params.text_document.uri) {
-    let _file_id = snap.files.read().path_to_id(&path);
+    let file_id = snap.files.read().path_to_id(&path);
+    let ast = snap.analysis.parse(file_id)?;
+
+    let mut tokens = vec![];
+
+    add_tokens(&mut tokens, ast);
 
     Ok(Some(lsp_types::SemanticTokensResult::Tokens(lsp_types::SemanticTokens {
-      data:      vec![],
+      data:      tokens,
       result_id: None,
     })))
   } else {
     Ok(None)
+  }
+}
+
+fn add_tokens(tokens: &mut Vec<lsp_types::SemanticToken>, ast: Parse<SourceFile>) {
+  for item in ast.tree().items() {
+    match item {
+      scalarc_syntax::ast::Item::ClassDef(o) => {
+        if let Some(token) = o.id_token() {
+          info!("got token: {:?}", token);
+          tokens.push(lsp_types::SemanticToken {
+            delta_line:             0,
+            delta_start:            token.text_range().start().into(),
+            length:                 token.text().len() as u32,
+            token_type:             0,
+            token_modifiers_bitset: 0,
+          });
+        }
+      }
+      _ => {}
+    }
   }
 }
 

@@ -17,7 +17,7 @@ use diagnostic::Diagnostic;
 use database::RootDatabase;
 use salsa::{Cancelled, ParallelDatabase};
 use scalarc_source::{FileId, SourceDatabase, Workspace};
-use scalarc_syntax::TextSize;
+use scalarc_syntax::{Parse, TextSize};
 
 pub struct AnalysisHost {
   db: RootDatabase,
@@ -82,6 +82,10 @@ impl Analysis {
       let ast = db.parse(file);
       ast.errors().iter().map(|err| Diagnostic::from_syntax_error(err)).collect()
     })
+  }
+
+  pub fn parse(&self, file: FileId) -> Cancellable<Parse<scalarc_syntax::SourceFile>> {
+    self.with_db(|db| db.parse(file))
   }
 
   fn with_db<T>(&self, f: impl FnOnce(&RootDatabase) -> T + UnwindSafe) -> Cancellable<T> {

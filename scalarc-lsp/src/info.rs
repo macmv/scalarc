@@ -11,7 +11,7 @@ pub fn server_capabilities() -> lsp_types::ServerCapabilities {
       lsp_types::SemanticTokensServerCapabilities::SemanticTokensOptions(
         lsp_types::SemanticTokensOptions {
           legend: lsp_types::SemanticTokensLegend {
-            token_types:     vec![],
+            token_types:     vec![lsp_types::SemanticTokenType::CLASS],
             token_modifiers: vec![],
           },
           range: Some(true),
