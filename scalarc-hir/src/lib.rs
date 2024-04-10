@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use scalarc_source::{FileId, SourceDatabase, TargetId};
-use scalarc_syntax::ast::Item;
+use scalarc_syntax::{ast::Item, TextRange, TextSize};
 use tree::Name;
 
 #[cfg(test)]
@@ -14,7 +14,24 @@ pub mod tree;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefinitionMap {
-  pub items: HashMap<Path, FileId>,
+  pub items: HashMap<Path, Definition>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FileLocation {
+  pub file:  FileId,
+  pub index: TextSize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FileRange {
+  pub file:  FileId,
+  pub range: TextRange,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Definition {
+  pub pos: FileRange,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -57,14 +74,20 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
     .items()
     .filter_map(|item| match item {
       Item::ObjectDef(c) => {
-        let name = c.id_token()?.text().into();
+        let name = c.id_token()?;
 
-        Some((Path { elems: vec![name] }, file))
+        Some((
+          Path { elems: vec![name.text().into()] },
+          Definition { pos: FileRange { file, range: name.text_range() } },
+        ))
       }
       Item::ClassDef(c) => {
-        let name = c.id_token()?.text().into();
+        let name = c.id_token()?;
 
-        Some((Path { elems: vec![name] }, file))
+        Some((
+          Path { elems: vec![name.text().into()] },
+          Definition { pos: FileRange { file, range: name.text_range() } },
+        ))
       }
       _ => None,
     })

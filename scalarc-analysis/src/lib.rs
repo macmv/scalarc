@@ -18,10 +18,9 @@ use diagnostic::Diagnostic;
 use database::RootDatabase;
 use highlight::Highlight;
 use salsa::{Cancelled, ParallelDatabase};
-use scalarc_hir::{HirDatabase, Path};
+use scalarc_hir::{Definition, FileLocation, HirDatabase, Path};
 use scalarc_parser::T;
 use scalarc_source::{FileId, SourceDatabase, Workspace};
-use scalarc_syntax::TextSize;
 
 pub struct AnalysisHost {
   db: RootDatabase,
@@ -65,11 +64,6 @@ pub struct Change {
   pub text: String,
 }
 
-pub struct FileLocation {
-  pub file:  FileId,
-  pub index: TextSize,
-}
-
 impl ParallelDatabase for RootDatabase {
   fn snapshot(&self) -> salsa::Snapshot<Self> {
     salsa::Snapshot::new(RootDatabase { storage: self.storage.snapshot() })
@@ -102,7 +96,7 @@ impl Analysis {
     self.with_db(|db| db.parse(file))
   }
 
-  pub fn definition_for_name(&self, pos: FileLocation) -> Cancellable<Option<FileLocation>> {
+  pub fn definition_for_name(&self, pos: FileLocation) -> Cancellable<Option<Definition>> {
     self.with_db(|db| {
       let ast = db.parse(pos.file);
 
@@ -125,7 +119,7 @@ impl Analysis {
           let target = db.source_root_target(source_root);
           let definitions = db.definitions_for_target(target);
 
-          definitions.items.get(&path).map(|&file| FileLocation { file, index: 0.into() })
+          definitions.items.get(&path).cloned()
         }
         _ => None,
       }

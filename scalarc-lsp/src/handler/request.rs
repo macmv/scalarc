@@ -1,13 +1,13 @@
-use std::{error::Error, iter::once, path::Path};
+use std::{error::Error, path::Path};
 
 use lsp_types::SemanticTokenType;
 use scalarc_analysis::{
   completion::CompletionKind,
   highlight::{Highlight, HighlightKind},
-  FileLocation,
 };
+use scalarc_hir::FileLocation;
 use scalarc_source::FileId;
-use scalarc_syntax::{TextSize, T};
+use scalarc_syntax::TextSize;
 
 use crate::global::GlobalStateSnapshot;
 
@@ -67,15 +67,22 @@ pub fn handle_goto_definition(
   let pos = file_position(&snap, params.text_document_position_params)?;
   let definition = snap.analysis.definition_for_name(pos)?;
 
-  if let Some(loc) = definition {
+  if let Some(def) = definition {
     let files = snap.files.read();
+
+    let (start_line, start_col) = range_to_line_col(&snap, def.pos.file, def.pos.range.start())?;
+    let (end_line, end_col) = range_to_line_col(&snap, def.pos.file, def.pos.range.end())?;
+
     Ok(Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_types::Location::new(
       lsp_types::Url::parse(&format!(
         "file://{}",
-        files.workspace.join(files.id_to_path(loc.file)).display()
+        files.workspace.join(files.id_to_path(def.pos.file)).display()
       ))
       .unwrap(),
-      lsp_types::Range::new(lsp_types::Position::new(0, 0), lsp_types::Position::new(0, 0)),
+      lsp_types::Range::new(
+        lsp_types::Position::new(start_line, start_col),
+        lsp_types::Position::new(end_line, end_col),
+      ),
     ))))
   } else {
     Ok(None)

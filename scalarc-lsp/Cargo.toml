@@ -17,6 +17,7 @@ simple-logging = "2.0.2"
 parking_lot = "0.12.1"
 
 scalarc-analysis.workspace = true
+scalarc-hir.workspace = true
 scalarc-source.workspace = true
 scalarc-syntax.workspace = true
 scalarc-bsp.workspace = true
