@@ -10,6 +10,8 @@ mod tests;
 #[macro_use]
 extern crate log;
 
+pub mod analysis;
+pub mod scope;
 pub mod tree;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,6 +46,9 @@ pub trait HirDatabase: SourceDatabase {
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
 
   fn definitions_for_file(&self, file: FileId) -> DefinitionMap;
+
+  #[salsa::invoke(tree::ast_for_file)]
+  fn hir_ast(&self, file: FileId) -> tree::Ast;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {
@@ -94,4 +99,8 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
     .collect();
 
   DefinitionMap { items }
+}
+
+impl Path {
+  pub fn new() -> Self { Path { elems: vec![] } }
 }

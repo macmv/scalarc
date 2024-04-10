@@ -19,7 +19,7 @@ use database::{LineIndexDatabase, RootDatabase};
 use highlight::Highlight;
 use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
-use scalarc_hir::{Definition, FileLocation, HirDatabase, Path};
+use scalarc_hir::{tree::Name, Definition, FileLocation, HirDatabase, Path};
 use scalarc_parser::T;
 use scalarc_source::{FileId, SourceDatabase, Workspace};
 
@@ -112,9 +112,15 @@ impl Analysis {
 
       match node.kind() {
         T![ident] => {
-          let name = node.text().to_string();
-          // TODO: Name resolution.
-          let path = Path { elems: vec![name.as_str().into()] };
+          let name = Name::new(node.text().to_string());
+
+          let hir = db.hir_ast(pos.file);
+          let path = match hir.imports.get(&name) {
+            Some(path) => path.clone(),
+
+            // uhhhhh
+            None => Path { elems: vec![name] },
+          };
 
           let source_root = db.file_source_root(pos.file);
           let target = db.source_root_target(source_root);

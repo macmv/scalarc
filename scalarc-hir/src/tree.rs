@@ -1,17 +1,47 @@
 // TODO: Actually use any of this.
 
-use la_arena::Idx;
+use std::collections::HashMap;
+
+use la_arena::{Arena, Idx};
+use scalarc_source::{FileId, SourceDatabase};
+use scalarc_syntax::SyntaxNodePtr;
+
+use crate::{analysis::FileAnalyzer, Path};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Name(String);
+pub struct Name(pub(crate) String);
 
 impl Name {
+  pub fn new(s: String) -> Self { Name(s) }
   pub fn as_str(&self) -> &str { &self.0 }
   pub fn into_string(self) -> String { self.0 }
 }
 
 impl From<&str> for Name {
   fn from(s: &str) -> Self { Name(s.to_owned()) }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ast {
+  pub imports: HashMap<Name, Path>,
+  pub arenas:  FileArenas,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct FileArenas {
+  pub item: Arena<Item>,
+  pub expr: Arena<Expr>,
+}
+
+pub fn ast_for_file(db: &dyn SourceDatabase, file: FileId) -> Ast {
+  let ast = db.parse(file);
+
+  let mut analyzer = FileAnalyzer::new(file);
+  for item in ast.tree().items() {
+    analyzer.analyze_item(item);
+  }
+
+  Ast { arenas: analyzer.arenas, imports: analyzer.imports }
 }
 
 pub type ItemId = Idx<Item>;
@@ -26,8 +56,13 @@ pub struct Package {
 
 #[derive(Default, Debug, Eq, PartialEq)]
 pub struct PackageArenas {
-  pub def: la_arena::Arena<Def>,
-  pub val: la_arena::Arena<Val>,
+  pub def: Arena<Def>,
+  pub val: Arena<Val>,
+}
+
+pub struct AstId {
+  pub file:   FileId,
+  pub syntax: Idx<SyntaxNodePtr>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
