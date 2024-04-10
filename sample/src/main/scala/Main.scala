@@ -9,3 +9,5 @@ object Main extends App {
 
   val x = 1
 }
+
+Main

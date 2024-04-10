@@ -19,6 +19,7 @@ use database::RootDatabase;
 use highlight::Highlight;
 use salsa::{Cancelled, ParallelDatabase};
 use scalarc_hir::{HirDatabase, Path};
+use scalarc_parser::T;
 use scalarc_source::{FileId, SourceDatabase, Workspace};
 use scalarc_syntax::TextSize;
 
@@ -101,16 +102,33 @@ impl Analysis {
     self.with_db(|db| db.parse(file))
   }
 
-  pub fn definition_for_name(&self, file: FileId, name: &str) -> Cancellable<Option<FileLocation>> {
+  pub fn definition_for_name(&self, pos: FileLocation) -> Cancellable<Option<FileLocation>> {
     self.with_db(|db| {
-      // TODO: This function should really accept a path, not a name.
-      let path = Path { elems: vec![name.into()] };
+      let ast = db.parse(pos.file);
 
-      let source_root = db.file_source_root(file);
-      let target = db.source_root_target(source_root);
-      let definitions = db.definitions_for_target(target);
+      let node = ast
+        .syntax_node()
+        .token_at_offset(pos.index)
+        .max_by_key(|token| match token.kind() {
+          T![ident] => 10,
+          _ => 1,
+        })
+        .unwrap();
 
-      definitions.items.get(&path).map(|&file| FileLocation { file, index: 0.into() })
+      match node.kind() {
+        T![ident] => {
+          let name = node.text().to_string();
+          // TODO: Name resolution.
+          let path = Path { elems: vec![name.as_str().into()] };
+
+          let source_root = db.file_source_root(pos.file);
+          let target = db.source_root_target(source_root);
+          let definitions = db.definitions_for_target(target);
+
+          definitions.items.get(&path).map(|&file| FileLocation { file, index: 0.into() })
+        }
+        _ => None,
+      }
     })
   }
 
