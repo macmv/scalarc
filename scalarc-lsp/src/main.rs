@@ -67,7 +67,7 @@ fn run() -> Result<(), Box<dyn Error>> {
       let res = c.send_initialize(root_uri.clone())?;
       let res: scalarc_bsp::types::InitializeBuildResult = serde_json::from_value(res).unwrap();
 
-      info!("got initialize response: {:#?}", res);
+      // info!("got initialize response: {:#?}", res);
 
       c.request(scalarc_bsp::types::WorkspaceBuildTargetsRequest);
 

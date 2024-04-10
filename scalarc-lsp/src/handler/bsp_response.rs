@@ -7,7 +7,7 @@ pub fn handle_workspace_build_targets(
   state: &mut GlobalState,
   result: bsp_types::WorkspaceBuildTargetsResult,
 ) -> Result<(), Box<dyn Error>> {
-  info!("got build targets: {:#?}", result);
+  // debug!("got build targets: {:#?}", result);
 
   if let Some(c) = &state.bsp_client {
     state.bsp_targets = Some(result.clone());
@@ -25,7 +25,7 @@ pub fn handle_sources(
   state: &mut GlobalState,
   sources: bsp_types::SourcesResult,
 ) -> Result<(), Box<dyn Error>> {
-  info!("got sources: {:#?}", sources);
+  // debug!("got sources: {:#?}", sources);
 
   if let Some(targets) = state.bsp_targets.take() {
     let workspace =
