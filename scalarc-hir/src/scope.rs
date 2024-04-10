@@ -1,27 +1,23 @@
+use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{AstNode, SyntaxKind},
   node::{NodeOrToken, SyntaxNode, SyntaxToken},
 };
 
-pub enum Declaration {
-  Class,
-  Val,
-  Var,
-  Def,
-}
+use crate::{Definition, DefinitionKind, FileRange, LocalDefinition};
 
 pub struct Scope {
-  pub declarations: Vec<(String, Declaration)>,
+  pub declarations: Vec<(String, Definition)>,
 }
 
 // Returns the scopes around the given token. The first scope is the innermost.
-pub fn scopes_for(token: &SyntaxToken) -> Vec<Scope> {
+pub fn scopes_for(file_id: FileId, token: &SyntaxToken) -> Vec<Scope> {
   let mut scopes = vec![];
 
   let mut n: NodeOrToken = token.clone().into();
 
   loop {
-    scopes.push(collect_scope(&n));
+    scopes.push(collect_scope(file_id, &n));
 
     if let Some(parent) = n.parent() {
       n = parent.into();
@@ -33,7 +29,7 @@ pub fn scopes_for(token: &SyntaxToken) -> Vec<Scope> {
   scopes
 }
 
-fn collect_scope(t: &NodeOrToken) -> Scope {
+fn collect_scope(file_id: FileId, t: &NodeOrToken) -> Scope {
   let mut declarations = vec![];
 
   for n in iter_prev_siblings(t) {
@@ -41,9 +37,34 @@ fn collect_scope(t: &NodeOrToken) -> Scope {
       SyntaxKind::VAL_DEF => {
         let n = scalarc_syntax::ast::ValDef::cast(n).unwrap();
         if let Some(id) = n.id_token() {
-          declarations.push((id.text().into(), Declaration::Val));
+          declarations.push((
+            id.text().into(),
+            Definition {
+              pos:  FileRange { file: file_id, range: id.text_range() },
+              kind: DefinitionKind::Local(LocalDefinition::Val),
+            },
+          ));
         }
       }
+
+      SyntaxKind::FUN_SIG => {
+        let sig = scalarc_syntax::ast::FunSig::cast(n).unwrap();
+
+        if let Some(params) = sig.fun_params() {
+          for param in params.fun_params() {
+            if let Some(id) = param.id_token() {
+              declarations.push((
+                id.text().into(),
+                Definition {
+                  pos:  FileRange { file: file_id, range: id.text_range() },
+                  kind: DefinitionKind::Local(LocalDefinition::Parameter),
+                },
+              ));
+            }
+          }
+        }
+      }
+
       _ => {}
     }
   }

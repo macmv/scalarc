@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use scalarc_hir::{scope::Declaration, HirDatabase};
+use scalarc_hir::{DefinitionKind, HirDatabase};
 use scalarc_parser::T;
 use scalarc_source::SourceDatabase;
 
@@ -8,7 +8,7 @@ use crate::{database::RootDatabase, FileLocation};
 
 pub struct Completion {
   pub label: String,
-  pub kind:  Declaration,
+  pub kind:  DefinitionKind,
 }
 
 pub fn completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion> {
@@ -20,11 +20,9 @@ pub fn completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion> {
   let target = db.source_root_target(source_root);
   let definitions = db.definitions_for_target(target);
 
-  for (mut path, _) in definitions.items {
-    completions.push(Completion {
-      label: path.elems.pop().unwrap().into_string(),
-      kind:  Declaration::Class,
-    });
+  for (mut path, def) in definitions.items {
+    completions
+      .push(Completion { label: path.elems.pop().unwrap().into_string(), kind: def.kind });
   }
 
   let ast = db.parse(pos.file);
@@ -38,13 +36,13 @@ pub fn completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion> {
     })
     .unwrap();
 
-  let scopes = scalarc_hir::scope::scopes_for(&node);
+  let scopes = scalarc_hir::scope::scopes_for(pos.file, &node);
 
   let mut names = HashSet::new();
   for scope in scopes {
-    for (name, kind) in scope.declarations {
+    for (name, def) in scope.declarations {
       if names.insert(name.clone()) {
-        completions.push(Completion { label: name, kind });
+        completions.push(Completion { label: name, kind: def.kind });
       }
     }
   }

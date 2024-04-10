@@ -114,11 +114,23 @@ impl Analysis {
         T![ident] => {
           let name = Name::new(node.text().to_string());
 
+          let scopes = scalarc_hir::scope::scopes_for(pos.file, &node);
+
+          // Scopes are ordered innermost to outermost, so the first definition we find is
+          // the one we want.
+          for scope in scopes {
+            for (n, def) in scope.declarations {
+              if n.as_str() == name.as_str() {
+                return Some(def);
+              }
+            }
+          }
+
           let hir = db.hir_ast(pos.file);
           let path = match hir.imports.get(&name) {
             Some(path) => path.clone(),
 
-            // uhhhhh
+            // TODO: Use the local package name here. That should be in the HIR ast.
             None => Path { elems: vec![name] },
           };
 

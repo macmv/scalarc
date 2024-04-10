@@ -33,7 +33,28 @@ pub struct FileRange {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Definition {
-  pub pos: FileRange,
+  pub pos:  FileRange,
+  pub kind: DefinitionKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DefinitionKind {
+  Local(LocalDefinition),
+  Global(GlobalDefinition),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LocalDefinition {
+  Val,
+  Var,
+  Parameter,
+  Def,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GlobalDefinition {
+  Class,
+  Object,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -83,7 +104,10 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
 
         Some((
           Path { elems: vec![name.text().into()] },
-          Definition { pos: FileRange { file, range: name.text_range() } },
+          Definition {
+            pos:  FileRange { file, range: name.text_range() },
+            kind: DefinitionKind::Global(GlobalDefinition::Object),
+          },
         ))
       }
       Item::ClassDef(c) => {
@@ -91,7 +115,10 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
 
         Some((
           Path { elems: vec![name.text().into()] },
-          Definition { pos: FileRange { file, range: name.text_range() } },
+          Definition {
+            pos:  FileRange { file, range: name.text_range() },
+            kind: DefinitionKind::Global(GlobalDefinition::Class),
+          },
         ))
       }
       _ => None,

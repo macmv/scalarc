@@ -2,7 +2,7 @@ use std::{error::Error, path::Path};
 
 use lsp_types::SemanticTokenType;
 use scalarc_analysis::highlight::{Highlight, HighlightKind};
-use scalarc_hir::{scope::Declaration, FileLocation};
+use scalarc_hir::{DefinitionKind, FileLocation, GlobalDefinition, LocalDefinition};
 use scalarc_source::FileId;
 use scalarc_syntax::TextSize;
 
@@ -24,10 +24,16 @@ pub fn handle_completion(
         .map(|c| lsp_types::CompletionItem {
           label: c.label,
           kind: Some(match c.kind {
-            Declaration::Val => lsp_types::CompletionItemKind::VARIABLE,
-            Declaration::Var => lsp_types::CompletionItemKind::VARIABLE,
-            Declaration::Def => lsp_types::CompletionItemKind::FUNCTION,
-            Declaration::Class => lsp_types::CompletionItemKind::CLASS,
+            DefinitionKind::Global(g) => match g {
+              GlobalDefinition::Class => lsp_types::CompletionItemKind::CLASS,
+              GlobalDefinition::Object => lsp_types::CompletionItemKind::CLASS,
+            },
+            DefinitionKind::Local(l) => match l {
+              LocalDefinition::Val => lsp_types::CompletionItemKind::VARIABLE,
+              LocalDefinition::Var => lsp_types::CompletionItemKind::VARIABLE,
+              LocalDefinition::Parameter => lsp_types::CompletionItemKind::VARIABLE,
+              LocalDefinition::Def => lsp_types::CompletionItemKind::FUNCTION,
+            },
           }),
           ..Default::default()
         })
