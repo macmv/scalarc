@@ -43,10 +43,13 @@ pub enum HighlightKind {
 }
 
 struct Highlighter {
-  // Stack of scopes.
+  // Stack of function scopes.
   frames: Vec<usize>,
   // Arguments in the current scope.
   params: Vec<String>,
+
+  // Locals in the current scope. TODO: This needs a stack too.
+  locals: Vec<String>,
 
   hl: Highlight,
 }
@@ -66,7 +69,12 @@ impl Highlight {
 // FIXME: Replace with HIR
 impl Highlighter {
   pub fn new() -> Self {
-    Highlighter { params: vec![], frames: vec![], hl: Highlight { tokens: vec![] } }
+    Highlighter {
+      frames: vec![],
+      params: vec![],
+      locals: vec![],
+      hl:     Highlight { tokens: vec![] },
+    }
   }
 
   pub fn push(&mut self) { self.frames.push(self.params.len()); }
@@ -90,6 +98,21 @@ impl Highlighter {
 
         self.visit_body(o.body());
       }
+
+      ast::Item::ValDef(d) => {
+        self.highlight_opt(d.val_token(), HighlightKind::Keyword);
+        self.highlight_opt(d.id_token(), HighlightKind::Variable);
+        self.highlight_opt(d.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
+
+        if let Some(name) = d.id_token() {
+          self.locals.push(name.text().to_string());
+        }
+
+        if let Some(body) = d.expr() {
+          self.visit_expr(body);
+        }
+      }
+
       ast::Item::FunDef(d) => {
         self.highlight_opt(d.def_token(), HighlightKind::Keyword);
 
@@ -127,14 +150,17 @@ impl Highlighter {
     match expr {
       ast::Expr::IdentExpr(id) => {
         if let Some(id) = id.id_token() {
-          self.highlight(
-            id.text_range(),
-            if self.params.contains(&id.text().to_string()) {
-              HighlightKind::Parameter
-            } else {
-              HighlightKind::Variable
-            },
-          );
+          let kind = if self.params.contains(&id.text().to_string()) {
+            Some(HighlightKind::Parameter)
+          } else if self.locals.contains(&id.text().to_string()) {
+            Some(HighlightKind::Variable)
+          } else {
+            None
+          };
+
+          if let Some(kind) = kind {
+            self.highlight(id.text_range(), kind);
+          }
         }
       }
       ast::Expr::LitExpr(lit) => {
