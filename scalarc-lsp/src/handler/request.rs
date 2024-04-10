@@ -90,6 +90,34 @@ pub fn handle_goto_definition(
   }
 }
 
+pub fn handle_document_highlight(
+  snap: GlobalStateSnapshot,
+  params: lsp_types::DocumentHighlightParams,
+) -> Result<Option<Vec<lsp_types::DocumentHighlight>>, Box<dyn Error>> {
+  let pos = file_position(&snap, params.text_document_position_params)?;
+  let line_index = snap.analysis.line_index(pos.file)?;
+  let definition = snap.analysis.definition_for_name(pos)?;
+
+  if let Some(def) = definition {
+    if def.pos.file != pos.file {
+      return Ok(None);
+    }
+
+    let start = line_index.line_col(def.pos.range.start());
+    let end = line_index.line_col(def.pos.range.end());
+
+    let start = lsp_types::Position { line: start.line, character: start.col };
+    let end = lsp_types::Position { line: end.line, character: end.col };
+
+    Ok(Some(vec![lsp_types::DocumentHighlight {
+      range: lsp_types::Range { start, end },
+      kind:  Some(lsp_types::DocumentHighlightKind::WRITE),
+    }]))
+  } else {
+    Ok(None)
+  }
+}
+
 pub fn semantic_tokens_legend() -> lsp_types::SemanticTokensLegend {
   fn token_type(kind: HighlightKind) -> SemanticTokenType {
     match kind {

@@ -198,6 +198,7 @@ impl GlobalState {
       .on_sync::<lsp_request::Shutdown>(|_, ()| Ok(()))
       .on::<lsp_request::SemanticTokensFullRequest>(request::handle_semantic_tokens_full)
       .on::<lsp_request::GotoDefinition>(request::handle_goto_definition)
+      .on::<lsp_request::DocumentHighlightRequest>(request::handle_document_highlight)
       .on::<lsp_request::Completion>(request::handle_completion);
   }
 
