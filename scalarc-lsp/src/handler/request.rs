@@ -1,7 +1,13 @@
 use std::{error::Error, path::Path};
 
-use scalarc_analysis::{completion::CompletionKind, FileLocation};
-use scalarc_syntax::{Parse, SourceFile, TextSize};
+use lsp_types::SemanticTokenType;
+use scalarc_analysis::{
+  completion::CompletionKind,
+  highlight::{Highlight, HighlightKind},
+  FileLocation,
+};
+use scalarc_source::FileId;
+use scalarc_syntax::TextSize;
 
 use crate::global::GlobalStateSnapshot;
 
@@ -40,11 +46,10 @@ pub fn handle_semantic_tokens_full(
 ) -> Result<Option<lsp_types::SemanticTokensResult>, Box<dyn Error>> {
   if let Some(path) = snap.workspace_path(&params.text_document.uri) {
     let file_id = snap.files.read().path_to_id(&path);
-    let ast = snap.analysis.parse(file_id)?;
+    let highlight = snap.analysis.highlight(file_id)?;
 
-    let mut tokens = vec![];
-
-    add_tokens(&mut tokens, ast);
+    let tokens = to_semantic_tokens(snap, file_id, &highlight);
+    info!("tokens: {:?}", tokens);
 
     Ok(Some(lsp_types::SemanticTokensResult::Tokens(lsp_types::SemanticTokens {
       data:      tokens,
@@ -55,24 +60,65 @@ pub fn handle_semantic_tokens_full(
   }
 }
 
-fn add_tokens(tokens: &mut Vec<lsp_types::SemanticToken>, ast: Parse<SourceFile>) {
-  for item in ast.tree().items() {
-    match item {
-      scalarc_syntax::ast::Item::ClassDef(o) => {
-        if let Some(token) = o.id_token() {
-          info!("got token: {:?}", token);
-          tokens.push(lsp_types::SemanticToken {
-            delta_line:             0,
-            delta_start:            token.text_range().start().into(),
-            length:                 token.text().len() as u32,
-            token_type:             0,
-            token_modifiers_bitset: 0,
-          });
-        }
-      }
-      _ => {}
+pub fn semantic_tokens_legend() -> lsp_types::SemanticTokensLegend {
+  fn token_type(kind: HighlightKind) -> SemanticTokenType {
+    match kind {
+      HighlightKind::Class => SemanticTokenType::new("class"),
+      HighlightKind::Function => SemanticTokenType::new("function"),
+      HighlightKind::Keyword => SemanticTokenType::new("keyword"),
+      HighlightKind::Parameter => SemanticTokenType::new("parameter"),
+      HighlightKind::Variable => SemanticTokenType::new("variable"),
     }
   }
+
+  info!("{:?}", HighlightKind::iter().map(token_type).collect::<Vec<_>>());
+
+  lsp_types::SemanticTokensLegend {
+    token_types:     HighlightKind::iter().map(token_type).collect(),
+    token_modifiers: vec![],
+  }
+}
+
+fn to_semantic_tokens(
+  snap: GlobalStateSnapshot,
+  file: FileId,
+  highlight: &Highlight,
+) -> Vec<lsp_types::SemanticToken> {
+  let mut tokens = Vec::new();
+
+  let mut line = 0;
+  let mut col = 0;
+
+  info!("highlight: {:?}", highlight.tokens);
+
+  for h in highlight.tokens.iter() {
+    let range = h.range;
+
+    let (l, c) = range_to_line_col(&snap, file, range.start()).unwrap();
+
+    let delta_line = l - line;
+    if delta_line != 0 {
+      col = 0;
+    }
+    let delta_start = c - col;
+
+    line = l;
+    col = c;
+
+    info!(
+      "range: {range:?}, line: {line}, col: {col}, delta_line: {delta_line}, delta_start: {delta_start}",
+    );
+
+    tokens.push(lsp_types::SemanticToken {
+      delta_line,
+      delta_start,
+      length: (range.end() - range.start()).into(),
+      token_type: h.kind as u32,
+      token_modifiers_bitset: 0,
+    });
+  }
+
+  tokens
 }
 
 fn file_position(
@@ -92,6 +138,26 @@ fn file_position(
     }
 
     i += line.len() as u32 + 1;
+  }
+
+  Err("position not found".into())
+}
+
+fn range_to_line_col(
+  snap: &GlobalStateSnapshot,
+  file_id: FileId,
+  mut index: TextSize,
+) -> Result<(u32, u32), Box<dyn Error>> {
+  let files = snap.files.read();
+  let file = files.read(file_id);
+
+  let mut i = 0;
+  for (num, line) in file.lines().enumerate() {
+    if u32::from(index) < line.len() as u32 {
+      return Ok((num as u32, index.into()));
+    }
+
+    index -= TextSize::new(line.len() as u32);
   }
 
   Err("position not found".into())

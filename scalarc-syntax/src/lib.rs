@@ -31,7 +31,7 @@ pub struct Parse<T> {
 
 pub type SyntaxNodePtr = rowan::ast::SyntaxNodePtr<Scala>;
 
-pub use rowan::{TextSize, WalkEvent};
+pub use rowan::{TextRange, TextSize, WalkEvent};
 
 impl<T> Parse<T> {
   pub fn syntax_node(&self) -> SyntaxNode { SyntaxNode::new_root(self.green.clone()) }

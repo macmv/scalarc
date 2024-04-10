@@ -1,5 +1,6 @@
 pub mod completion;
 pub mod diagnostic;
+pub mod highlight;
 
 mod database;
 
@@ -15,9 +16,10 @@ use completion::Completion;
 use diagnostic::Diagnostic;
 
 use database::RootDatabase;
+use highlight::Highlight;
 use salsa::{Cancelled, ParallelDatabase};
 use scalarc_source::{FileId, SourceDatabase, Workspace};
-use scalarc_syntax::{Parse, TextSize};
+use scalarc_syntax::TextSize;
 
 pub struct AnalysisHost {
   db: RootDatabase,
@@ -84,8 +86,11 @@ impl Analysis {
     })
   }
 
-  pub fn parse(&self, file: FileId) -> Cancellable<Parse<scalarc_syntax::SourceFile>> {
-    self.with_db(|db| db.parse(file))
+  pub fn highlight(&self, file: FileId) -> Cancellable<Highlight> {
+    self.with_db(|db| {
+      let ast = db.parse(file);
+      Highlight::from_ast(ast)
+    })
   }
 
   fn with_db<T>(&self, f: impl FnOnce(&RootDatabase) -> T + UnwindSafe) -> Cancellable<T> {
