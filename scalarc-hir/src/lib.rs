@@ -32,8 +32,9 @@ pub trait HirDatabase: SourceDatabase {
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {
   let mut items = HashMap::new();
 
-  for &source in db.workspace().targets[target].sources.iter() {
-    for file in db.source_root_files(source) {
+  let workspace = db.workspace();
+  for &root in workspace.targets[target].source_roots.iter() {
+    for &file in workspace.source_roots[root].sources.iter() {
       let definitions = db.definitions_for_file(file);
       items.extend(definitions.items);
     }

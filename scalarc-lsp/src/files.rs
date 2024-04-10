@@ -59,6 +59,11 @@ impl Files {
     self.ids[&path]
   }
 
+  pub fn get(&self, path: &Path) -> Option<FileId> {
+    let path = self.canonicalize(path).unwrap();
+    self.ids.get(&path).copied()
+  }
+
   pub fn path_to_id(&self, path: &Path) -> FileId {
     let Some(path) = self.canonicalize(path) else {
       panic!("path not in workspace {}", path.display())

@@ -16,9 +16,8 @@ use diagnostic::Diagnostic;
 
 use database::RootDatabase;
 use salsa::{Cancelled, ParallelDatabase};
-use scalarc_source::{FileId, SourceDatabase, SourceRootId, Workspace};
+use scalarc_source::{FileId, SourceDatabase, Workspace};
 use scalarc_syntax::TextSize;
-use std::path::Path;
 
 pub struct AnalysisHost {
   db: RootDatabase,
@@ -41,8 +40,10 @@ impl AnalysisHost {
   pub fn snapshot(&self) -> Analysis { Analysis { db: self.db.snapshot() } }
 
   pub fn set_workspace(&mut self, workspace: scalarc_source::Workspace) {
-    for (id, _) in workspace.sources.iter() {
-      self.db.set_source_root_files(id, vec![]);
+    for (id, root) in workspace.source_roots.iter() {
+      for &file in &root.sources {
+        self.db.set_file_source_root(file, id);
+      }
     }
 
     self.db.set_workspace(workspace.into());
@@ -57,14 +58,6 @@ impl AnalysisHost {
   pub fn has_file(&self, _file: FileId) -> bool {
     // FIXME
     false
-  }
-
-  pub fn add_file(&mut self, file: FileId, source: SourceRootId) {
-    self.db.set_file_source_root(file, source);
-
-    let mut files = self.db.source_root_files(source);
-    files.push(file);
-    self.db.set_source_root_files(source, files);
   }
 }
 

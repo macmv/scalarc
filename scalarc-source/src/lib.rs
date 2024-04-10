@@ -6,8 +6,6 @@ use url::Url;
 
 mod source_root;
 
-pub use source_root::SourceRootId;
-
 #[salsa::query_group(SourceDatabaseStorage)]
 pub trait SourceDatabase: std::fmt::Debug {
   /// The current workspace.
@@ -23,8 +21,6 @@ pub trait SourceDatabase: std::fmt::Debug {
 
   #[salsa::input]
   fn file_source_root(&self, file_id: FileId) -> SourceRootId;
-  #[salsa::input]
-  fn source_root_files(&self, id: SourceRootId) -> Vec<FileId>;
 
   #[salsa::invoke(source_root::source_root_target)]
   fn source_root_target(&self, id: SourceRootId) -> TargetId;
@@ -44,8 +40,8 @@ impl FileId {
 pub struct Workspace {
   pub root: PathBuf,
 
-  pub targets: Arena<TargetData>,
-  pub sources: Arena<PathBuf>,
+  pub targets:      Arena<TargetData>,
+  pub source_roots: Arena<SourceRoot>,
 }
 
 /// Targets are similar to packages, but are slightly more granular. For
@@ -60,10 +56,18 @@ pub struct TargetData {
   pub bsp_id: Url,
 
   /// A list of directories which contain the source files for this target.
-  pub sources: Vec<SourceRootId>,
+  pub source_roots: Vec<SourceRootId>,
 }
 
 pub type TargetId = Idx<TargetData>;
+
+#[derive(Debug)]
+pub struct SourceRoot {
+  pub path:    PathBuf,
+  pub sources: Vec<FileId>,
+}
+
+pub type SourceRootId = Idx<SourceRoot>;
 
 fn parse(db: &dyn SourceDatabase, file_id: FileId) -> Parse<SourceFile> {
   let text = db.file_text(file_id);
