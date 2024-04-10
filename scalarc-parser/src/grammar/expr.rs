@@ -269,7 +269,7 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
     }
     IDENT => {
       p.eat(IDENT);
-      Some(m.complete(p, IDENT))
+      Some(m.complete(p, IDENT_EXPR))
     }
 
     DOUBLE_QUOTE => {
@@ -617,7 +617,7 @@ mod tests {
       "hi(2)",
       expect![@r#"
         CALL_EXPR
-          IDENT
+          IDENT_EXPR
             IDENT 'hi'
           PAREN_ARGUMENTS
             OPEN_PAREN '('
@@ -631,7 +631,7 @@ mod tests {
       "hi(2, 3)",
       expect![@r#"
         CALL_EXPR
-          IDENT
+          IDENT_EXPR
             IDENT 'hi'
           PAREN_ARGUMENTS
             OPEN_PAREN '('
@@ -649,7 +649,7 @@ mod tests {
       "hi { 3 }",
       expect![@r#"
         CALL_EXPR
-          IDENT
+          IDENT_EXPR
             IDENT 'hi'
           WHITESPACE ' '
           BLOCK_ARGUMENTS
@@ -670,7 +670,7 @@ mod tests {
       "foo.bar",
       expect![@r#"
         FIELD_EXPR
-          IDENT
+          IDENT_EXPR
             IDENT 'foo'
           DOT '.'
           IDENT 'bar'
@@ -682,7 +682,7 @@ mod tests {
       expect![@r#"
         FIELD_EXPR
           FIELD_EXPR
-            IDENT
+            IDENT_EXPR
               IDENT 'foo'
             DOT '.'
             IDENT 'bar'
@@ -694,7 +694,7 @@ mod tests {
     check_expr(
       "foo.3",
       expect![@r#"
-        IDENT
+        IDENT_EXPR
           IDENT 'foo'
         DOT '.'
         error: expected expression, got DOT
@@ -736,7 +736,7 @@ mod tests {
         SOURCE_FILE
           EXPR_ITEM
             CALL_EXPR
-              IDENT
+              IDENT_EXPR
                 IDENT 'println'
               WHITESPACE ' '
               BLOCK_ARGUMENTS
@@ -761,7 +761,7 @@ mod tests {
       expect![@r#"
         SOURCE_FILE
           EXPR_ITEM
-            IDENT
+            IDENT_EXPR
               IDENT 'println'
             NL_KW '\n'
           WHITESPACE '       '
@@ -789,7 +789,7 @@ mod tests {
       expect![@r#"
         SOURCE_FILE
           EXPR_ITEM
-            IDENT
+            IDENT_EXPR
               IDENT 'println'
             NL_KW '\n'
           NL_KW '\n'
@@ -880,7 +880,7 @@ mod tests {
                   WHITESPACE ' '
                   EQ '='
                   WHITESPACE ' '
-                  IDENT
+                  IDENT_EXPR
                     IDENT 'None'
                 WHITESPACE ' '
                 CLOSE_CURLY '}'

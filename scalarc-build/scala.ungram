@@ -118,6 +118,7 @@ Expr = IfExpr
      | BlockExpr
      | PostfixUnderscoreExpr
      | LitExpr
+     | IdentExpr
      | DoubleQuotedString
      | TrippleQuotedString
      | Path
@@ -144,6 +145,7 @@ MatchExpr             = Expr 'match' '{' CaseItem (CaseItem)* '}'
 PostfixExpr    = Expr id
 InfixExpr      = lhs:Expr id rhs:Expr
 PrefixExpr     = id Expr // id can only be '-' | '+' | '~' | '!'
+IdentExpr      = id
 
 SimpleExpr = NewClassExpr
            | NewItemExpr

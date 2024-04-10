@@ -63,7 +63,7 @@ impl SourceFile {
 /// API.
 #[test]
 fn api_walkthrough() {
-  let source_code = "def foo = 1 + 2\n";
+  let source_code = "def foo = x + 2\n";
   // `SourceFile` is the main entry point.
   //
   // The `parse` method returns a `Parse` -- a pair of syntax tree and a list
@@ -92,8 +92,8 @@ fn api_walkthrough() {
   // on this expression and grab the inner literals of `1 + 2`.
   let ast::Expr::InfixExpr(infix) = func.expr().unwrap() else { panic!() };
 
-  let ast::Expr::LitExpr(lhs) = infix.lhs().unwrap() else { panic!() };
-  assert_eq!(lhs.int_lit_token().unwrap().text(), "1");
+  let ast::Expr::IdentExpr(id) = infix.lhs().unwrap() else { panic!() };
+  assert_eq!(id.id_token().unwrap().text(), "x");
 
   let ast::Expr::LitExpr(rhs) = infix.rhs().unwrap() else { panic!() };
   assert_eq!(rhs.int_lit_token().unwrap().text(), "2");
