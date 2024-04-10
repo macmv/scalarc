@@ -14,3 +14,4 @@ object Main extends App {
 }
 
 Main
+Foo

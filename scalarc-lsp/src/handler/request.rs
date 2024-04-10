@@ -70,8 +70,8 @@ pub fn handle_goto_definition(
   if let Some(def) = definition {
     let files = snap.files.read();
 
-    let (start_line, start_col) = range_to_line_col(&snap, def.pos.file, def.pos.range.start())?;
-    let (end_line, end_col) = range_to_line_col(&snap, def.pos.file, def.pos.range.end())?;
+    let start = index_to_pos(&snap, def.pos.file, def.pos.range.start())?;
+    let end = index_to_pos(&snap, def.pos.file, def.pos.range.end())?;
 
     Ok(Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_types::Location::new(
       lsp_types::Url::parse(&format!(
@@ -79,10 +79,7 @@ pub fn handle_goto_definition(
         files.workspace.join(files.id_to_path(def.pos.file)).display()
       ))
       .unwrap(),
-      lsp_types::Range::new(
-        lsp_types::Position::new(start_line, start_col),
-        lsp_types::Position::new(end_line, end_col),
-      ),
+      lsp_types::Range { start, end },
     ))))
   } else {
     Ok(None)
@@ -125,21 +122,16 @@ fn to_semantic_tokens(
   for h in highlight.tokens.iter() {
     let range = h.range;
 
-    let (l, c) = range_to_line_col(&snap, file, range.start()).unwrap();
-    info!("l: {l}, c: {c}");
+    let pos = index_to_pos(&snap, file, range.start()).unwrap();
 
-    let delta_line = l - line;
+    let delta_line = pos.line - line;
     if delta_line != 0 {
       col = 0;
     }
-    let delta_start = c - col;
+    let delta_start = pos.character - col;
 
-    line = l;
-    col = c;
-
-    info!(
-      "range: {range:?}, line: {line}, col: {col}, delta_line: {delta_line}, delta_start: {delta_start}",
-    );
+    line = pos.line;
+    col = pos.character;
 
     tokens.push(lsp_types::SemanticToken {
       delta_line,
@@ -175,17 +167,17 @@ fn file_position(
   Err("position not found".into())
 }
 
-fn range_to_line_col(
+fn index_to_pos(
   snap: &GlobalStateSnapshot,
   file_id: FileId,
   mut index: TextSize,
-) -> Result<(u32, u32), Box<dyn Error>> {
+) -> Result<lsp_types::Position, Box<dyn Error>> {
   let files = snap.files.read();
   let file = files.read(file_id);
 
   for (num, line) in file.lines().enumerate() {
     if u32::from(index) < line.len() as u32 {
-      return Ok((num as u32, index.into()));
+      return Ok(lsp_types::Position { line: num as u32, character: index.into() });
     }
 
     index -= TextSize::new(line.len() as u32 + 1);
