@@ -387,6 +387,7 @@ dependencies = [
 name = "scalarc-analysis"
 version = "0.1.0"
 dependencies = [
+ "la-arena",
  "line-index",
  "log",
  "salsa",
