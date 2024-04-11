@@ -152,6 +152,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13e3bf6590cbc649f4d1a3eefc9d5d6eb746f5200ffb04e5e142700b8faa56e7"
 
 [[package]]
+name = "line-index"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67d61795376ae2683928c218fda7d7d7db136fd38c06b7552904667f0d55580a"
+dependencies = [
+ "nohash-hasher",
+ "text-size",
+]
+
+[[package]]
 name = "lock_api"
 version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -200,6 +210,12 @@ checksum = "5a634b1c61a95585bd15607c6ab0c4e5b226e695ff2800ba0cdccddf208c406c"
 dependencies = [
  "autocfg",
 ]
+
+[[package]]
+name = "nohash-hasher"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
 
 [[package]]
 name = "oorandom"
@@ -371,6 +387,8 @@ dependencies = [
 name = "scalarc-analysis"
 version = "0.1.0"
 dependencies = [
+ "la-arena",
+ "line-index",
  "log",
  "salsa",
  "scalarc-hir",
@@ -432,6 +450,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "scalarc-analysis",
  "scalarc-bsp",
+ "scalarc-hir",
  "scalarc-source",
  "scalarc-syntax",
  "serde_json",

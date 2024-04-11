@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use scalarc_source::{FileId, SourceDatabase, TargetId};
-use scalarc_syntax::ast::Item;
+use scalarc_syntax::{ast::Item, TextRange, TextSize};
 use tree::Name;
 
 #[cfg(test)]
@@ -10,11 +10,51 @@ mod tests;
 #[macro_use]
 extern crate log;
 
+pub mod analysis;
+pub mod scope;
 pub mod tree;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefinitionMap {
-  pub items: HashMap<Path, ()>,
+  pub items: HashMap<Path, Definition>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FileLocation {
+  pub file:  FileId,
+  pub index: TextSize,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FileRange {
+  pub file:  FileId,
+  pub range: TextRange,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Definition {
+  pub pos:  FileRange,
+  pub kind: DefinitionKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DefinitionKind {
+  Local(LocalDefinition),
+  Global(GlobalDefinition),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LocalDefinition {
+  Val,
+  Var,
+  Parameter,
+  Def,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GlobalDefinition {
+  Class,
+  Object,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -27,6 +67,9 @@ pub trait HirDatabase: SourceDatabase {
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
 
   fn definitions_for_file(&self, file: FileId) -> DefinitionMap;
+
+  #[salsa::invoke(tree::ast_for_file)]
+  fn hir_ast(&self, file: FileId) -> tree::Ast;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {
@@ -57,18 +100,34 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
     .items()
     .filter_map(|item| match item {
       Item::ObjectDef(c) => {
-        let name = c.id_token()?.text().into();
+        let name = c.id_token()?;
 
-        Some((Path { elems: vec![name] }, ()))
+        Some((
+          Path { elems: vec![name.text().into()] },
+          Definition {
+            pos:  FileRange { file, range: name.text_range() },
+            kind: DefinitionKind::Global(GlobalDefinition::Object),
+          },
+        ))
       }
       Item::ClassDef(c) => {
-        let name = c.id_token()?.text().into();
+        let name = c.id_token()?;
 
-        Some((Path { elems: vec![name] }, ()))
+        Some((
+          Path { elems: vec![name.text().into()] },
+          Definition {
+            pos:  FileRange { file, range: name.text_range() },
+            kind: DefinitionKind::Global(GlobalDefinition::Class),
+          },
+        ))
       }
       _ => None,
     })
     .collect();
 
   DefinitionMap { items }
+}
+
+impl Path {
+  pub fn new() -> Self { Path { elems: vec![] } }
 }

@@ -1,5 +1,5 @@
-use scalarc_source::{FileId, SourceDatabase};
-
+use la_arena::Arena;
+use scalarc_source::{FileId, SourceDatabase, TargetData, Workspace};
 
 use crate::{completion::completions, database::RootDatabase};
 
@@ -14,6 +14,17 @@ fn completions_for(src: &str) -> Vec<String> {
 
   let mut db = RootDatabase::default();
   let file = FileId::temp_new();
+  let mut source_roots = Arena::new();
+  let source =
+    source_roots.alloc(scalarc_source::SourceRoot { path: "/".into(), sources: vec![file] });
+  let mut targets = Arena::new();
+  targets.alloc(TargetData {
+    dependencies: vec![],
+    bsp_id:       "file:///".try_into().unwrap(),
+    source_roots: vec![source],
+  });
+  db.set_workspace(Workspace { root: "/".into(), targets, source_roots }.into());
+  db.set_file_source_root(file, source);
   db.set_file_text(file, real_src.into());
 
   simple_completions(&db, crate::FileLocation { file, index: cursor.into() })

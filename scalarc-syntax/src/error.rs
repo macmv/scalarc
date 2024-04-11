@@ -17,5 +17,5 @@ impl SyntaxError {
   }
 
   pub fn message(&self) -> &str { &self.message }
-  pub fn span(&self) -> Range<u32> { self.range.start().into()..self.range.end().into() }
+  pub fn span(&self) -> TextRange { self.range }
 }

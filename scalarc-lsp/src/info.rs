@@ -10,16 +10,22 @@ pub fn server_capabilities() -> lsp_types::ServerCapabilities {
     semantic_tokens_provider: Some(
       lsp_types::SemanticTokensServerCapabilities::SemanticTokensOptions(
         lsp_types::SemanticTokensOptions {
-          legend: lsp_types::SemanticTokensLegend {
-            token_types:     vec![],
-            token_modifiers: vec![],
-          },
+          legend: crate::handler::request::semantic_tokens_legend(),
           range: Some(true),
           full: Some(lsp_types::SemanticTokensFullOptions::Delta { delta: Some(true) }),
           ..Default::default()
         },
       ),
     ),
+
+    definition_provider: Some(lsp_types::OneOf::Right(lsp_types::DefinitionOptions {
+      work_done_progress_options: lsp_types::WorkDoneProgressOptions {
+        // TODO: This would be neat to implement. Not sure how though.
+        work_done_progress: Some(false),
+      },
+    })),
+
+    document_highlight_provider: Some(lsp_types::OneOf::Left(true)),
 
     ..Default::default()
   }

@@ -154,7 +154,7 @@ impl GlobalState {
     let snap = self.analysis_host.snapshot();
 
     for &file_id in &changes {
-      let src = files.read(file_id);
+      let line_index = snap.line_index(file_id).unwrap();
       let diagnostics = snap.diagnostics(file_id).unwrap();
 
       self
@@ -166,13 +166,18 @@ impl GlobalState {
               .unwrap(),
             diagnostics: diagnostics
               .into_iter()
-              .map(|d| lsp_types::Diagnostic {
-                message: d.message,
-                range: lsp_types::Range {
-                  start: pos_to_lsp(&src, d.span.start),
-                  end:   pos_to_lsp(&src, d.span.end + 1), // TODO: Don't make empty spans
-                },
-                ..Default::default()
+              .filter_map(|d| {
+                let start = line_index.try_line_col(d.span.start())?;
+                let end = line_index.try_line_col(d.span.end())?;
+
+                Some(lsp_types::Diagnostic {
+                  message: d.message,
+                  range: lsp_types::Range {
+                    start: lsp_types::Position { line: start.line, character: start.col },
+                    end:   lsp_types::Position { line: end.line, character: end.col },
+                  },
+                  ..Default::default()
+                })
               })
               .collect(),
             version:     None,
@@ -192,6 +197,8 @@ impl GlobalState {
       // Not sure if we really need to do anything about a shutdown.
       .on_sync::<lsp_request::Shutdown>(|_, ()| Ok(()))
       .on::<lsp_request::SemanticTokensFullRequest>(request::handle_semantic_tokens_full)
+      .on::<lsp_request::GotoDefinition>(request::handle_goto_definition)
+      .on::<lsp_request::DocumentHighlightRequest>(request::handle_document_highlight)
       .on::<lsp_request::Completion>(request::handle_completion);
   }
 
@@ -488,18 +495,4 @@ impl BspNotificationDispatcher<'_> {
 
     self
   }
-}
-
-// TODO: Store this in salsa.
-fn pos_to_lsp(file: &str, pos: u32) -> lsp_types::Position {
-  let mut offset = 0;
-
-  for (i, line) in file.lines().enumerate() {
-    if offset + line.len() as u32 >= pos {
-      return lsp_types::Position { line: i as u32, character: pos - offset };
-    }
-    offset += line.len() as u32 + 1;
-  }
-
-  panic!("pos not in file");
 }

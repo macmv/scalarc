@@ -1,5 +1,6 @@
 pub mod completion;
 pub mod diagnostic;
+pub mod highlight;
 
 mod database;
 
@@ -14,10 +15,13 @@ use std::{panic::UnwindSafe, sync::Arc};
 use completion::Completion;
 use diagnostic::Diagnostic;
 
-use database::RootDatabase;
+use database::{LineIndexDatabase, RootDatabase};
+use highlight::Highlight;
+use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
+use scalarc_hir::{tree::Name, Definition, FileLocation, HirDatabase, Path};
+use scalarc_parser::T;
 use scalarc_source::{FileId, SourceDatabase, Workspace};
-use scalarc_syntax::TextSize;
 
 pub struct AnalysisHost {
   db: RootDatabase,
@@ -61,11 +65,6 @@ pub struct Change {
   pub text: String,
 }
 
-pub struct FileLocation {
-  pub file:  FileId,
-  pub index: TextSize,
-}
-
 impl ParallelDatabase for RootDatabase {
   fn snapshot(&self) -> salsa::Snapshot<Self> {
     salsa::Snapshot::new(RootDatabase { storage: self.storage.snapshot() })
@@ -82,6 +81,72 @@ impl Analysis {
       let ast = db.parse(file);
       ast.errors().iter().map(|err| Diagnostic::from_syntax_error(err)).collect()
     })
+  }
+
+  pub fn highlight(&self, file: FileId) -> Cancellable<Highlight> {
+    self.with_db(|db| {
+      let ast = db.parse(file);
+      Highlight::from_ast(ast)
+    })
+  }
+
+  pub fn parse(
+    &self,
+    file: FileId,
+  ) -> Cancellable<scalarc_syntax::Parse<scalarc_syntax::SourceFile>> {
+    self.with_db(|db| db.parse(file))
+  }
+
+  pub fn definition_for_name(&self, pos: FileLocation) -> Cancellable<Option<Definition>> {
+    self.with_db(|db| {
+      let ast = db.parse(pos.file);
+
+      let node = ast
+        .syntax_node()
+        .token_at_offset(pos.index)
+        .max_by_key(|token| match token.kind() {
+          T![ident] => 10,
+          _ => 1,
+        })
+        .unwrap();
+
+      match node.kind() {
+        T![ident] => {
+          let name = Name::new(node.text().to_string());
+
+          let scopes = scalarc_hir::scope::scopes_for(pos.file, &node);
+
+          // Scopes are ordered innermost to outermost, so the first definition we find is
+          // the one we want.
+          for scope in scopes {
+            for (n, def) in scope.declarations {
+              if n.as_str() == name.as_str() {
+                return Some(def);
+              }
+            }
+          }
+
+          let hir = db.hir_ast(pos.file);
+          let path = match hir.imports.get(&name) {
+            Some(path) => path.clone(),
+
+            // TODO: Use the local package name here. That should be in the HIR ast.
+            None => Path { elems: vec![name] },
+          };
+
+          let source_root = db.file_source_root(pos.file);
+          let target = db.source_root_target(source_root);
+          let definitions = db.definitions_for_target(target);
+
+          definitions.items.get(&path).cloned()
+        }
+        _ => None,
+      }
+    })
+  }
+
+  pub fn line_index(&self, file: FileId) -> Cancellable<Arc<LineIndex>> {
+    self.with_db(|db| db.line_index(file))
   }
 
   fn with_db<T>(&self, f: impl FnOnce(&RootDatabase) -> T + UnwindSafe) -> Cancellable<T> {

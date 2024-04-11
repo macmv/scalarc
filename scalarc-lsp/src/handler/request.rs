@@ -1,6 +1,9 @@
 use std::{error::Error, path::Path};
 
-use scalarc_analysis::{completion::CompletionKind, FileLocation};
+use lsp_types::SemanticTokenType;
+use scalarc_analysis::highlight::{Highlight, HighlightKind};
+use scalarc_hir::{DefinitionKind, FileLocation, GlobalDefinition, LocalDefinition};
+use scalarc_source::FileId;
 use scalarc_syntax::TextSize;
 
 use crate::global::GlobalStateSnapshot;
@@ -21,9 +24,16 @@ pub fn handle_completion(
         .map(|c| lsp_types::CompletionItem {
           label: c.label,
           kind: Some(match c.kind {
-            CompletionKind::Val => lsp_types::CompletionItemKind::VARIABLE,
-            CompletionKind::Var => lsp_types::CompletionItemKind::VARIABLE,
-            CompletionKind::Class => lsp_types::CompletionItemKind::CLASS,
+            DefinitionKind::Global(g) => match g {
+              GlobalDefinition::Class => lsp_types::CompletionItemKind::CLASS,
+              GlobalDefinition::Object => lsp_types::CompletionItemKind::CLASS,
+            },
+            DefinitionKind::Local(l) => match l {
+              LocalDefinition::Val => lsp_types::CompletionItemKind::VARIABLE,
+              LocalDefinition::Var => lsp_types::CompletionItemKind::VARIABLE,
+              LocalDefinition::Parameter => lsp_types::CompletionItemKind::VARIABLE,
+              LocalDefinition::Def => lsp_types::CompletionItemKind::FUNCTION,
+            },
           }),
           ..Default::default()
         })
@@ -39,15 +49,138 @@ pub fn handle_semantic_tokens_full(
   params: lsp_types::SemanticTokensParams,
 ) -> Result<Option<lsp_types::SemanticTokensResult>, Box<dyn Error>> {
   if let Some(path) = snap.workspace_path(&params.text_document.uri) {
-    let _file_id = snap.files.read().path_to_id(&path);
+    let file_id = snap.files.read().path_to_id(&path);
+    let highlight = snap.analysis.highlight(file_id)?;
+
+    let tokens = to_semantic_tokens(snap, file_id, &highlight)?;
+    info!("tokens: {:?}", tokens);
 
     Ok(Some(lsp_types::SemanticTokensResult::Tokens(lsp_types::SemanticTokens {
-      data:      vec![],
+      data:      tokens,
       result_id: None,
     })))
   } else {
     Ok(None)
   }
+}
+
+pub fn handle_goto_definition(
+  snap: GlobalStateSnapshot,
+  params: lsp_types::GotoDefinitionParams,
+) -> Result<Option<lsp_types::GotoDefinitionResponse>, Box<dyn Error>> {
+  let pos = file_position(&snap, params.text_document_position_params)?;
+  let definition = snap.analysis.definition_for_name(pos)?;
+
+  if let Some(def) = definition {
+    let files = snap.files.read();
+
+    let line_index = snap.analysis.line_index(def.pos.file)?;
+    let start = line_index.line_col(def.pos.range.start());
+    let end = line_index.line_col(def.pos.range.end());
+
+    let start = lsp_types::Position { line: start.line, character: start.col };
+    let end = lsp_types::Position { line: end.line, character: end.col };
+
+    Ok(Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_types::Location::new(
+      lsp_types::Url::parse(&format!(
+        "file://{}",
+        files.workspace.join(files.id_to_path(def.pos.file)).display()
+      ))
+      .unwrap(),
+      lsp_types::Range { start, end },
+    ))))
+  } else {
+    Ok(None)
+  }
+}
+
+pub fn handle_document_highlight(
+  snap: GlobalStateSnapshot,
+  params: lsp_types::DocumentHighlightParams,
+) -> Result<Option<Vec<lsp_types::DocumentHighlight>>, Box<dyn Error>> {
+  let pos = file_position(&snap, params.text_document_position_params)?;
+  let line_index = snap.analysis.line_index(pos.file)?;
+  let definition = snap.analysis.definition_for_name(pos)?;
+
+  if let Some(def) = definition {
+    if def.pos.file != pos.file {
+      return Ok(None);
+    }
+
+    let start = line_index.line_col(def.pos.range.start());
+    let end = line_index.line_col(def.pos.range.end());
+
+    let start = lsp_types::Position { line: start.line, character: start.col };
+    let end = lsp_types::Position { line: end.line, character: end.col };
+
+    Ok(Some(vec![lsp_types::DocumentHighlight {
+      range: lsp_types::Range { start, end },
+      kind:  Some(lsp_types::DocumentHighlightKind::WRITE),
+    }]))
+  } else {
+    Ok(None)
+  }
+}
+
+pub fn semantic_tokens_legend() -> lsp_types::SemanticTokensLegend {
+  fn token_type(kind: HighlightKind) -> SemanticTokenType {
+    match kind {
+      HighlightKind::Class => SemanticTokenType::new("class"),
+      HighlightKind::Function => SemanticTokenType::new("function"),
+      HighlightKind::Keyword => SemanticTokenType::new("keyword"),
+      HighlightKind::Number => SemanticTokenType::new("number"),
+      HighlightKind::Parameter => SemanticTokenType::new("parameter"),
+      HighlightKind::Type => SemanticTokenType::new("type"),
+      HighlightKind::Variable => SemanticTokenType::new("variable"),
+    }
+  }
+
+  info!("{:?}", HighlightKind::iter().map(token_type).collect::<Vec<_>>());
+
+  lsp_types::SemanticTokensLegend {
+    token_types:     HighlightKind::iter().map(token_type).collect(),
+    token_modifiers: vec![],
+  }
+}
+
+fn to_semantic_tokens(
+  snap: GlobalStateSnapshot,
+  file: FileId,
+  highlight: &Highlight,
+) -> Result<Vec<lsp_types::SemanticToken>, Box<dyn Error>> {
+  let line_index = snap.analysis.line_index(file)?;
+
+  let mut tokens = Vec::new();
+
+  let mut line = 0;
+  let mut col = 0;
+
+  info!("highlight: {:?}", highlight.tokens);
+
+  for h in highlight.tokens.iter() {
+    let range = h.range;
+
+    let pos = line_index.line_col(range.start());
+
+    let delta_line = pos.line - line;
+    if delta_line != 0 {
+      col = 0;
+    }
+    let delta_start = pos.col - col;
+
+    line = pos.line;
+    col = pos.col;
+
+    tokens.push(lsp_types::SemanticToken {
+      delta_line,
+      delta_start,
+      length: (range.end() - range.start()).into(),
+      token_type: h.kind as u32,
+      token_modifiers_bitset: 0,
+    });
+  }
+
+  Ok(tokens)
 }
 
 fn file_position(
