@@ -263,14 +263,6 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       p.eat(INT_LIT_KW);
       Some(m.complete(p, LIT_EXPR))
     }
-    STRING_LIT_KW => {
-      p.eat(STRING_LIT_KW);
-      Some(m.complete(p, LIT_EXPR))
-    }
-    IDENT => {
-      p.eat(IDENT);
-      Some(m.complete(p, IDENT_EXPR))
-    }
 
     SINGLE_QUOTE => {
       p.eat(SINGLE_QUOTE);
@@ -294,6 +286,35 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       tripple_quote_string(p);
 
       Some(m.complete(p, TRIPPLE_QUOTED_STRING))
+    }
+
+    // test ok
+    // s"hello $world"
+    IDENT if p.peek() == DOUBLE_QUOTE => {
+      p.eat(IDENT);
+      p.eat(DOUBLE_QUOTE);
+
+      // FIXME: Need to parse interpolated strings.
+      double_quote_string(p);
+
+      Some(m.complete(p, DOUBLE_QUOTED_STRING))
+    }
+
+    // test ok
+    // s"""hello $world"""
+    IDENT if p.peek() == TRIPPLE_QUOTE => {
+      p.eat(IDENT);
+      p.eat(TRIPPLE_QUOTE);
+
+      // FIXME: Need to parse interpolated strings.
+      tripple_quote_string(p);
+
+      Some(m.complete(p, TRIPPLE_QUOTED_STRING))
+    }
+
+    IDENT => {
+      p.eat(IDENT);
+      Some(m.complete(p, IDENT_EXPR))
     }
 
     T![return] => {
