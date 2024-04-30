@@ -38,7 +38,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
 
   loop {
     match p.current() {
-      T![ident] => {
+      T![ident] | T![=>] => {
         let op = p.slice();
         let (l_bp, r_bp) = op_bp(op);
         if l_bp < min_bp {
@@ -47,7 +47,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
         }
 
         let m2 = lhs.precede(p);
-        p.eat(T![ident]);
+        p.bump(); // eat T![ident] or T![=>]
 
         // this is one expression
         // 2 +
@@ -724,6 +724,60 @@ mod tests {
             WHITESPACE ' '
             LIT_EXPR
               INT_LIT_KW '4'
+      "#],
+    );
+  }
+
+  #[test]
+  fn lambda_expr() {
+    // This might be a bit difficult to parse up the chain. Ah well, this way avoids
+    // special cases in the parser, which is nice.
+    check_expr(
+      "x => x + 3",
+      expect![@r#"
+        INFIX_EXPR
+          IDENT_EXPR
+            IDENT 'x'
+          WHITESPACE ' '
+          FAT_ARROW '=>'
+          WHITESPACE ' '
+          INFIX_EXPR
+            IDENT_EXPR
+              IDENT 'x'
+            WHITESPACE ' '
+            IDENT '+'
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
+      "#],
+    );
+
+    // FIXME: Type annotations are valid anywhere, so we should be able to parse
+    // `x: Int` as an expression.
+    check_expr(
+      "(x: Int) => x + 3",
+      expect![@r#"
+        INFIX_EXPR
+          TUPLE_EXPR
+            OPEN_PAREN '('
+            IDENT_EXPR
+              IDENT 'x'
+            error: expected expression, got COLON
+            COLON ':'
+            WHITESPACE ' '
+            IDENT 'Int'
+            CLOSE_PAREN ')'
+          WHITESPACE ' '
+          FAT_ARROW '=>'
+          WHITESPACE ' '
+          INFIX_EXPR
+            IDENT_EXPR
+              IDENT 'x'
+            WHITESPACE ' '
+            IDENT '+'
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
       "#],
     );
   }
