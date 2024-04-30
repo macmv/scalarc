@@ -280,6 +280,14 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       Some(m.complete(p, DOUBLE_QUOTED_STRING))
     }
 
+    SINGLE_QUOTE => {
+      p.eat(SINGLE_QUOTE);
+
+      character_lit(p);
+
+      Some(m.complete(p, CHARACTER_LIT))
+    }
+
     T![return] => {
       // test ok
       // return 3
@@ -351,6 +359,51 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       p.error(format!("expected expression, got {:?}", p.current()));
       p.recover_until(T![nl]);
       None
+    }
+  }
+}
+
+pub fn character_lit(p: &mut Parser) {
+  // test ok
+  // 'a'
+  // '*'
+  match p.current() {
+    // test err
+    // ''
+    SINGLE_QUOTE => {
+      p.error("unexpected empty character literal");
+      p.eat(SINGLE_QUOTE);
+      return;
+    }
+    // test err
+    // 'a
+    EOF => {
+      p.error("unexpected end of file");
+      return;
+    }
+
+    // test ok
+    // '3'
+    _ => {
+      // test err
+      // 'ab'
+      if p.slice().chars().count() > 1 {
+        p.error("expected a single character");
+      }
+      p.bump();
+    }
+  }
+
+  match p.current() {
+    SINGLE_QUOTE => {
+      p.eat(SINGLE_QUOTE);
+      return;
+    }
+
+    _ => {
+      p.error("expected a single character");
+      p.bump();
+      return;
     }
   }
 }
@@ -430,10 +483,10 @@ mod tests {
     check_expr(
       "'a'",
       expect![@r#"
-        error: expected expression, got SINGLE_QUOTE
-        SINGLE_QUOTE '''
-        IDENT 'a'
-        SINGLE_QUOTE '''
+        CHARACTER_LIT
+          SINGLE_QUOTE '''
+          IDENT 'a'
+          SINGLE_QUOTE '''
       "#],
     );
   }
