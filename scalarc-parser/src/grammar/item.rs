@@ -86,6 +86,8 @@ fn item(p: &mut Parser) {
   }
 
   match p.current() {
+    T![package] => package_item(p, m),
+
     T![import] => import_item(p, m),
     T![def] => fun_def(p, m),
     T![val] => val_def(p, m),
@@ -100,6 +102,55 @@ fn item(p: &mut Parser) {
       m.complete(p, EXPR_ITEM);
     }
   };
+}
+
+fn package_item(p: &mut Parser, m: Marker) {
+  p.eat(T![package]);
+
+  let path = p.start();
+
+  loop {
+    match p.current() {
+      // test ok
+      // package foo
+      T![ident] => p.eat(T![ident]),
+
+      // test err
+      // package 3
+      _ => {
+        path.abandon(p);
+        p.error(format!("expected ident, got {:?}", p.current()));
+        p.recover_until(T![nl]);
+        m.abandon(p);
+        return;
+      }
+    }
+
+    match p.current() {
+      // test ok
+      // package foo.bar
+      T![.] => {
+        p.eat(T![.]);
+        continue;
+      }
+
+      T![nl] | EOF => {
+        path.complete(p, PATH);
+        m.complete(p, PACKAGE);
+        return;
+      }
+
+      // test err
+      // package foo 3
+      _ => {
+        path.abandon(p);
+        p.error(format!("expected dot, got {:?}", p.current()));
+        p.recover_until(T![nl]);
+        m.abandon(p);
+        return;
+      }
+    }
+  }
 }
 
 // test ok

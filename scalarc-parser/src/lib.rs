@@ -42,6 +42,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
   match token {
     Token::Ident(_) => match s {
       // TODO: Keywords should be defined somewhere else.
+      "package" => T![package],
       "import" => T![import],
       "def" => T![def],
       "val" => T![val],

@@ -228,6 +228,8 @@ ConstrAnnotation  =  '@' Type Arguments
 ItemBody = nl? '{' SelfType? (Item (';' Item)*) '}'
 SelfType = id (':' Type)? '=>'
 
+Package = 'package' (id ('.' id)*)
+
 Import     = 'import' (ImportExpr (',' ImportExpr)*)
 ImportExpr = Path | ImportSelectors
 
@@ -262,6 +264,7 @@ Item = ExprItem
   | ClassDef
   | ObjectDef
   | TraitDef
+  | Package
   | Import
 
 // new-typed expr so we can have nested enums.
