@@ -3,10 +3,10 @@
 use std::collections::HashMap;
 
 use la_arena::{Arena, Idx};
-use scalarc_source::{FileId, SourceDatabase};
+use scalarc_source::FileId;
 use scalarc_syntax::SyntaxNodePtr;
 
-use crate::{analysis::FileAnalyzer, Path};
+use crate::{analysis::FileAnalyzer, HirDatabase, Path};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Name(pub(crate) String);
@@ -33,7 +33,7 @@ pub struct FileArenas {
   pub expr: Arena<Expr>,
 }
 
-pub fn ast_for_file(db: &dyn SourceDatabase, file: FileId) -> Ast {
+pub fn ast_for_file(db: &dyn HirDatabase, file: FileId) -> Ast {
   let ast = db.parse(file);
 
   let mut analyzer = FileAnalyzer::new(file);
