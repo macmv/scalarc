@@ -26,11 +26,7 @@ impl fmt::Display for Events<'_> {
             continue;
           }
           let str = &self.1[index..index + len];
-          if str == "\n" {
-            writeln!(f, " '\\n'")?;
-          } else {
-            writeln!(f, " '{str}'")?;
-          }
+          writeln!(f, " '{}'", str.replace('\n', "\\n"))?;
           index += len;
         }
         Event::Error { msg } => {
