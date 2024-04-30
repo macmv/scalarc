@@ -39,6 +39,7 @@ LitPattern = ('-')? 'int_lit'
 // Special token for strings.
 any = 'any'
 
+CharacterLit = '\'' any '\''
 DoubleQuotedString = '"' any* '"'
 TrippleQuotedString = '"""' any* '"""'
 
@@ -119,6 +120,7 @@ Expr = IfExpr
      | PostfixUnderscoreExpr
      | LitExpr
      | IdentExpr
+     | CharacterLit
      | DoubleQuotedString
      | TrippleQuotedString
      | Path

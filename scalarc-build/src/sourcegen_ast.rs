@@ -372,7 +372,9 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, ast: &AstSrc) -> String {
       let token = name;
       let name = token_name(name);
 
-      if token == "\"" {
+      if token == "'" {
+        punctuation_values.push(quote!("'"));
+      } else if token == "\"" {
         punctuation_values.push(quote!("\""));
       } else if token == "\"\"\"" {
         punctuation_values.push(quote!("\"\"\""));
@@ -563,6 +565,7 @@ fn token_name(name: &str) -> &str {
     "~" => "tilde",
     "_" => "underscore",
 
+    "'" => "single_quote",
     "\"" => "double_quote",
     "\"\"\"" => "tripple_quote",
 
@@ -576,6 +579,7 @@ impl Field {
   fn token_kind(&self) -> Option<proc_macro2::TokenStream> {
     match self {
       Field::Token(token) => match token.as_str() {
+        "'" => Some(quote! { T!["'"] }),
         "\"" => Some(quote! { T!["\""] }),
         "\"\"\"" => Some(quote! { T!["\"\"\""] }),
         _ => {

@@ -426,6 +426,16 @@ mod tests {
           DOUBLE_QUOTE '"'
       "#],
     );
+
+    check_expr(
+      "'a'",
+      expect![@r#"
+        error: expected expression, got SINGLE_QUOTE
+        SINGLE_QUOTE '''
+        IDENT 'a'
+        SINGLE_QUOTE '''
+      "#],
+    );
   }
 
   #[test]

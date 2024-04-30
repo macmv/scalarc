@@ -35,8 +35,6 @@ pub enum Ident {
 pub enum Literal {
   Integer,
   Float,
-  String,
-  Char,
 }
 
 pub type Result<T> = std::result::Result<T, LexError>;
@@ -352,19 +350,6 @@ impl<'a> Lexer<'a> {
           self.ok(start, Token::Delimiter(Delimiter::TrippleQuote))
         } else {
           self.ok(start, Token::Delimiter(Delimiter::DoubleQuote))
-        }
-      }
-
-      // Character literals.
-      InnerToken::Delimiter(Delimiter::SingleQuote) => {
-        self.tok.eat()?; // the token inside.
-
-        match self.tok.eat() {
-          Ok(InnerToken::Delimiter(Delimiter::SingleQuote)) => {
-            self.ok(start, Token::Literal(Literal::Char))
-          }
-          Ok(_) => Err(LexError::MissingCharClose),
-          Err(e) => Err(e),
         }
       }
 
@@ -748,8 +733,12 @@ mod tests {
   #[test]
   fn char_literals() {
     let mut lexer = Lexer::new("'a'");
-    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Char)));
-    assert_eq!(lexer.slice(), "'a'");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::SingleQuote)));
+    assert_eq!(lexer.slice(), "'");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "a");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::SingleQuote)));
+    assert_eq!(lexer.slice(), "'");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
