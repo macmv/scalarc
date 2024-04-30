@@ -29,10 +29,7 @@ fn op_bp(ident: &str) -> (u8, u8) {
 pub fn expr(p: &mut Parser) { expr_bp(p, 0); }
 
 fn expr_bp(p: &mut Parser, min_bp: u8) {
-  let m = p.start();
-
   let Some(mut lhs) = simple_expr(p) else {
-    m.abandon(p);
     return;
   };
 
@@ -42,11 +39,10 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
         let op = p.slice();
         let (l_bp, r_bp) = op_bp(op);
         if l_bp < min_bp {
-          m.abandon(p);
           return;
         }
 
-        let m2 = lhs.precede(p);
+        let m = lhs.precede(p);
         p.bump(); // eat T![ident] or T![=>]
 
         // this is one expression
@@ -58,7 +54,6 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
         //
         //   3
         if p.eat_newlines() >= 2 {
-          m2.abandon(p);
           m.abandon(p);
           p.error(format!("expected expression, got expression separator {:?}", p.current()));
           p.recover_until_any(&[T![nl], T![,], T![')'], T!['}']]);
@@ -66,16 +61,14 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
         };
 
         expr_bp(p, r_bp);
-        lhs = m2.complete(p, INFIX_EXPR);
+        lhs = m.complete(p, INFIX_EXPR);
       }
 
       T![nl] | T![,] | T![')'] | T!['}'] | EOF => {
-        m.abandon(p);
         return;
       }
 
       _ => {
-        m.abandon(p);
         p.error(format!("expected expression, got {:?}", p.current()));
         p.recover_until_any(&[T![nl], T![,], T![')'], T!['}']]);
         return;
