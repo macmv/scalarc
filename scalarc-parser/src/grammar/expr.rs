@@ -196,7 +196,20 @@ fn call_paren_expr(p: &mut Parser) {
   }
 
   loop {
-    expr(p);
+    // FIXME: I think this might run into ambiguity with assignments?.
+    if p.current() == T![ident] && p.peek() == T![=] {
+      // test ok
+      // hi(
+      //   foo = 3,
+      //   bar = 4
+      // )
+      p.expect(T![ident]);
+      p.expect(T![=]);
+      expr(p);
+    } else {
+      expr(p);
+    }
+
     // test ok
     // hi(
     //   3
@@ -866,6 +879,32 @@ mod tests {
                 INT_LIT_KW '3'
             WHITESPACE ' '
             CLOSE_CURLY '}'
+      "#],
+    );
+
+    check_expr(
+      "hi(foo = 3, bar = 4)",
+      expect![@r#"
+        CALL_EXPR
+          IDENT_EXPR
+            IDENT 'hi'
+          PAREN_ARGUMENTS
+            OPEN_PAREN '('
+            IDENT 'foo'
+            WHITESPACE ' '
+            EQ '='
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
+            COMMA ','
+            WHITESPACE ' '
+            IDENT 'bar'
+            WHITESPACE ' '
+            EQ '='
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '4'
+            CLOSE_PAREN ')'
       "#],
     );
   }
