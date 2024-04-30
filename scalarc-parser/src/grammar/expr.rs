@@ -272,6 +272,14 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       Some(m.complete(p, IDENT_EXPR))
     }
 
+    SINGLE_QUOTE => {
+      p.eat(SINGLE_QUOTE);
+
+      character_lit(p);
+
+      Some(m.complete(p, CHARACTER_LIT))
+    }
+
     DOUBLE_QUOTE => {
       p.eat(DOUBLE_QUOTE);
 
@@ -280,12 +288,12 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       Some(m.complete(p, DOUBLE_QUOTED_STRING))
     }
 
-    SINGLE_QUOTE => {
-      p.eat(SINGLE_QUOTE);
+    TRIPPLE_QUOTE => {
+      p.eat(TRIPPLE_QUOTE);
 
-      character_lit(p);
+      tripple_quote_string(p);
 
-      Some(m.complete(p, CHARACTER_LIT))
+      Some(m.complete(p, TRIPPLE_QUOTED_STRING))
     }
 
     T![return] => {
@@ -431,6 +439,31 @@ pub fn double_quote_string(p: &mut Parser) {
         // TODO: Parse unicode escapes and such.
         p.bump();
       }
+      _ => {
+        p.bump();
+      }
+    }
+  }
+}
+
+pub fn tripple_quote_string(p: &mut Parser) {
+  // test ok
+  // """hello"""
+  loop {
+    match p.current() {
+      TRIPPLE_QUOTE => {
+        p.eat(TRIPPLE_QUOTE);
+        break;
+      }
+      // test err
+      // """hello
+      EOF => {
+        p.error("unexpected end of file");
+        break;
+      }
+      // test ok
+      // """hello
+      // world"""
       _ => {
         p.bump();
       }
