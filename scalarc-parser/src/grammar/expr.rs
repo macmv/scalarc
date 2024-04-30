@@ -221,6 +221,48 @@ fn call_paren_expr(p: &mut Parser) {
   p.expect(T![')']);
 }
 
+fn tuple_expr(p: &mut Parser) {
+  p.eat(T!['(']);
+  // test ok
+  // (
+  //   3,
+  //   4
+  // )
+  p.eat_newlines();
+
+  // test ok
+  // ()
+  if p.at(T![')']) {
+    p.eat(T![')']);
+    return;
+  }
+
+  loop {
+    expr(p);
+    // test ok
+    // (
+    //   3
+    //   ,
+    //   4
+    // )
+    p.eat_newlines();
+    if p.at(T![,]) {
+      p.bump();
+      p.eat_newlines();
+
+      // test ok
+      // (3,4,)
+      if p.at(T![')']) {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+
+  p.expect(T![')']);
+}
+
 fn call_block_expr(p: &mut Parser) {
   let m = p.start();
   // test ok
@@ -372,7 +414,7 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       // ()
       // (1 to 100)
       // (1, 2)
-      call_paren_expr(p);
+      tuple_expr(p);
       Some(m.complete(p, TUPLE_EXPR))
     }
 
