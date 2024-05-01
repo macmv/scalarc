@@ -66,7 +66,7 @@ impl Files {
 
   pub fn path_to_id(&self, path: &Path) -> FileId {
     let Some(path) = self.canonicalize(path) else {
-      panic!("path not in workspace {}", path.display())
+      panic!("path {} not in workspace {}", path.display(), self.workspace.display())
     };
 
     match self.ids.get(&path) {
