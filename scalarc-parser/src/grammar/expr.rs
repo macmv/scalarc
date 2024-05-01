@@ -67,13 +67,13 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
       lhs = m.complete(p, INFIX_EXPR);
     } else {
       match p.current() {
-        T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | EOF => {
+        T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | T![else] | EOF => {
           return;
         }
 
         _ => {
           p.error(format!("expected operator, got {:?}", p.current()));
-          p.recover_until_any(&[T![nl], T![,], T![')'], T!['}']]);
+          p.recover_until_any(&[T![nl], T![,], T![')'], T!['}'], T![else]]);
           return;
         }
       }
@@ -473,6 +473,11 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       Some(m.complete(p, TUPLE_EXPR))
     }
 
+    T![if] => {
+      if_expr(p);
+      Some(m.complete(p, IF_EXPR))
+    }
+
     _ => {
       m.abandon(p);
       p.error(format!("expected expression, got {:?}", p.current()));
@@ -579,6 +584,24 @@ pub fn tripple_quote_string(p: &mut Parser) {
         p.bump();
       }
     }
+  }
+}
+
+// test ok
+// if (true) 3
+fn if_expr(p: &mut Parser) {
+  p.eat(T![if]);
+
+  p.expect(T!['(']);
+  expr(p);
+  p.expect(T![')']);
+
+  expr(p);
+
+  // if (true) 3 else 4
+  if p.at(T![else]) {
+    p.eat(T![else]);
+    expr(p);
   }
 }
 
@@ -1396,6 +1419,50 @@ mod tests {
                   IDENT 'bar'
                 DOT '.'
                 IDENT 'baz'
+      "#],
+    );
+  }
+
+  #[test]
+  fn if_expr() {
+    check(
+      "if (2 == 3) { 4 } else { 5 }",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            IF_EXPR
+              IF_KW 'if'
+              WHITESPACE ' '
+              OPEN_PAREN '('
+              INFIX_EXPR
+                LIT_EXPR
+                  INT_LIT_KW '2'
+                WHITESPACE ' '
+                IDENT '=='
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '3'
+              CLOSE_PAREN ')'
+              WHITESPACE ' '
+              BLOCK_EXPR
+                OPEN_CURLY '{'
+                WHITESPACE ' '
+                EXPR_ITEM
+                  LIT_EXPR
+                    INT_LIT_KW '4'
+                WHITESPACE ' '
+                CLOSE_CURLY '}'
+              WHITESPACE ' '
+              ELSE_KW 'else'
+              WHITESPACE ' '
+              BLOCK_EXPR
+                OPEN_CURLY '{'
+                WHITESPACE ' '
+                EXPR_ITEM
+                  LIT_EXPR
+                    INT_LIT_KW '5'
+                WHITESPACE ' '
+                CLOSE_CURLY '}'
       "#],
     );
   }
