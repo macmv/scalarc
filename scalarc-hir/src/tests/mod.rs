@@ -3,6 +3,7 @@ use scalarc_source::{FileId, SourceDatabase};
 use std::{fmt, sync::Mutex};
 
 mod incremental;
+mod scope;
 
 #[salsa::database(scalarc_source::SourceDatabaseStorage, crate::HirDatabaseStorage)]
 pub(crate) struct TestDB {

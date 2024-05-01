@@ -441,6 +441,7 @@ dependencies = [
  "salsa",
  "scalarc-source",
  "scalarc-syntax",
+ "scalarc-test",
  "url",
 ]
 

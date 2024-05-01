@@ -1,7 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
+use la_arena::Arena;
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{ast::Item, TextRange, TextSize};
+use scope::Scope;
 use tree::Name;
 
 #[cfg(test)]
@@ -70,6 +72,9 @@ pub trait HirDatabase: SourceDatabase {
 
   #[salsa::invoke(tree::ast_for_file)]
   fn hir_ast(&self, file: FileId) -> tree::Ast;
+
+  #[salsa::invoke(scope::scopes_of)]
+  fn scopes_of(&self, file: FileId) -> Arena<Scope>;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {
