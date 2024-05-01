@@ -86,13 +86,11 @@ fn simple_expr(p: &mut Parser) -> Option<CompletedMarker> {
   let prefix = prefix_expr(p);
   let m = p.start();
   let lhs = atom_expr(p, m)?;
-  let lhs = match prefix {
-    Some(prefix) => prefix.complete(p, PREFIX_EXPR),
-    None => lhs,
-  };
   let m = postfix_expr(p, lhs);
-
-  Some(m)
+  match prefix {
+    Some(prefix) => Some(prefix.complete(p, PREFIX_EXPR)),
+    None => Some(m),
+  }
 }
 
 // test ok
@@ -1372,6 +1370,24 @@ mod tests {
               WHITESPACE ' '
               LIT_EXPR
                 INT_LIT_KW '3'
+      "#],
+    );
+
+    check(
+      "!foo.bar.baz",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            PREFIX_EXPR
+              IDENT '!'
+              FIELD_EXPR
+                FIELD_EXPR
+                  IDENT_EXPR
+                    IDENT 'foo'
+                  DOT '.'
+                  IDENT 'bar'
+                DOT '.'
+                IDENT 'baz'
       "#],
     );
   }
