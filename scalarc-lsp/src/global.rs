@@ -5,6 +5,7 @@ use lsp_server::RequestId;
 use parking_lot::RwLock;
 use scalarc_analysis::{Analysis, AnalysisHost};
 use scalarc_bsp::{client::BspClient, types as bsp_types};
+use scalarc_syntax::TextSize;
 use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
 
 use lsp_types::{notification::Notification, Url};
@@ -168,7 +169,13 @@ impl GlobalState {
               .into_iter()
               .filter_map(|d| {
                 let start = line_index.try_line_col(d.span.start())?;
-                let end = line_index.try_line_col(d.span.end())?;
+
+                let end = if d.span.is_empty() {
+                  // Underline the next character for empty spans.
+                  line_index.try_line_col(TextSize::from(u32::from(d.span.end()) + 1))?
+                } else {
+                  line_index.try_line_col(d.span.end())?
+                };
 
                 Some(lsp_types::Diagnostic {
                   message: d.message,
