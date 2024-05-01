@@ -50,7 +50,7 @@ fn collect_scope(file_id: FileId, t: &NodeOrToken) -> Scope {
       SyntaxKind::FUN_SIG => {
         let sig = scalarc_syntax::ast::FunSig::cast(n).unwrap();
 
-        if let Some(params) = sig.fun_params() {
+        for params in sig.fun_paramss() {
           for param in params.fun_params() {
             if let Some(id) = param.id_token() {
               declarations.push((

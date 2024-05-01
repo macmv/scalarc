@@ -184,8 +184,6 @@ ResultExpr     = Expr
 Enumerators    = Generator (';' Generator)*
 Generator      = ('case')? Pattern '<-' Expr ((';')? Guard | ';' Pattern '=' Expr)*
 
-TypeParamClause = 'todo'
-
 // TypeParamClause    = '[' VariantTypeParam (',' VariantTypeParam)* ']'
 // FunTypeParamClause = '[' TypeParam (',' TypeParam)* ']'
 // VariantTypeParam   = (Annotation)* ('+' | '-')? TypeParam
@@ -247,8 +245,8 @@ Def = ValDef
 ValDef  = 'val' id (':' Type)? '=' Expr
 VarDef  = 'var' id (':' Type)? '=' Expr
 FunDef  = 'def' FunSig '=' Expr
-FunSig  = id FunParams (':' Type)?
-TypeDec = 'type' id (TypeParamClause)? ('>:' Type)? ('<:' Type)?
+FunSig  = id TypeParams? FunParams* (':' Type)?
+TypeDec = 'type' id Type
 
 // Items
 
@@ -298,10 +296,10 @@ IdentPattern = id
 // FunBlockDef = 'def' FunSig (nl)? '{' Block '}'
 // FunThisDef  = 'this' FunParams ('=' ConstrExpr | (nl)? ConstrBlock)
 
-TypeDef     = 'type' id TypeParamClause? '=' Type
+TypeDef     = 'type' id TypeParams? '=' Type
 
-ClassDef     = 'case'? 'class' id TypeParamClause? ConstrAnnotation* AccessModifier? ClassFunParams ClassExtends body:ItemBody
-TraitDef     = 'trait' id TypeParamClause? TraitTemplateOpt
+ClassDef     = 'case'? 'class' id TypeParams? ConstrAnnotation* AccessModifier? ClassFunParams ClassExtends body:ItemBody
+TraitDef     = 'trait' id TypeParams? TraitTemplateOpt
 ObjectDef    = 'case'? 'object' id body:ItemBody
 ClassExtends = 'extends' ClassTemplate // TODO
 

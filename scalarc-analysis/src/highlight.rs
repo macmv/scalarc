@@ -131,7 +131,7 @@ impl Highlighter {
         if let Some(sig) = d.fun_sig() {
           self.highlight_opt(sig.id_token(), HighlightKind::Function);
 
-          if let Some(params) = sig.fun_params() {
+          for params in sig.fun_paramss() {
             for param in params.fun_params() {
               if let Some(name) = param.id_token() {
                 self.params.push(name.text().to_string());

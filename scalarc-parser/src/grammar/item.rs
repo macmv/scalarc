@@ -322,6 +322,10 @@ fn fun_sig(p: &mut Parser) {
   let m = p.start();
   p.expect(T![ident]);
 
+  if p.at(T!['[']) {
+    generic_def(p);
+  }
+
   // test ok
   // def foo(a: String) = 2
   // def bar(a: String)(b: String) = 3
@@ -337,6 +341,56 @@ fn fun_sig(p: &mut Parser) {
   }
 
   m.complete(p, FUN_SIG);
+}
+
+// test ok
+// def foo[A] = 3
+fn generic_def(p: &mut Parser) {
+  let m = p.start();
+  p.eat(T!['[']);
+
+  // test ok
+  // def foo[] = 3
+  if p.at(T![']']) {
+    p.eat(T![']']);
+    m.complete(p, TYPE_PARAMS);
+    return;
+  }
+
+  // test ok
+  // def foo[
+  //   A
+  // ] = 3
+  p.eat_newlines();
+
+  loop {
+    type_param(p);
+    p.eat_newlines();
+    // test ok
+    // def foo[A, B] = 3
+    if p.current() == T![,] {
+      p.eat(T![,]);
+
+      // test ok
+      // def foo[
+      //   A
+      //   ,
+      //   B
+      // ] = 3
+      p.eat_newlines();
+    } else {
+      p.expect(T![']']);
+      m.complete(p, TYPE_PARAMS);
+      break;
+    }
+  }
+}
+
+// test ok
+// def foo[A] = 3
+fn type_param(p: &mut Parser) {
+  // TODO: Parse things like `A <: Int`.
+  super::type_expr::type_expr(p);
 }
 
 fn fun_params(p: &mut Parser) {
