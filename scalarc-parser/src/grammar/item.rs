@@ -85,6 +85,17 @@ fn item(p: &mut Parser) {
     _ => {}
   }
 
+  // test ok
+  // final def foo = 3
+  // private final def foo = 4
+  match p.current() {
+    T![final] => {
+      p.bump();
+      p.eat_newlines();
+    }
+    _ => {}
+  }
+
   match p.current() {
     T![package] => package_item(p, m),
 
