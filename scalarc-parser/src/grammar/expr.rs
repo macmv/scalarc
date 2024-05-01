@@ -312,6 +312,15 @@ fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
       Some(m.complete(p, LIT_EXPR))
     }
 
+    T![true] => {
+      p.eat(T![true]);
+      Some(m.complete(p, LIT_EXPR))
+    }
+    T![false] => {
+      p.eat(T![false]);
+      Some(m.complete(p, LIT_EXPR))
+    }
+
     SINGLE_QUOTE => {
       p.eat(SINGLE_QUOTE);
 
@@ -551,6 +560,20 @@ mod tests {
       expect![@r#"
         LIT_EXPR
           INT_LIT_KW '2'
+      "#],
+    );
+
+    check_expr(
+      "true + false",
+      expect![@r#"
+        INFIX_EXPR
+          LIT_EXPR
+            TRUE_KW 'true'
+          WHITESPACE ' '
+          IDENT '+'
+          WHITESPACE ' '
+          LIT_EXPR
+            FALSE_KW 'false'
       "#],
     );
 

@@ -616,8 +616,8 @@ mod tests {
                   WHITESPACE ' '
                   EQ '='
                   WHITESPACE ' '
-                  IDENT_EXPR
-                    IDENT 'true'
+                  LIT_EXPR
+                    TRUE_KW 'true'
                 CLOSE_PAREN ')'
             WHITESPACE ' '
             EQ '='
