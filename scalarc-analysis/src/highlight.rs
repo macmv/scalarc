@@ -184,7 +184,6 @@ impl Highlighter {
         self.pop_block();
       }
       ast::Expr::InfixExpr(i) => {
-        info!("infix: {:#?}", i.syntax());
         if let Some(lhs) = i.lhs() {
           self.visit_expr(lhs);
         }
@@ -207,6 +206,19 @@ impl Highlighter {
             }
             _ => {}
           }
+        }
+      }
+      ast::Expr::IfExpr(i) => {
+        self.highlight_opt(i.if_token(), HighlightKind::Keyword);
+
+        if let Some(cond) = i.cond() {
+          self.visit_expr(cond);
+        }
+        if let Some(then) = i.then() {
+          self.visit_expr(then);
+        }
+        if let Some(else_branch) = i.els() {
+          self.visit_expr(else_branch);
         }
       }
       _ => {}

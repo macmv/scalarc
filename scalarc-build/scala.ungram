@@ -129,7 +129,7 @@ Expr = IfExpr
      | FieldExpr
      | CallExpr
 
-IfExpr      = 'if' '(' Expr ')' (nl)* Expr ((';')? 'else' Expr)?
+IfExpr      = 'if' '(' Expr ')' Expr ('else' Expr)?
 WhileExpr   = 'while' '(' Expr ')' (nl)* Expr
 TryExpr     = 'try' Expr ('catch' Expr)? ('finally' Expr)?
 DoWhileExpr = 'do' Expr (';')? 'while' '(' Expr ')'
