@@ -344,6 +344,12 @@ fn fun_params(p: &mut Parser) {
   p.eat(T!['(']);
 
   // test ok
+  // def foo(implicit a: Int) = 3
+  if p.at(T![implicit]) {
+    p.eat(T![implicit]);
+  }
+
+  // test ok
   // def foo() = 3
   if p.at(T![')']) {
     p.eat(T![')']);

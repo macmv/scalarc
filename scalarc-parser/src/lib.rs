@@ -51,6 +51,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       "class" => T![class],
       "object" => T![object],
       "extends" => T![extends],
+      "implicit" => T![implicit],
       "with" => T![with],
       "return" => T![return],
       "private" => T![private],
