@@ -161,7 +161,10 @@ impl EntryPoint {
 
 impl<'a> Parser<'a> {
   pub fn new(lexer: &'a mut Lexer<'a>) -> Self {
-    let first = token_to_kind(lexer.next().unwrap(), lexer.slice());
+    let first = match lexer.next() {
+      Ok(t) => token_to_kind(t, lexer.slice()),
+      Err(_) => T![nl], // Empty file
+    };
 
     Parser {
       current_range: lexer.range(),
