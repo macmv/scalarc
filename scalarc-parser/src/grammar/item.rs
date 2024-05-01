@@ -324,7 +324,8 @@ fn fun_sig(p: &mut Parser) {
 
   // test ok
   // def foo(a: String) = 2
-  if p.at(T!['(']) {
+  // def bar(a: String)(b: String) = 3
+  while p.at(T!['(']) {
     fun_params(p);
   }
 
