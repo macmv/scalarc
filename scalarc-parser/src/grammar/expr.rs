@@ -1,4 +1,4 @@
-use crate::CompletedMarker;
+use crate::{CompletedMarker, Marker};
 
 use super::*;
 
@@ -81,12 +81,37 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
   }
 }
 
-// Expression like `hello(3, 4)`
+// Expressions like `hello(3, 4)`
 fn simple_expr(p: &mut Parser) -> Option<CompletedMarker> {
-  let lhs = atom_expr(p)?;
+  let prefix = prefix_expr(p);
+  let m = p.start();
+  let lhs = atom_expr(p, m)?;
+  let lhs = match prefix {
+    Some(prefix) => prefix.complete(p, PREFIX_EXPR),
+    None => lhs,
+  };
   let m = postfix_expr(p, lhs);
 
   Some(m)
+}
+
+// test ok
+// !true
+// ~3
+fn prefix_expr(p: &mut Parser) -> Option<Marker> {
+  if p.current() != T![ident] {
+    return None;
+  }
+
+  match p.slice() {
+    "+" | "-" | "~" | "!" => {
+      let m = p.start();
+      p.eat(T![ident]);
+      Some(m)
+    }
+
+    _ => None,
+  }
 }
 
 fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
@@ -307,9 +332,7 @@ fn postfix_dot_expr(
 }
 
 // Expressions like `1` or "hi"
-fn atom_expr(p: &mut Parser) -> Option<CompletedMarker> {
-  let m = p.start();
-
+fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
   match p.current() {
     INT_LIT_KW => {
       p.eat(INT_LIT_KW);
@@ -1328,6 +1351,27 @@ mod tests {
               LIT_EXPR
                 INT_LIT_KW '3'
               CLOSE_PAREN ')'
+      "#],
+    );
+  }
+
+  #[test]
+  fn prefix_ops() {
+    check(
+      "!true > 3",
+      expect![@r#"
+        SOURCE_FILE
+          EXPR_ITEM
+            INFIX_EXPR
+              PREFIX_EXPR
+                IDENT '!'
+                LIT_EXPR
+                  TRUE_KW 'true'
+              WHITESPACE ' '
+              IDENT '>'
+              WHITESPACE ' '
+              LIT_EXPR
+                INT_LIT_KW '3'
       "#],
     );
   }
