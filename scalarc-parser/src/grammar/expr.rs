@@ -378,33 +378,33 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       Some(m.complete(p, TRIPPLE_QUOTED_STRING))
     }
 
-    // test ok
-    // s"hello $world"
-    IDENT if p.peek() == DOUBLE_QUOTE => {
-      p.eat(IDENT);
-      p.eat(DOUBLE_QUOTE);
-
-      // FIXME: Need to parse interpolated strings.
-      double_quote_string(p);
-
-      Some(m.complete(p, DOUBLE_QUOTED_STRING))
-    }
-
-    // test ok
-    // s"""hello $world"""
-    IDENT if p.peek() == TRIPPLE_QUOTE => {
-      p.eat(IDENT);
-      p.eat(TRIPPLE_QUOTE);
-
-      // FIXME: Need to parse interpolated strings.
-      tripple_quote_string(p);
-
-      Some(m.complete(p, TRIPPLE_QUOTED_STRING))
-    }
-
     IDENT => {
       p.eat(IDENT);
-      Some(m.complete(p, IDENT_EXPR))
+
+      match p.current() {
+        // test ok
+        // s"hello $world"
+        DOUBLE_QUOTE => {
+          p.eat(DOUBLE_QUOTE);
+
+          // FIXME: Need to parse interpolated strings.
+          double_quote_string(p);
+
+          Some(m.complete(p, DOUBLE_QUOTED_STRING))
+        }
+
+        // test ok
+        // s"""hello $world"""
+        TRIPPLE_QUOTE => {
+          p.eat(TRIPPLE_QUOTE);
+
+          // FIXME: Need to parse interpolated strings.
+          tripple_quote_string(p);
+
+          Some(m.complete(p, TRIPPLE_QUOTED_STRING))
+        }
+        _ => Some(m.complete(p, IDENT_EXPR)),
+      }
     }
 
     T![return] => {
