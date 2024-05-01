@@ -221,6 +221,49 @@ impl Highlighter {
           self.visit_expr(else_branch);
         }
       }
+      ast::Expr::MatchExpr(m) => {
+        if let Some(e) = m.expr() {
+          self.visit_expr(e);
+        }
+        self.highlight_opt(m.match_token(), HighlightKind::Keyword);
+
+        for case in m.case_items() {
+          self.highlight_opt(case.case_token(), HighlightKind::Keyword);
+
+          if let Some(pat) = case.pattern() {
+            self.visit_pattern(pat);
+          }
+          if let Some(guard) = case.guard() {
+            self.highlight_opt(guard.if_token(), HighlightKind::Keyword);
+            if let Some(expr) = guard.expr() {
+              self.visit_expr(expr);
+            }
+          }
+
+          if let Some(b) = case.block() {
+            for item in b.items() {
+              self.visit_item(item);
+            }
+          }
+        }
+      }
+      _ => {}
+    }
+  }
+
+  fn visit_pattern(&mut self, pat: ast::Pattern) {
+    match pat {
+      ast::Pattern::IdentPattern(i) => {
+        self.highlight_opt(i.id_token(), HighlightKind::Variable);
+      }
+      ast::Pattern::TypePattern(i) => {
+        self.highlight_opt(i.id_token(), HighlightKind::Variable);
+
+        if let Some(ty) = i.ty() {
+          self.highlight(ty.syntax().text_range(), HighlightKind::Type);
+        }
+      }
+
       _ => {}
     }
   }
