@@ -85,7 +85,15 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
 fn simple_expr(p: &mut Parser) -> Option<CompletedMarker> {
   let prefix = prefix_expr(p);
   let m = p.start();
-  let lhs = atom_expr(p, m)?;
+  let lhs = match atom_expr(p, m) {
+    Some(m) => m,
+    None => {
+      if let Some(prefix) = prefix {
+        prefix.abandon(p);
+      }
+      return None;
+    }
+  };
   let m = postfix_expr(p, lhs);
   match prefix {
     Some(prefix) => Some(prefix.complete(p, PREFIX_EXPR)),
