@@ -395,6 +395,13 @@ fn fun_param(p: &mut Parser) {
 
   super::type_expr::type_expr(p);
 
+  // test ok
+  // def bar(a: Int = 3) = a + 1
+  if p.at(T![=]) {
+    p.eat(T![=]);
+    super::expr::expr(p);
+  }
+
   m.complete(p, FUN_PARAM);
 }
 
@@ -575,7 +582,7 @@ mod tests {
     );
 
     check(
-      "def foo(a: Int, b: String) = 3",
+      "def foo(a: Int, b: Boolean = true) = 3",
       expect![@r#"
         SOURCE_FILE
           FUN_DEF
@@ -598,7 +605,12 @@ mod tests {
                   COLON ':'
                   WHITESPACE ' '
                   SIMPLE_TYPE
-                    IDENT 'String'
+                    IDENT 'Boolean'
+                  WHITESPACE ' '
+                  EQ '='
+                  WHITESPACE ' '
+                  IDENT_EXPR
+                    IDENT 'true'
                 CLOSE_PAREN ')'
             WHITESPACE ' '
             EQ '='
