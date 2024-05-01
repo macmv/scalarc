@@ -522,8 +522,10 @@ pub fn case_item(p: &mut Parser, m: Marker) {
   // test ok
   // case _ if true =>
   if p.at(T![if]) {
+    let m = p.start();
     p.eat(T![if]);
     super::expr::expr_no_fat_arrow(p);
+    m.complete(p, GUARD);
   }
 
   p.expect(T![=>]);
@@ -887,6 +889,40 @@ mod tests {
             ITEM_BODY
               OPEN_CURLY '{'
               CLOSE_CURLY '}'
+      "#],
+    );
+  }
+
+  #[test]
+  fn case_item() {
+    check(
+      "case _ if 2 == 3 => 4",
+      expect![@r#"
+        SOURCE_FILE
+          CASE_ITEM
+            CASE_KW 'case'
+            WHITESPACE ' '
+            IDENT_PATTERN
+              IDENT '_'
+            WHITESPACE ' '
+            GUARD
+              IF_KW 'if'
+              WHITESPACE ' '
+              INFIX_EXPR
+                LIT_EXPR
+                  INT_LIT_KW '2'
+                WHITESPACE ' '
+                IDENT '=='
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '3'
+            WHITESPACE ' '
+            FAT_ARROW '=>'
+            WHITESPACE ' '
+            BLOCK
+              EXPR_ITEM
+                LIT_EXPR
+                  INT_LIT_KW '4'
       "#],
     );
   }
