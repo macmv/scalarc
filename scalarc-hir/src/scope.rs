@@ -52,6 +52,7 @@ fn has_children(node: &SyntaxNode) -> bool {
   match node.kind() {
     SyntaxKind::VAL_DEF => true,
     SyntaxKind::FUN_DEF => true,
+    SyntaxKind::BLOCK_EXPR => true,
     _ => false,
   }
 }
@@ -77,8 +78,6 @@ fn single_scope(file_id: FileId, n: &SyntaxNode) -> Scope {
       _ => {}
     }
   }
-
-  declarations.reverse();
 
   Scope { declarations }
 }

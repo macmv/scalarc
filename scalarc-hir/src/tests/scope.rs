@@ -53,9 +53,37 @@ fn scopes_of_example() {
       [
         Scope {
           declarations: {
-            "baz": Definition { pos: 41..44, kind: Local(Val) }
-            "bar": Definition { pos: 25..28, kind: Local(Val) }
             "foo": Definition { pos: 9..12, kind: Local(Val) }
+            "bar": Definition { pos: 25..28, kind: Local(Val) }
+            "baz": Definition { pos: 41..44, kind: Local(Val) }
+          }
+        }
+      ]
+    "#],
+  );
+
+  scopes_of(
+    r#"
+    val foo = 3
+    val bar = {
+      val a = 6
+      val b = 7
+    }
+    val baz = 5
+    "#,
+    expect![@r#"
+      [
+        Scope {
+          declarations: {
+            "foo": Definition { pos: 9..12, kind: Local(Val) }
+            "bar": Definition { pos: 25..28, kind: Local(Val) }
+            "baz": Definition { pos: 79..82, kind: Local(Val) }
+          }
+        }
+        Scope {
+          declarations: {
+            "a": Definition { pos: 43..44, kind: Local(Val) }
+            "b": Definition { pos: 59..60, kind: Local(Val) }
           }
         }
       ]
