@@ -26,6 +26,7 @@ impl fmt::Display for DebugScopes<'_> {
     write!(f, "[\n")?;
     for (_, s) in self.0.iter() {
       writeln!(f, "  Scope {{")?;
+      writeln!(f, "    range: {:?},", s.range)?;
       writeln!(f, "    declarations: {{")?;
       for (name, def) in &s.declarations {
         write!(f, "      ")?;
@@ -52,6 +53,7 @@ fn scopes_of_example() {
     expect![@r#"
       [
         Scope {
+          range: 0..49,
           declarations: {
             "foo": Definition { pos: 9..12, kind: Local(Val) }
             "bar": Definition { pos: 25..28, kind: Local(Val) }
@@ -74,6 +76,7 @@ fn scopes_of_example() {
     expect![@r#"
       [
         Scope {
+          range: 0..87,
           declarations: {
             "foo": Definition { pos: 9..12, kind: Local(Val) }
             "bar": Definition { pos: 25..28, kind: Local(Val) }
@@ -81,6 +84,7 @@ fn scopes_of_example() {
           }
         }
         Scope {
+          range: 31..70,
           declarations: {
             "a": Definition { pos: 43..44, kind: Local(Val) }
             "b": Definition { pos: 59..60, kind: Local(Val) }

@@ -1,16 +1,16 @@
-use std::sync::Arc;
-
 use la_arena::Arena;
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{AstNode, SyntaxKind},
   node::{NodeOrToken, SyntaxNode, SyntaxToken},
+  TextRange,
 };
 
 use crate::{Definition, DefinitionKind, FileRange, HirDatabase, LocalDefinition};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Scope {
+  pub range:        TextRange,
   pub declarations: Vec<(String, Definition)>,
 }
 
@@ -79,7 +79,7 @@ fn single_scope(file_id: FileId, n: &SyntaxNode) -> Scope {
     }
   }
 
-  Scope { declarations }
+  Scope { range: n.text_range(), declarations }
 }
 
 // Returns the scopes around the given token. The first scope is the innermost.
@@ -143,7 +143,7 @@ fn collect_scope(file_id: FileId, t: &NodeOrToken) -> Scope {
 
   declarations.reverse();
 
-  Scope { declarations }
+  Scope { range: t.text_range(), declarations }
 }
 
 fn iter_prev_siblings(t: &NodeOrToken) -> impl Iterator<Item = SyntaxNode> {
