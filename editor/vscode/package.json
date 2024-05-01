@@ -1,0 +1,47 @@
+{
+  "name": "scalarc",
+  "displayName": "ScalaRC",
+  "description": "Scala RC language server",
+  "publisher": "macmv",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.72.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:scala"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "scala",
+        "extensions": [
+          ".scala"
+        ]
+      }
+    ]
+  },
+  "main": "./out/extension.js",
+  "dependencies": {
+    "vscode-languageclient": "^8.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "16.x",
+    "@types/vscode": "^1.72.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.24.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.1.6"
+  },
+  "scripts": {
+    "vscode:prepublish": "yarn run compile",
+    "compile": "tsc -p ./",
+    "pretest": "yarn run compile && yarn run lint-analyzer",
+    "lint": "eslint src --ext ts",
+    "fmt": "prettier -w src"
+  }
+}
