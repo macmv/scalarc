@@ -206,7 +206,9 @@ impl Parser<'_> {
     if let Some((p, _)) = self.peeked {
       p
     } else {
-      let t = self.bump_inner();
+      // Don't push an even here. Instead, we'll push `current` when we consume the
+      // peeked token in `bump`.
+      let t = self.bump_inner(false);
       self.peeked = Some((t, self.lexer.range()));
       t
     }
@@ -229,20 +231,24 @@ impl Parser<'_> {
   }
   pub fn bump(&mut self) -> SyntaxKind {
     if let Some((t, r)) = self.peeked.take() {
+      // Push `current`, now that we're pulling an event from `peeked`.
+      self.events.push(Event::Token { kind: self.current, len: self.current_range.len() });
       self.current = t;
       self.current_range = r;
       t
     } else {
-      let kind = self.bump_inner();
+      let kind = self.bump_inner(true);
       self.current = kind;
       self.current_range = self.lexer.range();
       kind
     }
   }
 
-  fn bump_inner(&mut self) -> SyntaxKind {
+  fn bump_inner(&mut self, push: bool) -> SyntaxKind {
     self.eat_trivia();
-    self.events.push(Event::Token { kind: self.current, len: self.lexer.slice().len() });
+    if push {
+      self.events.push(Event::Token { kind: self.current, len: self.lexer.slice().len() });
+    }
 
     loop {
       match self.lexer.next() {

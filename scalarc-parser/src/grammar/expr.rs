@@ -986,6 +986,20 @@ mod tests {
             CLOSE_PAREN ')'
       "#],
     );
+
+    check_expr(
+      "hi(foo)",
+      expect![@r#"
+        CALL_EXPR
+          IDENT_EXPR
+            IDENT 'hi'
+          PAREN_ARGUMENTS
+            OPEN_PAREN '('
+            IDENT_EXPR
+              IDENT 'foo'
+            CLOSE_PAREN ')'
+      "#],
+    );
   }
 
   #[test]
@@ -1020,8 +1034,8 @@ mod tests {
       expect![@r#"
         IDENT_EXPR
           IDENT 'foo'
-        DOT '.'
         error: expected operator, got DOT
+        DOT '.'
         INT_LIT_KW '3'
       "#],
     );
@@ -1070,7 +1084,7 @@ mod tests {
                 EXPR_ITEM
                   LIT_EXPR
                     INT_LIT_KW '3'
-                  NL_KW '\n'
+                NL_KW '\n'
                 WHITESPACE '       '
                 CLOSE_CURLY '}'
       "#],
@@ -1087,7 +1101,7 @@ mod tests {
           EXPR_ITEM
             IDENT_EXPR
               IDENT 'println'
-            NL_KW '\n'
+          NL_KW '\n'
           WHITESPACE '       '
           EXPR_ITEM
             BLOCK_EXPR
@@ -1097,7 +1111,7 @@ mod tests {
               EXPR_ITEM
                 LIT_EXPR
                   INT_LIT_KW '3'
-                NL_KW '\n'
+              NL_KW '\n'
               WHITESPACE '       '
               CLOSE_CURLY '}'
       "#],
@@ -1115,7 +1129,7 @@ mod tests {
           EXPR_ITEM
             IDENT_EXPR
               IDENT 'println'
-            NL_KW '\n'
+          NL_KW '\n'
           NL_KW '\n'
           WHITESPACE '       '
           EXPR_ITEM
@@ -1126,7 +1140,7 @@ mod tests {
               EXPR_ITEM
                 LIT_EXPR
                   INT_LIT_KW '3'
-                NL_KW '\n'
+              NL_KW '\n'
               WHITESPACE '       '
               CLOSE_CURLY '}'
       "#],
@@ -1244,7 +1258,7 @@ mod tests {
                   EXPR_ITEM
                     LIT_EXPR
                       INT_LIT_KW '3'
-                    NL_KW '\n'
+                  NL_KW '\n'
               WHITESPACE '        '
               CASE_ITEM
                 CASE_KW 'case'
@@ -1258,7 +1272,7 @@ mod tests {
                   EXPR_ITEM
                     LIT_EXPR
                       INT_LIT_KW '4'
-                    NL_KW '\n'
+                  NL_KW '\n'
               WHITESPACE '        '
               CASE_ITEM
                 CASE_KW 'case'
@@ -1272,7 +1286,7 @@ mod tests {
                   EXPR_ITEM
                     LIT_EXPR
                       INT_LIT_KW '5'
-                    NL_KW '\n'
+                  NL_KW '\n'
               WHITESPACE '      '
               CLOSE_CURLY '}'
       "#],
@@ -1333,7 +1347,7 @@ mod tests {
                   EXPR_ITEM
                     LIT_EXPR
                       INT_LIT_KW '1'
-                    NL_KW '\n'
+                  NL_KW '\n'
               WHITESPACE ' '
               CASE_ITEM
                 CASE_KW 'case'
