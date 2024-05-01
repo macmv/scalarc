@@ -26,52 +26,56 @@ fn op_bp(ident: &str) -> (u8, u8) {
   }
 }
 
-pub fn expr(p: &mut Parser) { expr_bp(p, 0); }
+pub fn expr(p: &mut Parser) { expr_bp(p, 0, true); }
 
-fn expr_bp(p: &mut Parser, min_bp: u8) {
+// This is primarily used for parsing `if` predicates in `case` expressions,
+// where a `=>` should be interpretted as a terminator, and not a lambda.
+pub fn expr_no_fat_arrow(p: &mut Parser) { expr_bp(p, 0, false); }
+
+fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
   let Some(mut lhs) = simple_expr(p) else {
     return;
   };
 
   loop {
-    match p.current() {
-      T![ident] | T![=>] => {
-        let op = p.slice();
-        let (l_bp, r_bp) = op_bp(op);
-        if l_bp < min_bp {
+    if p.current() == T![ident] || (p.current() == T![=>] && fat_arrow) {
+      let op = p.slice();
+      let (l_bp, r_bp) = op_bp(op);
+      if l_bp < min_bp {
+        return;
+      }
+
+      let m = lhs.precede(p);
+      p.bump(); // eat T![ident] or T![=>]
+
+      // this is one expression
+      // 2 +
+      //   3
+      //
+      // these are two expressions
+      // 2 +
+      //
+      //   3
+      if p.eat_newlines() >= 2 {
+        m.abandon(p);
+        p.error(format!("expected expression, got expression separator {:?}", p.current()));
+        p.recover_until_any(&[T![nl], T![,], T![')'], T!['}']]);
+        return;
+      };
+
+      expr_bp(p, r_bp, fat_arrow);
+      lhs = m.complete(p, INFIX_EXPR);
+    } else {
+      match p.current() {
+        T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | EOF => {
           return;
         }
 
-        let m = lhs.precede(p);
-        p.bump(); // eat T![ident] or T![=>]
-
-        // this is one expression
-        // 2 +
-        //   3
-        //
-        // these are two expressions
-        // 2 +
-        //
-        //   3
-        if p.eat_newlines() >= 2 {
-          m.abandon(p);
-          p.error(format!("expected expression, got expression separator {:?}", p.current()));
+        _ => {
+          p.error(format!("expected expression, got {:?}", p.current()));
           p.recover_until_any(&[T![nl], T![,], T![')'], T!['}']]);
           return;
-        };
-
-        expr_bp(p, r_bp);
-        lhs = m.complete(p, INFIX_EXPR);
-      }
-
-      T![nl] | T![,] | T![')'] | T!['}'] | EOF => {
-        return;
-      }
-
-      _ => {
-        p.error(format!("expected expression, got {:?}", p.current()));
-        p.recover_until_any(&[T![nl], T![,], T![')'], T!['}']]);
-        return;
+        }
       }
     }
   }

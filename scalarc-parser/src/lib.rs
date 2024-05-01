@@ -59,6 +59,8 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       "match" => T![match],
       "true" => T![true],
       "false" => T![false],
+      "if" => T![if],
+      "else" => T![else],
       "=" => T![=],
       ":" => T![:],
       "=>" => T![=>],

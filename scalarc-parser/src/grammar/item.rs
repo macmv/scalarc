@@ -508,6 +508,13 @@ pub fn case_item(p: &mut Parser, m: Marker) {
   p.expect(T![case]);
   super::pattern::pattern(p);
 
+  // test ok
+  // case _ if true =>
+  if p.at(T![if]) {
+    p.eat(T![if]);
+    super::expr::expr_no_fat_arrow(p);
+  }
+
   p.expect(T![=>]);
 
   p.eat_newlines();
