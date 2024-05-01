@@ -72,7 +72,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
         }
 
         _ => {
-          p.error(format!("expected expression, got {:?}", p.current()));
+          p.error(format!("expected operator, got {:?}", p.current()));
           p.recover_until_any(&[T![nl], T![,], T![')'], T!['}']]);
           return;
         }
@@ -837,7 +837,7 @@ mod tests {
             OPEN_PAREN '('
             IDENT_EXPR
               IDENT 'x'
-            error: expected expression, got COLON
+            error: expected operator, got COLON
             COLON ':'
             WHITESPACE ' '
             IDENT 'Int'
@@ -969,7 +969,7 @@ mod tests {
         IDENT_EXPR
           IDENT 'foo'
         DOT '.'
-        error: expected expression, got DOT
+        error: expected operator, got DOT
         INT_LIT_KW '3'
       "#],
     );
