@@ -227,7 +227,6 @@ fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
         let f = scalarc_syntax::ast::FunDef::cast(n.clone()).unwrap();
 
         if let Some(sig) = f.fun_sig() {
-          println!("got sig {sig:#?}");
           if let Some(id) = sig.id_token() {
             declarations.push((
               id.text().into(),
