@@ -34,6 +34,13 @@ fn simple_type_at() {
 fn type_of_val() {
   type_at(
     r#"
+    val foo@@ = 2
+    "#,
+    expect![@"scala.Int"],
+  );
+
+  type_at(
+    r#"
     val foo = 2
     foo@@
     "#,
