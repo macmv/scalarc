@@ -25,25 +25,12 @@ pub fn completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion> {
       .push(Completion { label: path.elems.pop().unwrap().into_string(), kind: def.kind });
   }
 
-  let ast = db.parse(pos.file);
-
-  let node = ast
-    .syntax_node()
-    .token_at_offset(pos.index)
-    .max_by_key(|token| match token.kind() {
-      T![ident] => 10,
-      _ => 1,
-    })
-    .unwrap();
-
-  let scopes = scalarc_hir::scope::scopes_for(pos.file, &node);
+  let definitions = db.defs_at_index(pos.file, pos.index);
 
   let mut names = HashSet::new();
-  for scope in scopes {
-    for (name, def) in scope.declarations {
-      if names.insert(name.clone()) {
-        completions.push(Completion { label: name, kind: def.kind });
-      }
+  for def in definitions {
+    if names.insert(def.name.clone()) {
+      completions.push(Completion { label: def.name.as_str().into(), kind: def.kind });
     }
   }
 
