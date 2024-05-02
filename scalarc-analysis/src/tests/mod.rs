@@ -24,7 +24,7 @@ fn completions_for(src: &str) -> Vec<String> {
     source_roots: vec![source],
   });
   db.set_workspace(Workspace { root: "/".into(), targets, source_roots }.into());
-  db.set_file_source_root(file, source);
+  db.set_file_source_root(file, Some(source));
   db.set_file_text(file, real_src.into());
 
   simple_completions(&db, crate::FileLocation { file, index: cursor.into() })
