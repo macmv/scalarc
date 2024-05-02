@@ -30,6 +30,15 @@ fn defs_at(src: &str, expected: Expect) {
   expected.assert_eq(&DebugDefList(&actual).to_string());
 }
 
+fn def_at(src: &str, expected: Expect) {
+  let cursor = src.find("@@").unwrap();
+  let src = format!("{}{}", &src[..cursor], &src[cursor + 2..]);
+
+  let db = new_db(&src);
+  let actual = db.def_at_index(FileId::temp_new(), TextSize::from(cursor as u32));
+  expected.assert_eq(&DebugDefOpt(&actual).to_string());
+}
+
 struct DebugScopes<'a>(&'a Arena<Scope>);
 impl fmt::Display for DebugScopes<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -63,6 +72,16 @@ impl fmt::Display for DebugDefList<'_> {
       writeln!(f, "}}")?;
     }
     write!(f, "]\n")
+  }
+}
+
+struct DebugDefOpt<'a>(&'a Option<Definition>);
+impl fmt::Display for DebugDefOpt<'_> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self.0 {
+      Some(def) => writeln!(f, "Definition {{ pos: {:?}, kind: {:?} }}", def.pos.range, def.kind),
+      None => writeln!(f, "None"),
+    }
   }
 }
 
@@ -137,6 +156,38 @@ fn definitions_at() {
         Definition { pos: 25..28, kind: Local(Val) }
         Definition { pos: 9..12, kind: Local(Val) }
       ]
+    "#],
+  );
+}
+
+#[test]
+fn definition_at() {
+  def_at(
+    r#"
+    val foo = 3
+    val bar = {
+      val a@@ = 6
+      val b = 7
+    }
+    val baz = 5
+    "#,
+    expect![@r#"
+      Definition { pos: 43..44, kind: Local(Val) }
+    "#],
+  );
+
+  def_at(
+    r#"
+    val foo = 3
+    val bar = {
+      val a = 6
+      a@@
+      val b = 7
+    }
+    val baz = 5
+    "#,
+    expect![@r#"
+      Definition { pos: 43..44, kind: Local(Val) }
     "#],
   );
 }

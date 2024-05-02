@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use la_arena::Arena;
 use scalarc_source::{FileId, SourceDatabase, TargetId};
@@ -36,6 +36,7 @@ pub struct FileRange {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Definition {
   pub pos:  FileRange,
+  pub name: Name,
   pub kind: DefinitionKind,
 }
 
@@ -75,6 +76,8 @@ pub trait HirDatabase: SourceDatabase {
 
   #[salsa::invoke(scope::scopes_of)]
   fn scopes_of(&self, file: FileId) -> Arena<Scope>;
+  #[salsa::invoke(scope::def_at_index)]
+  fn def_at_index(&self, file: FileId, index: TextSize) -> Option<Definition>;
   #[salsa::invoke(scope::defs_at_index)]
   fn defs_at_index(&self, file: FileId, index: TextSize) -> Vec<Definition>;
 }
@@ -113,6 +116,7 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
           Path { elems: vec![name.text().into()] },
           Definition {
             pos:  FileRange { file, range: name.text_range() },
+            name: name.text().into(),
             kind: DefinitionKind::Global(GlobalDefinition::Object),
           },
         ))
@@ -124,6 +128,7 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
           Path { elems: vec![name.text().into()] },
           Definition {
             pos:  FileRange { file, range: name.text_range() },
+            name: name.text().into(),
             kind: DefinitionKind::Global(GlobalDefinition::Class),
           },
         ))

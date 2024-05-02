@@ -3,10 +3,12 @@ use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{AstNode, SyntaxKind},
   node::{NodeOrToken, SyntaxNode, SyntaxToken},
-  TextRange, TextSize,
+  TextRange, TextSize, T,
 };
 
-use crate::{Definition, DefinitionKind, FileRange, HirDatabase, LocalDefinition};
+use crate::{
+  tree::Name, Definition, DefinitionKind, FileRange, HirDatabase, LocalDefinition, Path,
+};
 
 pub type ScopeId = Idx<Scope>;
 
@@ -29,7 +31,6 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   let mut defs = vec![];
 
   // Find the last (ie, smallest) scope that contains the given span.
-  dbg!(&scopes);
   let Some(innermost) = scopes.iter().rev().find(|(_, scope)| scope.range.contains(pos)) else {
     return vec![];
   };
@@ -55,6 +56,49 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   }
 
   defs
+}
+
+pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<Definition> {
+  let defs = db.defs_at_index(file_id, pos);
+
+  let ast = db.parse(file_id);
+
+  let node = ast
+    .syntax_node()
+    .token_at_offset(pos)
+    .max_by_key(|token| match token.kind() {
+      T![ident] => 10,
+      _ => 1,
+    })
+    .unwrap();
+
+  match node.kind() {
+    T![ident] => {
+      let name = Name::new(node.text().to_string());
+
+      // Scopes are ordered innermost to outermost, so the first definition we find is
+      // the one we want.
+      if let Some(def) = defs.iter().find(|def| def.name.as_str() == name.as_str()) {
+        return Some(def.clone());
+      }
+
+      let hir = db.hir_ast(file_id);
+      let path = match hir.imports.get(&name) {
+        Some(path) => path.clone(),
+
+        // TODO: Use the local package name here. That should be in the HIR ast.
+        None => Path { elems: vec![name] },
+      };
+
+      let source_root = db.file_source_root(file_id);
+      let target = db.source_root_target(source_root);
+      let definitions = db.definitions_for_target(target);
+
+      definitions.items.get(&path).cloned()
+    }
+
+    _ => None,
+  }
 }
 
 /// Returns all the scopes of the given file. This is in breadth-first order.
@@ -109,6 +153,7 @@ fn single_scope(file_id: FileId, n: &SyntaxNode) -> Scope {
             id.text().into(),
             Definition {
               pos:  FileRange { file: file_id, range: id.text_range() },
+              name: id.text().into(),
               kind: DefinitionKind::Local(LocalDefinition::Val),
             },
           ));
@@ -153,6 +198,7 @@ fn collect_scope(file_id: FileId, t: &NodeOrToken) -> Scope {
             id.text().into(),
             Definition {
               pos:  FileRange { file: file_id, range: id.text_range() },
+              name: id.text().into(),
               kind: DefinitionKind::Local(LocalDefinition::Val),
             },
           ));
@@ -169,6 +215,7 @@ fn collect_scope(file_id: FileId, t: &NodeOrToken) -> Scope {
                 id.text().into(),
                 Definition {
                   pos:  FileRange { file: file_id, range: id.text_range() },
+                  name: id.text().into(),
                   kind: DefinitionKind::Local(LocalDefinition::Parameter),
                 },
               ));
