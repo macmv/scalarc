@@ -133,7 +133,7 @@ fn scopes_of_example() {
           }
         }
         Scope {
-          range: 31..70,
+          range: 21..70,
           declarations: {
             "a": Definition { pos: 43..44, name: "a", kind: Local(Val) }
             "b": Definition { pos: 59..60, name: "b", kind: Local(Val) }
@@ -219,11 +219,6 @@ fn class_scopes() {
           range: 23..59,
           declarations: {
             "a": Definition { pos: 15..16, name: "a", kind: Local(Parameter) }
-          }
-        }
-        Scope {
-          range: 23..59,
-          declarations: {
             "b": Definition { pos: 35..36, name: "b", kind: Local(Val) }
           }
         }
@@ -258,7 +253,6 @@ fn class_def() {
     "#],
   );
 
-  // FIXME: This should pick up `a`!
   defs_at(
     r#"
     class Foo(a: Int) {
@@ -269,6 +263,7 @@ fn class_def() {
     expect![@r#"
       [
         Definition { pos: 35..36, name: "b", kind: Local(Val) }
+        Definition { pos: 15..16, name: "a", kind: Local(Parameter) }
         Definition { pos: 11..14, name: "Foo", kind: Global(Class) }
       ]
     "#],

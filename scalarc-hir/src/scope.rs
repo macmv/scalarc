@@ -126,16 +126,19 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
   let tree = ast.tree();
   dbg!(&tree);
 
-  let mut this_pass = vec![(tree.syntax().clone(), None, tree.syntax().text_range())];
+  let mut this_pass = vec![(vec![tree.syntax().clone()], None, tree.syntax().text_range())];
   let mut next_pass = vec![];
   while !this_pass.is_empty() {
-    for (item, parent, visible) in this_pass.drain(..) {
-      println!("checking {item:?} visible at {visible:?}");
+    for (items, parent, visible) in this_pass.drain(..) {
+      println!("checking {items:?} visible at {visible:?}");
 
-      let mut scope = single_scope(file_id, &item, visible);
-      scope.parent = parent;
+      let mut scope = Scope { parent, visible, declarations: vec![] };
+      for item in items.iter() {
+        scope.declarations.extend(single_scope(file_id, &item, visible).declarations);
+      }
       let id = if !scope.is_empty() { Some(scopes.alloc(scope)) } else { parent };
-      for node in item.children() {
+
+      for node in items.iter().flat_map(|it| it.children()) {
         let visible = node.text_range();
 
         match node.kind() {
@@ -144,25 +147,25 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
 
             let Some(expr) = n.expr() else { continue };
 
-            next_pass.push((expr.syntax().clone(), id, visible));
+            next_pass.push((vec![expr.syntax().clone()], id, visible));
           }
           SyntaxKind::BLOCK_EXPR => {
-            next_pass.push((node, id, visible));
+            next_pass.push((vec![node], id, visible));
           }
           SyntaxKind::CLASS_DEF => {
             println!("got class def");
             let n = scalarc_syntax::ast::ClassDef::cast(node.clone()).unwrap();
 
+            // Walk one level deeper manually, so that parameters and defs in the body are
+            // both visible in only the class body.
             let Some(params) = n.fun_params() else { continue };
             let Some(body) = n.body() else { continue };
 
-            println!("class params: {params:?}");
-
-            // The parameters of classes are only visible within the body of a class.
-            next_pass.push((params.syntax().clone(), id, body.syntax().text_range()));
-
-            // Also walk through the body of the class.
-            next_pass.push((body.syntax().clone(), id, body.syntax().text_range()));
+            next_pass.push((
+              vec![params.syntax().clone(), body.syntax().clone()],
+              id,
+              body.syntax().text_range(),
+            ));
           }
           _ => continue,
         };
