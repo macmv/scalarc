@@ -30,7 +30,7 @@ export async function activate(context: vscode.ExtensionContext) {
       // Notify the server about file changes to '.clientrc files contained in the workspace
       fileEvents: vscode.workspace.createFileSystemWatcher("**/.clientrc"),
     },
-    outputChannel: vscode.window.createOutputChannel("FQL Language Server"),
+    outputChannel,
     revealOutputChannelOn: RevealOutputChannelOn.Info,
   };
 
