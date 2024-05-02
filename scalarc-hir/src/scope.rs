@@ -10,7 +10,7 @@ use scalarc_syntax::{
 
 use crate::{
   tree::Name, Definition, DefinitionKind, FileRange, GlobalDefinition, HirDatabase,
-  LocalDefinition, Path,
+  LocalDefinition, Path, Reference,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -300,7 +300,7 @@ fn definitions_of(
   })
 }
 
-pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<TextRange> {
+pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<Reference> {
   let ast = db.parse(file_id);
   let tree = ast.tree();
 
@@ -321,7 +321,8 @@ pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
         match child.kind() {
           SyntaxKind::IDENT_EXPR => {
             if child.text() == def.name.as_str() {
-              references.push(child.text_range())
+              references
+                .push(Reference { pos: FileRange { file: file_id, range: child.text_range() } });
             }
           }
 

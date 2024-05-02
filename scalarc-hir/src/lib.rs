@@ -42,6 +42,11 @@ pub struct Definition {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Reference {
+  pub pos: FileRange,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DefinitionKind {
   Local(LocalDefinition),
   Global(GlobalDefinition),
@@ -82,7 +87,7 @@ pub trait HirDatabase: SourceDatabase {
   #[salsa::invoke(scope::defs_at_index)]
   fn defs_at_index(&self, file: FileId, index: TextSize) -> Vec<Definition>;
   #[salsa::invoke(scope::references_to)]
-  fn references_to(&self, file: FileId, index: TextSize) -> Vec<TextRange>;
+  fn references_to(&self, file: FileId, index: TextSize) -> Vec<Reference>;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {

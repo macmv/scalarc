@@ -48,8 +48,8 @@ fn refs_to(src: &str, expected: Expect) {
 
   let mut actual_src = src.to_string();
   for r in actual.iter().rev() {
-    actual_src.insert_str(r.end().into(), "@");
-    actual_src.insert_str(r.start().into(), "@");
+    actual_src.insert_str(r.pos.range.end().into(), "@");
+    actual_src.insert_str(r.pos.range.start().into(), "@");
   }
 
   let actual_src = actual_src
