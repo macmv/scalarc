@@ -18,5 +18,19 @@ object Main extends App {
   val x = 1
 }
 
+class Foo(a: String) {
+  println("Hello, World!")
+
+  val b = 3
+
+  a
+  b
+}
+
+val x = 3
+
+x
+
+
 Main
 Foo
