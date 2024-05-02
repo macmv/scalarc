@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use scalarc_hir::{DefinitionKind, HirDatabase};
-use scalarc_parser::T;
 use scalarc_source::SourceDatabase;
 
 use crate::{database::RootDatabase, FileLocation};
@@ -16,7 +15,7 @@ pub fn completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion> {
 
   info!("finding completions...");
 
-  let source_root = db.file_source_root(pos.file);
+  let Some(source_root) = db.file_source_root(pos.file) else { return vec![] };
   let target = db.source_root_target(source_root);
   let definitions = db.definitions_for_target(target);
 

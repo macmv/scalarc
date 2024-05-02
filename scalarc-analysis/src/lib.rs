@@ -46,11 +46,16 @@ impl AnalysisHost {
   pub fn set_workspace(&mut self, workspace: scalarc_source::Workspace) {
     for (id, root) in workspace.source_roots.iter() {
       for &file in &root.sources {
-        self.db.set_file_source_root(file, id);
+        self.db.set_file_source_root(file, Some(id));
       }
     }
 
     self.db.set_workspace(workspace.into());
+  }
+
+  pub fn add_file(&mut self, file: FileId) {
+    self.db.set_file_source_root(file, None);
+    self.db.set_file_text(file, "".into());
   }
 
   pub fn workspace(&self) -> Arc<Workspace> { self.db.workspace() }

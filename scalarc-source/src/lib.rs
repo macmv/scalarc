@@ -20,7 +20,7 @@ pub trait SourceDatabase: std::fmt::Debug {
   fn parse(&self, file_id: FileId) -> Parse<SourceFile>;
 
   #[salsa::input]
-  fn file_source_root(&self, file_id: FileId) -> SourceRootId;
+  fn file_source_root(&self, file_id: FileId) -> Option<SourceRootId>;
 
   #[salsa::invoke(source_root::source_root_target)]
   fn source_root_target(&self, id: SourceRootId) -> TargetId;

@@ -101,7 +101,7 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
         None => Path { elems: vec![name] },
       };
 
-      let source_root = db.file_source_root(file_id);
+      let source_root = db.file_source_root(file_id)?;
       let target = db.source_root_target(source_root);
       let definitions = db.definitions_for_target(target);
 

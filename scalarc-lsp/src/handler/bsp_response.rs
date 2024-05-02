@@ -31,7 +31,7 @@ pub fn handle_sources(
   if let Some(targets) = state.bsp_targets.take() {
     let workspace =
       crate::search::workspace_from_sources(targets, sources, &mut state.files.write());
-    state.analysis_host.set_workspace(workspace);
+    state.set_workspace(workspace);
   }
 
   Ok(())

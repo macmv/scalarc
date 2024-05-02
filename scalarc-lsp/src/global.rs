@@ -5,6 +5,7 @@ use lsp_server::{ErrorCode, RequestId};
 use parking_lot::RwLock;
 use scalarc_analysis::{Analysis, AnalysisHost};
 use scalarc_bsp::{client::BspClient, types as bsp_types};
+use scalarc_source::{FileId, SourceRootId, Workspace};
 use scalarc_syntax::TextSize;
 use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
 
@@ -17,6 +18,11 @@ pub struct GlobalState {
   pub workspace: PathBuf,
 
   pub files: Arc<RwLock<Files>>,
+
+  /// Maps file IDs to source roots. If there is no source root for a file
+  /// (happens during initialization usually, or for files outside a worksapce),
+  /// then `None` will be set for it.
+  pub file_to_source_root: HashMap<FileId, Option<SourceRootId>>,
 
   pub analysis_host: AnalysisHost,
   pub bsp_client:    Option<BspClient>,
@@ -56,7 +62,10 @@ impl GlobalState {
     GlobalState {
       sender,
       workspace: workspace.to_file_path().unwrap(),
+
       files: Arc::new(RwLock::new(Files::new(workspace.to_file_path().unwrap()))),
+      file_to_source_root: HashMap::new(),
+
       analysis_host: AnalysisHost::new(),
       bsp_client,
       bsp_targets: None,
@@ -135,21 +144,29 @@ impl GlobalState {
     Ok(())
   }
 
+  pub fn set_workspace(&mut self, workspace: Workspace) {
+    for (id, root) in workspace.source_roots.iter() {
+      for &file in &root.sources {
+        self.file_to_source_root.insert(file, Some(id));
+      }
+    }
+
+    self.analysis_host.set_workspace(workspace);
+  }
+
   fn process_changes(&mut self) {
     let mut files = self.files.write();
     let changes = files.take_changes();
 
     for &file_id in &changes {
+      if !self.file_to_source_root.contains_key(&file_id) {
+        self.file_to_source_root.insert(file_id, None);
+        self.analysis_host.add_file(file_id);
+      }
+
       self
         .analysis_host
         .change(scalarc_analysis::Change { file: file_id, text: files.read(file_id) });
-
-      // FIXME: Handle adding files. This needs to add the file into the
-      // workspace, which will cancel all running queries. Its kind of a
-      // pain to get right.
-      /*
-      if !self.analysis_host.has_file(file_id) {}
-      */
     }
 
     let snap = self.analysis_host.snapshot();

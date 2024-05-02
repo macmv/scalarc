@@ -25,6 +25,9 @@ class Foo(a: String) {
 
   a
   b
+
+  Foo
+  Bar
 }
 
 val x = 3
