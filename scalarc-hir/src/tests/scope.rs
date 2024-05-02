@@ -52,7 +52,14 @@ fn refs_to(src: &str, expected: Expect) {
     actual_src.insert_str(r.start().into(), "@");
   }
 
-  expected.assert_eq(&actual_src.trim_start_matches(|c| c == '\n'));
+  let actual_src = actual_src
+    .trim_start_matches(|c| c == '\n')
+    .lines()
+    .map(|l| l.strip_prefix("    ").unwrap_or(l))
+    .collect::<Vec<_>>()
+    .join("\n");
+
+  expected.assert_eq(&actual_src);
 }
 
 struct DebugScopes<'a>(&'a Arena<Scope>);
@@ -461,15 +468,15 @@ fn refs_to_val() {
     }
     "#,
     expect![@r#"
-          val a = 3
-          @a@
-          @a@ + b
-          println(@a@)
+      val a = 3
+      @a@
+      @a@ + b
+      println(@a@)
 
-          if (@a@ > 3) {
-            val a = 4
-            @a@
-          }
+      if (@a@ > 3) {
+        val a = 4
+        @a@
+      }
     "#],
   );
 }
