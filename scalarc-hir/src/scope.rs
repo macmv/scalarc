@@ -2,20 +2,31 @@ use la_arena::{Arena, Idx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{AstNode, SyntaxKind},
-  node::{NodeOrToken, SyntaxNode, SyntaxToken},
+  node::SyntaxNode,
   TextRange, TextSize, T,
 };
 
 use crate::{
-  tree::Name, Definition, DefinitionKind, FileRange, HirDatabase, LocalDefinition, Path,
+  tree::Name, Definition, DefinitionKind, FileRange, GlobalDefinition, HirDatabase,
+  LocalDefinition, Path,
 };
 
 pub type ScopeId = Idx<Scope>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Scope {
-  pub parent:       Option<ScopeId>,
-  pub range:        TextRange,
+  /// The parent of this scope. `None` if this is the top-level scope of a file.
+  pub parent: Option<ScopeId>,
+
+  /// The range of text at which this scope is visible in.
+  ///
+  /// This might not be the same as the range of the node that defines the
+  /// scope. For example, class parameters are only visible within the body of
+  /// the class. So `visible` will be the class body for the scope that class
+  /// paramters define.
+  pub visible: TextRange,
+
+  /// All the names declared by the scope.
   pub declarations: Vec<(String, Definition)>,
 }
 
@@ -31,7 +42,7 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   let mut defs = vec![];
 
   // Find the last (ie, smallest) scope that contains the given span.
-  let Some(innermost) = scopes.iter().rev().find(|(_, scope)| scope.range.contains(pos)) else {
+  let Some(innermost) = scopes.iter().rev().find(|(_, scope)| scope.visible.contains(pos)) else {
     return vec![];
   };
 
@@ -113,17 +124,48 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
   let mut scopes = Arena::new();
 
   let tree = ast.tree();
-  let mut this_pass = vec![(tree.syntax().clone(), None)];
+  dbg!(&tree);
+
+  let mut this_pass = vec![(tree.syntax().clone(), None, tree.syntax().text_range())];
   let mut next_pass = vec![];
   while !this_pass.is_empty() {
-    for (item, parent) in this_pass.drain(..) {
-      let mut scope = single_scope(file_id, &item);
+    for (item, parent, visible) in this_pass.drain(..) {
+      println!("checking {item:?} visible at {visible:?}");
+
+      let mut scope = single_scope(file_id, &item, visible);
       scope.parent = parent;
       let id = if !scope.is_empty() { Some(scopes.alloc(scope)) } else { parent };
       for node in item.children() {
-        if has_children(&node) {
-          next_pass.push((node, id));
-        }
+        let visible = node.text_range();
+
+        match node.kind() {
+          SyntaxKind::VAL_DEF => {
+            let n = scalarc_syntax::ast::ValDef::cast(node.clone()).unwrap();
+
+            let Some(expr) = n.expr() else { continue };
+
+            next_pass.push((expr.syntax().clone(), id, visible));
+          }
+          SyntaxKind::BLOCK_EXPR => {
+            next_pass.push((node, id, visible));
+          }
+          SyntaxKind::CLASS_DEF => {
+            println!("got class def");
+            let n = scalarc_syntax::ast::ClassDef::cast(node.clone()).unwrap();
+
+            let Some(params) = n.fun_params() else { continue };
+            let Some(body) = n.body() else { continue };
+
+            println!("class params: {params:?}");
+
+            // The parameters of classes are only visible within the body of a class.
+            next_pass.push((params.syntax().clone(), id, body.syntax().text_range()));
+
+            // Also walk through the body of the class.
+            next_pass.push((body.syntax().clone(), id, body.syntax().text_range()));
+          }
+          _ => continue,
+        };
       }
     }
     std::mem::swap(&mut this_pass, &mut next_pass);
@@ -132,18 +174,10 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
   scopes
 }
 
-fn has_children(node: &SyntaxNode) -> bool {
-  match node.kind() {
-    SyntaxKind::VAL_DEF => true,
-    SyntaxKind::FUN_DEF => true,
-    SyntaxKind::BLOCK_EXPR => true,
-    _ => false,
-  }
-}
-
-fn single_scope(file_id: FileId, n: &SyntaxNode) -> Scope {
+fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
   let mut declarations = vec![];
 
+  println!("checking children of {n:?}");
   for n in n.children() {
     match n.kind() {
       SyntaxKind::VAL_DEF => {
@@ -160,9 +194,38 @@ fn single_scope(file_id: FileId, n: &SyntaxNode) -> Scope {
         }
       }
 
+      SyntaxKind::CLASS_DEF => {
+        let n = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
+        if let Some(id) = n.id_token() {
+          declarations.push((
+            id.text().into(),
+            Definition {
+              pos:  FileRange { file: file_id, range: id.text_range() },
+              name: id.text().into(),
+              kind: DefinitionKind::Global(GlobalDefinition::Class),
+            },
+          ));
+        }
+      }
+
+      SyntaxKind::FUN_PARAM => {
+        println!("found fun param {n:#?}");
+        let n = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
+        if let Some(id) = n.id_token() {
+          declarations.push((
+            id.text().into(),
+            Definition {
+              pos:  FileRange { file: file_id, range: id.text_range() },
+              name: id.text().into(),
+              kind: DefinitionKind::Local(LocalDefinition::Parameter),
+            },
+          ));
+        }
+      }
+
       _ => {}
     }
   }
 
-  Scope { parent: None, range: n.text_range(), declarations }
+  Scope { parent: None, visible, declarations }
 }

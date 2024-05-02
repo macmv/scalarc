@@ -298,7 +298,8 @@ IdentPattern = id
 
 TypeDef     = 'type' id TypeParams? '=' Type
 
-ClassDef     = 'case'? 'class' id TypeParams? ConstrAnnotation* AccessModifier? ClassFunParams ClassExtends body:ItemBody
+// TODO:`FunParams` should be `ClassFunParams`
+ClassDef     = 'case'? 'class' id TypeParams? ConstrAnnotation* AccessModifier? FunParams ClassExtends body:ItemBody
 TraitDef     = 'trait' id TypeParams? TraitTemplateOpt
 ObjectDef    = 'case'? 'object' id body:ItemBody
 ClassExtends = 'extends' ClassTemplate // TODO

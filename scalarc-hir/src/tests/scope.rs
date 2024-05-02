@@ -45,7 +45,7 @@ impl fmt::Display for DebugScopes<'_> {
     write!(f, "[\n")?;
     for (_, s) in self.0.iter() {
       writeln!(f, "  Scope {{")?;
-      writeln!(f, "    range: {:?},", s.range)?;
+      writeln!(f, "    range: {:?},", s.visible)?;
       writeln!(f, "    declarations: {{")?;
       for (name, def) in &s.declarations {
         write!(f, "      ")?;
@@ -194,6 +194,83 @@ fn definition_at() {
     "#,
     expect![@r#"
       Definition { pos: 43..44, name: "a", kind: Local(Val) }
+    "#],
+  );
+}
+
+#[test]
+fn class_scopes() {
+  scopes_of(
+    r#"
+    class Foo(a: Int) {
+      val b: String
+      @@
+    }
+    "#,
+    expect![@r#"
+      [
+        Scope {
+          range: 0..60,
+          declarations: {
+            "Foo": Definition { pos: 11..14, name: "Foo", kind: Global(Class) }
+          }
+        }
+        Scope {
+          range: 23..59,
+          declarations: {
+            "a": Definition { pos: 15..16, name: "a", kind: Local(Parameter) }
+          }
+        }
+        Scope {
+          range: 23..59,
+          declarations: {
+            "b": Definition { pos: 35..36, name: "b", kind: Local(Val) }
+          }
+        }
+      ]
+    "#],
+  );
+}
+
+#[test]
+fn class_def() {
+  defs_at(
+    r#"
+    class Foo(val a: Int) {}
+    @@
+    "#,
+    expect![@r#"
+      [
+        Definition { pos: 11..14, name: "Foo", kind: Global(Class) }
+      ]
+    "#],
+  );
+
+  defs_at(
+    r#"
+    class Foo(a: Int) { @@ }
+    "#,
+    expect![@r#"
+      [
+        Definition { pos: 15..16, name: "a", kind: Local(Parameter) }
+        Definition { pos: 11..14, name: "Foo", kind: Global(Class) }
+      ]
+    "#],
+  );
+
+  // FIXME: This should pick up `a`!
+  defs_at(
+    r#"
+    class Foo(a: Int) {
+      val b: String
+      @@
+    }
+    "#,
+    expect![@r#"
+      [
+        Definition { pos: 35..36, name: "b", kind: Local(Val) }
+        Definition { pos: 11..14, name: "Foo", kind: Global(Class) }
+      ]
     "#],
   );
 }
