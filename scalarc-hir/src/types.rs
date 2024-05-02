@@ -43,8 +43,6 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     })
     .unwrap();
 
-  dbg!(&node);
-
   match node.kind() {
     T![ident] => {
       let def = db.def_at_index(file_id, pos)?;
