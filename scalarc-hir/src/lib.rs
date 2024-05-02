@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use la_arena::Arena;
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{ast::Item, TextRange, TextSize};
-use scope::Scope;
+use scope::{FileScopes, Scope};
 use tree::Name;
 
 #[cfg(test)]
@@ -75,7 +75,7 @@ pub trait HirDatabase: SourceDatabase {
   fn hir_ast(&self, file: FileId) -> tree::Ast;
 
   #[salsa::invoke(scope::scopes_of)]
-  fn scopes_of(&self, file: FileId) -> Arena<Scope>;
+  fn scopes_of(&self, file: FileId) -> FileScopes;
   #[salsa::invoke(scope::def_at_index)]
   fn def_at_index(&self, file: FileId, index: TextSize) -> Option<Definition>;
   #[salsa::invoke(scope::defs_at_index)]

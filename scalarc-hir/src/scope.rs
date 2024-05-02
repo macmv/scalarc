@@ -30,6 +30,11 @@ pub struct Scope {
   pub declarations: Vec<(String, Definition)>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FileScopes {
+  pub scopes: Arena<Scope>,
+}
+
 impl Scope {
   fn is_empty(&self) -> bool { self.declarations.is_empty() }
 }
@@ -37,13 +42,13 @@ impl Scope {
 /// Returns the definitions at the given scope. The innermost declarations (ie,
 /// closest to the cursor) show up first in the list.
 pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<Definition> {
-  let scopes = db.scopes_of(file_id);
+  let file_scopes = db.scopes_of(file_id);
 
   let mut defs = vec![];
 
   // Find the last (ie, smallest) scope that contains the given span.
   let Some(innermost) =
-    scopes.iter().rev().find(|(_, scope)| scope.visible.contains_inclusive(pos))
+    file_scopes.scopes.iter().rev().find(|(_, scope)| scope.visible.contains_inclusive(pos))
   else {
     return vec![];
   };
@@ -58,7 +63,7 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
     }
   }));
   while let Some(parent) = scope.parent {
-    scope = &scopes[parent];
+    scope = &file_scopes.scopes[parent];
     defs.extend(scope.declarations.iter().rev().filter_map(|(_, def)| {
       if def.pos.range.end() <= pos {
         Some(def.clone())
@@ -119,7 +124,7 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
 ///
 /// Each scope contains a list of definitions (which could be values, classes,
 /// functions, etc) in file-order.
-pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
+pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
   // Breadth-first search of all scopes in the given file.
   let ast = db.parse(file_id);
 
@@ -193,7 +198,7 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
     std::mem::swap(&mut this_pass, &mut next_pass);
   }
 
-  scopes
+  FileScopes { scopes }
 }
 
 fn definitions_of(file_id: FileId, n: &SyntaxNode) -> impl Iterator<Item = (String, Definition)> {

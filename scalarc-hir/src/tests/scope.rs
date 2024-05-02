@@ -18,7 +18,7 @@ fn new_db(content: &str) -> TestDB {
 fn scopes_of(src: &str, expected: Expect) {
   let db = new_db(src);
   let actual = db.scopes_of(FileId::temp_new());
-  expected.assert_eq(&DebugScopes(&actual).to_string());
+  expected.assert_eq(&DebugScopes(&actual.scopes).to_string());
 }
 
 fn defs_at(src: &str, expected: Expect) {
