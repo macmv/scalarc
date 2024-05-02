@@ -6,7 +6,10 @@ use std::fmt;
 
 use crate::{HirDatabase, Path};
 use scalarc_source::FileId;
-use scalarc_syntax::{ast::SyntaxKind, TextSize, T};
+use scalarc_syntax::{
+  ast::{AstNode, SyntaxKind},
+  TextSize, T,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Type {
@@ -35,6 +38,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     .token_at_offset(pos)
     .max_by_key(|token| match token.kind() {
       T![ident] => 10,
+      SyntaxKind::INT_LIT_KW => 9,
       _ => 1,
     })
     .unwrap();

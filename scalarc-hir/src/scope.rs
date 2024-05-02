@@ -92,6 +92,7 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
     .token_at_offset(pos)
     .max_by_key(|token| match token.kind() {
       T![ident] => 10,
+      SyntaxKind::INT_LIT_KW => 9,
       _ => 1,
     })
     .unwrap();
