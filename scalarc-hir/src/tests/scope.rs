@@ -49,10 +49,7 @@ impl fmt::Display for DebugScopes<'_> {
       writeln!(f, "    declarations: {{")?;
       for (name, def) in &s.declarations {
         write!(f, "      ")?;
-        write!(f, "{:?}: Definition {{ ", name)?;
-        write!(f, "pos: {:?}, ", def.pos.range)?;
-        write!(f, "kind: {:?} ", def.kind)?;
-        writeln!(f, "}}")?;
+        write!(f, "{:?}: {}", name, DebugDef(&def))?;
       }
       writeln!(f, "    }}")?;
       writeln!(f, "  }}")?;
@@ -66,10 +63,7 @@ impl fmt::Display for DebugDefList<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     write!(f, "[\n")?;
     for def in self.0.iter() {
-      write!(f, "  Definition {{ ")?;
-      write!(f, "pos: {:?}, ", def.pos.range)?;
-      write!(f, "kind: {:?} ", def.kind)?;
-      writeln!(f, "}}")?;
+      write!(f, "  {}", DebugDef(&def))?;
     }
     write!(f, "]\n")
   }
@@ -79,9 +73,21 @@ struct DebugDefOpt<'a>(&'a Option<Definition>);
 impl fmt::Display for DebugDefOpt<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self.0 {
-      Some(def) => writeln!(f, "Definition {{ pos: {:?}, kind: {:?} }}", def.pos.range, def.kind),
+      Some(def) => write!(f, "{}", DebugDef(&def)),
       None => writeln!(f, "None"),
     }
+  }
+}
+
+struct DebugDef<'a>(&'a Definition);
+impl fmt::Display for DebugDef<'_> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let def = self.0;
+    write!(f, "Definition {{ ")?;
+    write!(f, "pos: {:?}, ", def.pos.range)?;
+    write!(f, "name: {:?}, ", def.name.as_str())?;
+    write!(f, "kind: {:?} ", def.kind)?;
+    writeln!(f, "}}")
   }
 }
 
@@ -98,9 +104,9 @@ fn scopes_of_example() {
         Scope {
           range: 0..49,
           declarations: {
-            "foo": Definition { pos: 9..12, kind: Local(Val) }
-            "bar": Definition { pos: 25..28, kind: Local(Val) }
-            "baz": Definition { pos: 41..44, kind: Local(Val) }
+            "foo": Definition { pos: 9..12, name: "foo", kind: Local(Val) }
+            "bar": Definition { pos: 25..28, name: "bar", kind: Local(Val) }
+            "baz": Definition { pos: 41..44, name: "baz", kind: Local(Val) }
           }
         }
       ]
@@ -121,16 +127,16 @@ fn scopes_of_example() {
         Scope {
           range: 0..87,
           declarations: {
-            "foo": Definition { pos: 9..12, kind: Local(Val) }
-            "bar": Definition { pos: 25..28, kind: Local(Val) }
-            "baz": Definition { pos: 79..82, kind: Local(Val) }
+            "foo": Definition { pos: 9..12, name: "foo", kind: Local(Val) }
+            "bar": Definition { pos: 25..28, name: "bar", kind: Local(Val) }
+            "baz": Definition { pos: 79..82, name: "baz", kind: Local(Val) }
           }
         }
         Scope {
           range: 31..70,
           declarations: {
-            "a": Definition { pos: 43..44, kind: Local(Val) }
-            "b": Definition { pos: 59..60, kind: Local(Val) }
+            "a": Definition { pos: 43..44, name: "a", kind: Local(Val) }
+            "b": Definition { pos: 59..60, name: "b", kind: Local(Val) }
           }
         }
       ]
@@ -152,9 +158,9 @@ fn definitions_at() {
     "#,
     expect![@r#"
       [
-        Definition { pos: 43..44, kind: Local(Val) }
-        Definition { pos: 25..28, kind: Local(Val) }
-        Definition { pos: 9..12, kind: Local(Val) }
+        Definition { pos: 43..44, name: "a", kind: Local(Val) }
+        Definition { pos: 25..28, name: "bar", kind: Local(Val) }
+        Definition { pos: 9..12, name: "foo", kind: Local(Val) }
       ]
     "#],
   );
@@ -172,7 +178,7 @@ fn definition_at() {
     val baz = 5
     "#,
     expect![@r#"
-      Definition { pos: 43..44, kind: Local(Val) }
+      Definition { pos: 43..44, name: "a", kind: Local(Val) }
     "#],
   );
 
@@ -187,7 +193,7 @@ fn definition_at() {
     val baz = 5
     "#,
     expect![@r#"
-      Definition { pos: 43..44, kind: Local(Val) }
+      Definition { pos: 43..44, name: "a", kind: Local(Val) }
     "#],
   );
 }
