@@ -269,3 +269,70 @@ fn class_def() {
     "#],
   );
 }
+
+#[test]
+fn fun_scopes() {
+  scopes_of(
+    r#"
+    def foo(a: Int) = {
+      val b: String
+    }
+    "#,
+    expect![@r#"
+      [
+        Scope {
+          range: 0..51,
+          declarations: {
+            "foo": Definition { pos: 9..12, name: "foo", kind: Local(Def) }
+          }
+        }
+        Scope {
+          range: 23..50,
+          declarations: {
+            "a": Definition { pos: 13..14, name: "a", kind: Local(Parameter) }
+            "b": Definition { pos: 35..36, name: "b", kind: Local(Val) }
+          }
+        }
+      ]
+    "#],
+  );
+}
+
+#[test]
+fn fun_def() {
+  defs_at(
+    r#"
+    def foo(a: Int) = 3
+    @@
+    "#,
+    expect![@r#"
+      [
+        Definition { pos: 9..12, name: "foo", kind: Local(Def) }
+      ]
+    "#],
+  );
+
+  defs_at(
+    r#"
+    def foo(a: Int) = @@a
+    "#,
+    expect![@r#"
+      [
+        Definition { pos: 13..14, name: "a", kind: Local(Parameter) }
+        Definition { pos: 9..12, name: "foo", kind: Local(Def) }
+      ]
+    "#],
+  );
+
+  defs_at(
+    r#"
+    def foo(a: Int) = a@@
+    "#,
+    expect![@r#"
+      [
+        Definition { pos: 13..14, name: "a", kind: Local(Parameter) }
+        Definition { pos: 9..12, name: "foo", kind: Local(Def) }
+      ]
+    "#],
+  );
+}

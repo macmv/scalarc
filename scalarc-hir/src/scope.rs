@@ -42,7 +42,9 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   let mut defs = vec![];
 
   // Find the last (ie, smallest) scope that contains the given span.
-  let Some(innermost) = scopes.iter().rev().find(|(_, scope)| scope.visible.contains(pos)) else {
+  let Some(innermost) =
+    scopes.iter().rev().find(|(_, scope)| scope.visible.contains_inclusive(pos))
+  else {
     return vec![];
   };
 
@@ -152,7 +154,6 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
             next_pass.push((vec![node], id, visible));
           }
           SyntaxKind::CLASS_DEF => {
-            info!("got class def");
             let n = scalarc_syntax::ast::ClassDef::cast(node.clone()).unwrap();
 
             // Walk one level deeper manually, so that parameters and defs in the body are
@@ -162,6 +163,18 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
 
             next_pass.push((
               vec![params.syntax().clone(), body.syntax().clone()],
+              id,
+              body.syntax().text_range(),
+            ));
+          }
+          SyntaxKind::FUN_DEF => {
+            let n = scalarc_syntax::ast::FunDef::cast(node.clone()).unwrap();
+
+            let Some(sig) = n.fun_sig() else { continue };
+            let Some(body) = n.expr() else { continue };
+
+            next_pass.push((
+              vec![sig.syntax().clone(), body.syntax().clone()],
               id,
               body.syntax().text_range(),
             ));
@@ -210,6 +223,42 @@ fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
         }
       }
 
+      SyntaxKind::FUN_DEF => {
+        let f = scalarc_syntax::ast::FunDef::cast(n.clone()).unwrap();
+
+        if let Some(sig) = f.fun_sig() {
+          println!("got sig {sig:#?}");
+          if let Some(id) = sig.id_token() {
+            declarations.push((
+              id.text().into(),
+              Definition {
+                pos:  FileRange { file: file_id, range: id.text_range() },
+                name: id.text().into(),
+                kind: DefinitionKind::Local(LocalDefinition::Def),
+              },
+            ));
+          }
+        }
+      }
+
+      SyntaxKind::FUN_PARAMS => {
+        let params = scalarc_syntax::ast::FunParams::cast(n.clone()).unwrap();
+
+        for param in params.fun_params() {
+          if let Some(id) = param.id_token() {
+            declarations.push((
+              id.text().into(),
+              Definition {
+                pos:  FileRange { file: file_id, range: id.text_range() },
+                name: id.text().into(),
+                kind: DefinitionKind::Local(LocalDefinition::Parameter),
+              },
+            ));
+          }
+        }
+      }
+
+      // FIXME: Should be `CLASS_PARAMS`.
       SyntaxKind::FUN_PARAM => {
         info!("found fun param {n:#?}");
         let n = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
