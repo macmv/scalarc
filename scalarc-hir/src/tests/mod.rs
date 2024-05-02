@@ -3,6 +3,7 @@ use std::{fmt, sync::Mutex};
 
 mod incremental;
 mod scope;
+mod types;
 
 #[salsa::database(scalarc_source::SourceDatabaseStorage, crate::HirDatabaseStorage)]
 pub(crate) struct TestDB {
@@ -25,6 +26,13 @@ impl salsa::Database for TestDB {
 
 impl fmt::Debug for TestDB {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { f.debug_struct("TestDB").finish() }
+}
+
+fn new_db(content: &str) -> TestDB {
+  let mut db = TestDB::default();
+  let file = FileId::temp_new();
+  db.set_file_text(file, content.into());
+  db
 }
 
 impl TestDB {

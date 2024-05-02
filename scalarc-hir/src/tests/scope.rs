@@ -6,14 +6,7 @@ use scalarc_source::{FileId, SourceDatabase};
 use scalarc_syntax::{TextRange, TextSize};
 use scalarc_test::{expect, Expect};
 
-use super::TestDB;
-
-fn new_db(content: &str) -> TestDB {
-  let mut db = TestDB::default();
-  let file = FileId::temp_new();
-  db.set_file_text(file, content.into());
-  db
-}
+use super::{new_db, TestDB};
 
 fn scopes_of(src: &str, expected: Expect) {
   let db = new_db(src);

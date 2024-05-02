@@ -15,6 +15,9 @@ extern crate log;
 pub mod analysis;
 pub mod scope;
 pub mod tree;
+pub mod types;
+
+pub use types::Type;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefinitionMap {
@@ -88,6 +91,9 @@ pub trait HirDatabase: SourceDatabase {
   fn defs_at_index(&self, file: FileId, index: TextSize) -> Vec<Definition>;
   #[salsa::invoke(scope::references_to)]
   fn references_to(&self, file: FileId, index: TextSize) -> Vec<Reference>;
+
+  #[salsa::invoke(types::type_at)]
+  fn type_at(&self, file: FileId, index: TextSize) -> Option<Type>;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {
