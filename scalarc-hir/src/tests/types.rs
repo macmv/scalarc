@@ -29,3 +29,14 @@ fn simple_type_at() {
 
   type_at("@@ 3", expect![@"no type"]);
 }
+
+#[test]
+fn type_of_val() {
+  type_at(
+    r#"
+    val foo = 2
+    foo@@
+    "#,
+    expect![@"scala.Int"],
+  );
+}

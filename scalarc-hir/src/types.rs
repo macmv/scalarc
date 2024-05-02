@@ -49,7 +49,14 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     T![ident] => {
       let def = db.def_at_index(file_id, pos)?;
 
-      Some(Type { path: Path { elems: vec![def.name] } })
+      let node = def.node.to_node(&ast.syntax_node());
+
+      match node.kind() {
+        SyntaxKind::VAL_DEF => {
+          return db.type_at(file_id, node.text_range().end());
+        }
+        _ => None,
+      }
     }
 
     SyntaxKind::INT_LIT_KW => Some(Type::int()),
