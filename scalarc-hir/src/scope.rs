@@ -135,7 +135,7 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
 
       let mut scope = Scope { parent, visible, declarations: vec![] };
       for item in items.iter() {
-        scope.declarations.extend(single_scope(file_id, &item, visible).declarations);
+        scope.declarations.extend(definitions_of(file_id, &item));
       }
       let id = if !scope.is_empty() { Some(scopes.alloc(scope)) } else { parent };
 
@@ -189,8 +189,8 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
   scopes
 }
 
-fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
-  let mut declarations = vec![];
+fn definitions_of(file_id: FileId, n: &SyntaxNode) -> Vec<(String, Definition)> {
+  let mut definitions = vec![];
 
   info!("checking children of {n:?}");
   for n in n.children() {
@@ -198,7 +198,7 @@ fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
       SyntaxKind::VAL_DEF => {
         let n = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
         if let Some(id) = n.id_token() {
-          declarations.push((
+          definitions.push((
             id.text().into(),
             Definition {
               pos:  FileRange { file: file_id, range: id.text_range() },
@@ -212,7 +212,7 @@ fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
       SyntaxKind::CLASS_DEF => {
         let n = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
         if let Some(id) = n.id_token() {
-          declarations.push((
+          definitions.push((
             id.text().into(),
             Definition {
               pos:  FileRange { file: file_id, range: id.text_range() },
@@ -228,7 +228,7 @@ fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
 
         if let Some(sig) = f.fun_sig() {
           if let Some(id) = sig.id_token() {
-            declarations.push((
+            definitions.push((
               id.text().into(),
               Definition {
                 pos:  FileRange { file: file_id, range: id.text_range() },
@@ -245,7 +245,7 @@ fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
 
         for param in params.fun_params() {
           if let Some(id) = param.id_token() {
-            declarations.push((
+            definitions.push((
               id.text().into(),
               Definition {
                 pos:  FileRange { file: file_id, range: id.text_range() },
@@ -262,7 +262,7 @@ fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
         info!("found fun param {n:#?}");
         let n = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
         if let Some(id) = n.id_token() {
-          declarations.push((
+          definitions.push((
             id.text().into(),
             Definition {
               pos:  FileRange { file: file_id, range: id.text_range() },
@@ -277,5 +277,5 @@ fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
     }
   }
 
-  Scope { parent: None, visible, declarations }
+  definitions
 }
