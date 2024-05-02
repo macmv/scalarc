@@ -177,9 +177,6 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
               body.syntax().text_range(),
             ));
           }
-          SyntaxKind::FUN_PARAMS => {
-            next_pass.push((vec![node], id, parent_visible));
-          }
           _ => continue,
         };
       }
