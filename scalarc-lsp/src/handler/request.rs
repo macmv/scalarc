@@ -138,6 +138,35 @@ pub fn handle_document_highlight(
   }
 }
 
+pub fn handle_hover(
+  snap: GlobalStateSnapshot,
+  params: lsp_types::HoverParams,
+) -> Result<Option<lsp_types::Hover>, Box<dyn Error>> {
+  let pos = file_position(&snap, params.text_document_position_params)?;
+  let line_index = snap.analysis.line_index(pos.file)?;
+  let def = snap.analysis.definition_for_name(pos)?;
+  let ty = snap.analysis.type_at(pos)?;
+
+  if let Some(ty) = ty {
+    let range = def.map(|d| {
+      let start = line_index.line_col(d.pos.range.start());
+      let end = line_index.line_col(d.pos.range.end());
+
+      let start = lsp_types::Position { line: start.line, character: start.col };
+      let end = lsp_types::Position { line: end.line, character: end.col };
+
+      lsp_types::Range { start, end }
+    });
+
+    Ok(Some(lsp_types::Hover {
+      range,
+      contents: lsp_types::HoverContents::Scalar(lsp_types::MarkedString::String(ty.to_string())),
+    }))
+  } else {
+    Ok(None)
+  }
+}
+
 pub fn semantic_tokens_legend() -> lsp_types::SemanticTokensLegend {
   fn token_type(kind: HighlightKind) -> SemanticTokenType {
     match kind {

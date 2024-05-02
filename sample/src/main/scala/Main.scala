@@ -5,6 +5,8 @@ class Foo(a: String) {
 
   val b = 3
 
+  b
+
   def foo(c: Int) = {
     a + b + c
 

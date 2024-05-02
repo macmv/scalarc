@@ -27,6 +27,8 @@ pub fn server_capabilities() -> lsp_types::ServerCapabilities {
 
     document_highlight_provider: Some(lsp_types::OneOf::Left(true)),
 
+    hover_provider: Some(lsp_types::HoverProviderCapability::Simple(true)),
+
     ..Default::default()
   }
 }
