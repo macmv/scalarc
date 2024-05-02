@@ -1,5 +1,4 @@
 use rowan::{TextRange, TextSize};
-use std::ops::Range;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct SyntaxError {

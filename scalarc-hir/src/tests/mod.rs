@@ -1,4 +1,3 @@
-use crate::tree::Item;
 use scalarc_source::{FileId, SourceDatabase};
 use std::{fmt, sync::Mutex};
 

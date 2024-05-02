@@ -1,5 +1,5 @@
 use crate::{
-  tree::{FileArenas, Item, Name},
+  tree::{FileArenas, Name},
   Path,
 };
 use scalarc_source::FileId;
