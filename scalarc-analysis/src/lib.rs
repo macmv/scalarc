@@ -19,7 +19,7 @@ use database::{LineIndexDatabase, RootDatabase};
 use highlight::Highlight;
 use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
-use scalarc_hir::{Definition, FileLocation, HirDatabase};
+use scalarc_hir::{Definition, FileLocation, HirDatabase, Reference};
 use scalarc_source::{FileId, SourceDatabase, Workspace};
 
 pub struct AnalysisHost {
@@ -100,6 +100,10 @@ impl Analysis {
 
   pub fn definition_for_name(&self, pos: FileLocation) -> Cancellable<Option<Definition>> {
     self.with_db(|db| db.def_at_index(pos.file, pos.index))
+  }
+
+  pub fn references_for_name(&self, pos: FileLocation) -> Cancellable<Vec<Reference>> {
+    self.with_db(|db| db.references_to(pos.file, pos.index))
   }
 
   pub fn line_index(&self, file: FileId) -> Cancellable<Arc<LineIndex>> {

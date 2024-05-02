@@ -101,6 +101,7 @@ pub fn handle_document_highlight(
   let pos = file_position(&snap, params.text_document_position_params)?;
   let line_index = snap.analysis.line_index(pos.file)?;
   let definition = snap.analysis.definition_for_name(pos)?;
+  let refs = snap.analysis.references_for_name(pos)?;
 
   if let Some(def) = definition {
     if def.pos.file != pos.file {
@@ -113,10 +114,25 @@ pub fn handle_document_highlight(
     let start = lsp_types::Position { line: start.line, character: start.col };
     let end = lsp_types::Position { line: end.line, character: end.col };
 
-    Ok(Some(vec![lsp_types::DocumentHighlight {
+    let def_highlight = lsp_types::DocumentHighlight {
       range: lsp_types::Range { start, end },
       kind:  Some(lsp_types::DocumentHighlightKind::WRITE),
-    }]))
+    };
+
+    let refs_highlight = refs.into_iter().map(|r| {
+      let start = line_index.line_col(r.pos.range.start());
+      let end = line_index.line_col(r.pos.range.end());
+
+      let start = lsp_types::Position { line: start.line, character: start.col };
+      let end = lsp_types::Position { line: end.line, character: end.col };
+
+      lsp_types::DocumentHighlight {
+        range: lsp_types::Range { start, end },
+        kind:  Some(lsp_types::DocumentHighlightKind::READ),
+      }
+    });
+
+    Ok(Some([def_highlight].into_iter().chain(refs_highlight).collect()))
   } else {
     Ok(None)
   }
