@@ -124,7 +124,6 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
   let mut scopes = Arena::new();
 
   let tree = ast.tree();
-  dbg!(&tree);
 
   let mut this_pass = vec![(vec![tree.syntax().clone()], None, tree.syntax().text_range())];
   let mut next_pass = vec![];
