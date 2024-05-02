@@ -3,7 +3,7 @@ use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{AstNode, SyntaxKind},
   node::SyntaxNode,
-  TextRange, TextSize, T,
+  SyntaxNodePtr, TextRange, TextSize, T,
 };
 
 use crate::{
@@ -25,6 +25,10 @@ pub struct Scope {
   /// the class. So `visible` will be the class body for the scope that class
   /// paramters define.
   pub visible: TextRange,
+
+  /// The roots of the scope. All definitions in the scope are children of these
+  /// nodes.
+  pub body: Vec<SyntaxNodePtr>,
 
   /// All the names declared by the scope.
   pub declarations: Vec<(String, Definition)>,
@@ -136,7 +140,12 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
   let mut next_pass = vec![];
   while !this_pass.is_empty() {
     for (items, parent, parent_visible) in this_pass.drain(..) {
-      let mut scope = Scope { parent, visible: parent_visible, declarations: vec![] };
+      let mut scope = Scope {
+        parent,
+        visible: parent_visible,
+        body: items.iter().map(|n| SyntaxNodePtr::new(&n)).collect(),
+        declarations: vec![],
+      };
       for item in items.iter() {
         scope.declarations.extend(definitions_of(file_id, &item));
       }
