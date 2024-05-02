@@ -129,7 +129,7 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
   let mut next_pass = vec![];
   while !this_pass.is_empty() {
     for (items, parent, visible) in this_pass.drain(..) {
-      println!("checking {items:?} visible at {visible:?}");
+      info!("checking {items:?} visible at {visible:?}");
 
       let mut scope = Scope { parent, visible, declarations: vec![] };
       for item in items.iter() {
@@ -152,7 +152,7 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
             next_pass.push((vec![node], id, visible));
           }
           SyntaxKind::CLASS_DEF => {
-            println!("got class def");
+            info!("got class def");
             let n = scalarc_syntax::ast::ClassDef::cast(node.clone()).unwrap();
 
             // Walk one level deeper manually, so that parameters and defs in the body are
@@ -179,7 +179,7 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
 fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
   let mut declarations = vec![];
 
-  println!("checking children of {n:?}");
+  info!("checking children of {n:?}");
   for n in n.children() {
     match n.kind() {
       SyntaxKind::VAL_DEF => {
@@ -211,7 +211,7 @@ fn single_scope(file_id: FileId, n: &SyntaxNode, visible: TextRange) -> Scope {
       }
 
       SyntaxKind::FUN_PARAM => {
-        println!("found fun param {n:#?}");
+        info!("found fun param {n:#?}");
         let n = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
         if let Some(id) = n.id_token() {
           declarations.push((
