@@ -130,10 +130,8 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
   let mut this_pass = vec![(vec![tree.syntax().clone()], None, tree.syntax().text_range())];
   let mut next_pass = vec![];
   while !this_pass.is_empty() {
-    for (items, parent, visible) in this_pass.drain(..) {
-      info!("checking {items:?} visible at {visible:?}");
-
-      let mut scope = Scope { parent, visible, declarations: vec![] };
+    for (items, parent, parent_visible) in this_pass.drain(..) {
+      let mut scope = Scope { parent, visible: parent_visible, declarations: vec![] };
       for item in items.iter() {
         scope.declarations.extend(definitions_of(file_id, &item));
       }
@@ -174,10 +172,13 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
             let Some(body) = n.expr() else { continue };
 
             next_pass.push((
-              vec![sig.syntax().clone(), body.syntax().clone()],
+              sig.syntax().children().chain([body.syntax().clone()]).collect(),
               id,
               body.syntax().text_range(),
             ));
+          }
+          SyntaxKind::FUN_PARAMS => {
+            next_pass.push((vec![node], id, parent_visible));
           }
           _ => continue,
         };
@@ -189,37 +190,38 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
   scopes
 }
 
-fn definitions_of(file_id: FileId, n: &SyntaxNode) -> Vec<(String, Definition)> {
-  let mut definitions = vec![];
-
-  info!("checking children of {n:?}");
-  for n in n.children() {
+fn definitions_of(file_id: FileId, n: &SyntaxNode) -> impl Iterator<Item = (String, Definition)> {
+  n.children().flat_map(move |n| {
     match n.kind() {
       SyntaxKind::VAL_DEF => {
         let n = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
         if let Some(id) = n.id_token() {
-          definitions.push((
+          Some((
             id.text().into(),
             Definition {
               pos:  FileRange { file: file_id, range: id.text_range() },
               name: id.text().into(),
               kind: DefinitionKind::Local(LocalDefinition::Val),
             },
-          ));
+          ))
+        } else {
+          None
         }
       }
 
       SyntaxKind::CLASS_DEF => {
         let n = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
         if let Some(id) = n.id_token() {
-          definitions.push((
+          Some((
             id.text().into(),
             Definition {
               pos:  FileRange { file: file_id, range: id.text_range() },
               name: id.text().into(),
               kind: DefinitionKind::Global(GlobalDefinition::Class),
             },
-          ));
+          ))
+        } else {
+          None
         }
       }
 
@@ -228,54 +230,41 @@ fn definitions_of(file_id: FileId, n: &SyntaxNode) -> Vec<(String, Definition)> 
 
         if let Some(sig) = f.fun_sig() {
           if let Some(id) = sig.id_token() {
-            definitions.push((
+            Some((
               id.text().into(),
               Definition {
                 pos:  FileRange { file: file_id, range: id.text_range() },
                 name: id.text().into(),
                 kind: DefinitionKind::Local(LocalDefinition::Def),
               },
-            ));
+            ))
+          } else {
+            None
           }
+        } else {
+          None
         }
       }
 
-      SyntaxKind::FUN_PARAMS => {
-        let params = scalarc_syntax::ast::FunParams::cast(n.clone()).unwrap();
-
-        for param in params.fun_params() {
-          if let Some(id) = param.id_token() {
-            definitions.push((
-              id.text().into(),
-              Definition {
-                pos:  FileRange { file: file_id, range: id.text_range() },
-                name: id.text().into(),
-                kind: DefinitionKind::Local(LocalDefinition::Parameter),
-              },
-            ));
-          }
-        }
-      }
-
-      // FIXME: Should be `CLASS_PARAMS`.
+      // TODO: This is `FUN_PARAM` for both functions and classes right now. It should be updated
+      // to `CLASS_PARAM`, as those can define `val`s on the class.
       SyntaxKind::FUN_PARAM => {
-        info!("found fun param {n:#?}");
         let n = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
         if let Some(id) = n.id_token() {
-          definitions.push((
+          Some((
             id.text().into(),
             Definition {
               pos:  FileRange { file: file_id, range: id.text_range() },
               name: id.text().into(),
               kind: DefinitionKind::Local(LocalDefinition::Parameter),
             },
-          ));
+          ))
+        } else {
+          None
         }
       }
 
-      _ => {}
+      _ => None,
     }
-  }
-
-  definitions
+  })
 }
