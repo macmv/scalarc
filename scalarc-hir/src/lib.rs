@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use la_arena::{Arena, RawIdx};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
-use scalarc_syntax::{ast::Item, TextRange, TextSize};
+use scalarc_syntax::{
+  ast::{AstNode, Item},
+  SyntaxNodePtr, TextRange, TextSize,
+};
 use scope::{FileScopes, Scope, ScopeId};
 use tree::Name;
 
@@ -42,6 +45,9 @@ pub struct Definition {
   pub name:  Name,
   pub scope: ScopeId,
   pub kind:  DefinitionKind,
+
+  /// This is a pointer to the definition node.
+  pub node: SyntaxNodePtr,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -133,6 +139,8 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
             name:  name.text().into(),
             scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
             kind:  DefinitionKind::Global(GlobalDefinition::Object),
+
+            node: SyntaxNodePtr::new(c.syntax()),
           },
         ))
       }
@@ -146,6 +154,8 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
             name:  name.text().into(),
             scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
             kind:  DefinitionKind::Global(GlobalDefinition::Class),
+
+            node: SyntaxNodePtr::new(c.syntax()),
           },
         ))
       }

@@ -221,8 +221,8 @@ fn definitions_of(
   n.children().flat_map(move |n| {
     match n.kind() {
       SyntaxKind::VAL_DEF => {
-        let n = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
-        if let Some(id) = n.id_token() {
+        let v = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
+        if let Some(id) = v.id_token() {
           Some((
             id.text().into(),
             Definition {
@@ -230,6 +230,8 @@ fn definitions_of(
               name: id.text().into(),
               scope,
               kind: DefinitionKind::Local(LocalDefinition::Val),
+
+              node: SyntaxNodePtr::new(&n),
             },
           ))
         } else {
@@ -238,8 +240,8 @@ fn definitions_of(
       }
 
       SyntaxKind::CLASS_DEF => {
-        let n = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
-        if let Some(id) = n.id_token() {
+        let c = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
+        if let Some(id) = c.id_token() {
           Some((
             id.text().into(),
             Definition {
@@ -247,6 +249,8 @@ fn definitions_of(
               name: id.text().into(),
               scope,
               kind: DefinitionKind::Global(GlobalDefinition::Class),
+
+              node: SyntaxNodePtr::new(&n),
             },
           ))
         } else {
@@ -266,6 +270,8 @@ fn definitions_of(
                 name: id.text().into(),
                 scope,
                 kind: DefinitionKind::Local(LocalDefinition::Def),
+
+                node: SyntaxNodePtr::new(&n),
               },
             ))
           } else {
@@ -279,8 +285,8 @@ fn definitions_of(
       // TODO: This is `FUN_PARAM` for both functions and classes right now. It should be updated
       // to `CLASS_PARAM`, as those can define `val`s on the class.
       SyntaxKind::FUN_PARAM => {
-        let n = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
-        if let Some(id) = n.id_token() {
+        let p = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
+        if let Some(id) = p.id_token() {
           Some((
             id.text().into(),
             Definition {
@@ -288,6 +294,8 @@ fn definitions_of(
               name: id.text().into(),
               scope,
               kind: DefinitionKind::Local(LocalDefinition::Parameter),
+
+              node: SyntaxNodePtr::new(&n),
             },
           ))
         } else {
