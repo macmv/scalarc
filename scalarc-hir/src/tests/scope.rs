@@ -3,7 +3,7 @@ use std::fmt;
 use crate::{scope::Scope, Definition, HirDatabase};
 use la_arena::Arena;
 use scalarc_source::{FileId, SourceDatabase};
-use scalarc_syntax::TextSize;
+use scalarc_syntax::{TextRange, TextSize};
 use scalarc_test::{expect, Expect};
 
 use super::TestDB;
@@ -37,6 +37,22 @@ fn def_at(src: &str, expected: Expect) {
   let db = new_db(&src);
   let actual = db.def_at_index(FileId::temp_new(), TextSize::from(cursor as u32));
   expected.assert_eq(&DebugDefOpt(&actual).to_string());
+}
+
+fn refs_to(src: &str, expected: Expect) {
+  let cursor = src.find("@@").unwrap();
+  let src = format!("{}{}", &src[..cursor], &src[cursor + 2..]);
+
+  let db = new_db(&src);
+  let actual = db.references_to(FileId::temp_new(), TextSize::from(cursor as u32));
+
+  let mut actual_src = src.to_string();
+  for r in actual.iter().rev() {
+    actual_src.insert_str(r.end().into(), "@");
+    actual_src.insert_str(r.start().into(), "@");
+  }
+
+  expected.assert_eq(&actual_src.trim_start_matches(|c| c == '\n'));
 }
 
 struct DebugScopes<'a>(&'a Arena<Scope>);
@@ -88,6 +104,17 @@ impl fmt::Display for DebugDef<'_> {
     write!(f, "name: {:?}, ", def.name.as_str())?;
     write!(f, "kind: {:?} ", def.kind)?;
     writeln!(f, "}}")
+  }
+}
+
+struct DebugReferences<'a>(&'a Vec<TextRange>);
+impl fmt::Display for DebugReferences<'_> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "[\n")?;
+    for r in self.0.iter() {
+      writeln!(f, "  {:?},", r)?;
+    }
+    write!(f, "]\n")
   }
 }
 
@@ -415,6 +442,34 @@ fn nested_scopes() {
           }
         }
       ]
+    "#],
+  );
+}
+
+#[test]
+fn refs_to_val() {
+  refs_to(
+    r#"
+    val a@@ = 3
+    a
+    a + b
+    println(a)
+
+    if (a > 3) {
+      val a = 4
+      a
+    }
+    "#,
+    expect![@r#"
+          val a = 3
+          @a@
+          @a@ + b
+          println(@a@)
+
+          if (@a@ > 3) {
+            val a = 4
+            @a@
+          }
     "#],
   );
 }

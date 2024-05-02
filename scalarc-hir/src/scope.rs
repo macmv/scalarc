@@ -1,3 +1,5 @@
+use std::mem;
+
 use la_arena::{Arena, Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
@@ -296,4 +298,48 @@ fn definitions_of(
       _ => None,
     }
   })
+}
+
+pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<TextRange> {
+  let ast = db.parse(file_id);
+  let tree = ast.tree();
+
+  let file_scopes = db.scopes_of(file_id);
+
+  let Some(def) = db.def_at_index(file_id, pos) else { return vec![] };
+
+  let scope = &file_scopes.scopes[def.scope];
+
+  let mut references = vec![];
+
+  let mut this_pass: Vec<_> = scope.body.iter().map(|ptr| ptr.to_node(tree.syntax())).collect();
+  let mut next_pass = vec![];
+
+  while !this_pass.is_empty() {
+    for node in this_pass.drain(..) {
+      for child in node.children() {
+        match child.kind() {
+          SyntaxKind::IDENT_EXPR => {
+            if child.text() == def.name.as_str() {
+              references.push(child.text_range())
+            }
+          }
+
+          SyntaxKind::BLOCK_EXPR
+          | SyntaxKind::EXPR_ITEM
+          | SyntaxKind::INFIX_EXPR
+          | SyntaxKind::CALL_EXPR
+          | SyntaxKind::PAREN_ARGUMENTS
+          | SyntaxKind::IF_EXPR => {
+            next_pass.push(child);
+          }
+
+          _ => {}
+        }
+      }
+    }
+    mem::swap(&mut this_pass, &mut next_pass);
+  }
+
+  references
 }

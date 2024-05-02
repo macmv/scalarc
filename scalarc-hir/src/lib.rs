@@ -81,6 +81,8 @@ pub trait HirDatabase: SourceDatabase {
   fn def_at_index(&self, file: FileId, index: TextSize) -> Option<Definition>;
   #[salsa::invoke(scope::defs_at_index)]
   fn defs_at_index(&self, file: FileId, index: TextSize) -> Vec<Definition>;
+  #[salsa::invoke(scope::references_to)]
+  fn references_to(&self, file: FileId, index: TextSize) -> Vec<TextRange>;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {
