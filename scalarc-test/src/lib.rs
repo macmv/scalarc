@@ -540,9 +540,7 @@ fn format_patch(desired_indent: Option<usize>, patch: &str) -> String {
   let is_multiline = patch.contains('\n');
 
   let mut buf = String::new();
-  if matches!(lit_kind, StrLitKind::Raw(_)) {
-    buf.push('@');
-  }
+  buf.push('@');
   lit_kind.write_start(&mut buf).unwrap();
   if is_multiline {
     buf.push('\n');
