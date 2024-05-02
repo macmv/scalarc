@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use la_arena::Arena;
+use la_arena::{Arena, RawIdx};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{ast::Item, TextRange, TextSize};
-use scope::{FileScopes, Scope};
+use scope::{FileScopes, Scope, ScopeId};
 use tree::Name;
 
 #[cfg(test)]
@@ -35,9 +35,10 @@ pub struct FileRange {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Definition {
-  pub pos:  FileRange,
-  pub name: Name,
-  pub kind: DefinitionKind,
+  pub pos:   FileRange,
+  pub name:  Name,
+  pub scope: ScopeId,
+  pub kind:  DefinitionKind,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -115,9 +116,10 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
         Some((
           Path { elems: vec![name.text().into()] },
           Definition {
-            pos:  FileRange { file, range: name.text_range() },
-            name: name.text().into(),
-            kind: DefinitionKind::Global(GlobalDefinition::Object),
+            pos:   FileRange { file, range: name.text_range() },
+            name:  name.text().into(),
+            scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
+            kind:  DefinitionKind::Global(GlobalDefinition::Object),
           },
         ))
       }
@@ -127,9 +129,10 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
         Some((
           Path { elems: vec![name.text().into()] },
           Definition {
-            pos:  FileRange { file, range: name.text_range() },
-            name: name.text().into(),
-            kind: DefinitionKind::Global(GlobalDefinition::Class),
+            pos:   FileRange { file, range: name.text_range() },
+            name:  name.text().into(),
+            scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
+            kind:  DefinitionKind::Global(GlobalDefinition::Class),
           },
         ))
       }

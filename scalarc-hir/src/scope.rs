@@ -1,4 +1,4 @@
-use la_arena::{Arena, Idx};
+use la_arena::{Arena, Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{AstNode, SyntaxKind},
@@ -146,8 +146,9 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
         body: items.iter().map(|n| SyntaxNodePtr::new(&n)).collect(),
         declarations: vec![],
       };
+      let scope_id = Idx::from_raw(RawIdx::from_u32(scopes.len() as u32));
       for item in items.iter() {
-        scope.declarations.extend(definitions_of(file_id, &item));
+        scope.declarations.extend(definitions_of(file_id, &item, scope_id));
       }
       let id = if !scope.is_empty() { Some(scopes.alloc(scope)) } else { parent };
 
@@ -210,7 +211,11 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
   FileScopes { scopes }
 }
 
-fn definitions_of(file_id: FileId, n: &SyntaxNode) -> impl Iterator<Item = (String, Definition)> {
+fn definitions_of(
+  file_id: FileId,
+  n: &SyntaxNode,
+  scope: ScopeId,
+) -> impl Iterator<Item = (String, Definition)> {
   n.children().flat_map(move |n| {
     match n.kind() {
       SyntaxKind::VAL_DEF => {
@@ -219,8 +224,9 @@ fn definitions_of(file_id: FileId, n: &SyntaxNode) -> impl Iterator<Item = (Stri
           Some((
             id.text().into(),
             Definition {
-              pos:  FileRange { file: file_id, range: id.text_range() },
+              pos: FileRange { file: file_id, range: id.text_range() },
               name: id.text().into(),
+              scope,
               kind: DefinitionKind::Local(LocalDefinition::Val),
             },
           ))
@@ -235,8 +241,9 @@ fn definitions_of(file_id: FileId, n: &SyntaxNode) -> impl Iterator<Item = (Stri
           Some((
             id.text().into(),
             Definition {
-              pos:  FileRange { file: file_id, range: id.text_range() },
+              pos: FileRange { file: file_id, range: id.text_range() },
               name: id.text().into(),
+              scope,
               kind: DefinitionKind::Global(GlobalDefinition::Class),
             },
           ))
@@ -253,8 +260,9 @@ fn definitions_of(file_id: FileId, n: &SyntaxNode) -> impl Iterator<Item = (Stri
             Some((
               id.text().into(),
               Definition {
-                pos:  FileRange { file: file_id, range: id.text_range() },
+                pos: FileRange { file: file_id, range: id.text_range() },
                 name: id.text().into(),
+                scope,
                 kind: DefinitionKind::Local(LocalDefinition::Def),
               },
             ))
@@ -274,8 +282,9 @@ fn definitions_of(file_id: FileId, n: &SyntaxNode) -> impl Iterator<Item = (Stri
           Some((
             id.text().into(),
             Definition {
-              pos:  FileRange { file: file_id, range: id.text_range() },
+              pos: FileRange { file: file_id, range: id.text_range() },
               name: id.text().into(),
+              scope,
               kind: DefinitionKind::Local(LocalDefinition::Parameter),
             },
           ))
