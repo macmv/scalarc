@@ -336,3 +336,85 @@ fn fun_def() {
     "#],
   );
 }
+
+#[test]
+fn nested_scopes() {
+  scopes_of(
+    r#"
+    val a = 3
+
+    {
+      val b = 3
+    }
+
+    if (a == 4) {
+      val c = 3
+    } else if (a < 0) {
+      val d = 5
+    }
+
+    a match {
+      case 3 =>
+        val e = 8
+        e
+      case _ => println(a)
+    }
+
+    println {
+      val g = 5
+      g
+    }
+
+    println({
+      val h = 6
+      h
+    })
+    "#,
+    expect![@r#"
+      [
+        Scope {
+          range: 0..308,
+          declarations: {
+            "a": Definition { pos: 9..10, name: "a", kind: Local(Val) }
+          }
+        }
+        Scope {
+          range: 20..43,
+          declarations: {
+            "b": Definition { pos: 32..33, name: "b", kind: Local(Val) }
+          }
+        }
+        Scope {
+          range: 61..84,
+          declarations: {
+            "c": Definition { pos: 73..74, name: "c", kind: Local(Val) }
+          }
+        }
+        Scope {
+          range: 230..261,
+          declarations: {
+            "g": Definition { pos: 242..243, name: "g", kind: Local(Val) }
+          }
+        }
+        Scope {
+          range: 101..124,
+          declarations: {
+            "d": Definition { pos: 113..114, name: "d", kind: Local(Val) }
+          }
+        }
+        Scope {
+          range: 164..184,
+          declarations: {
+            "e": Definition { pos: 168..169, name: "e", kind: Local(Val) }
+          }
+        }
+        Scope {
+          range: 275..306,
+          declarations: {
+            "h": Definition { pos: 287..288, name: "h", kind: Local(Val) }
+          }
+        }
+      ]
+    "#],
+  );
+}

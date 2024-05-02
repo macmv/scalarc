@@ -148,9 +148,6 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
 
             next_pass.push((vec![expr.syntax().clone()], id, visible));
           }
-          SyntaxKind::BLOCK_EXPR => {
-            next_pass.push((vec![node], id, visible));
-          }
           SyntaxKind::CLASS_DEF => {
             let n = scalarc_syntax::ast::ClassDef::cast(node.clone()).unwrap();
 
@@ -176,6 +173,18 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> Arena<Scope> {
               id,
               body.syntax().text_range(),
             ));
+          }
+          SyntaxKind::EXPR_ITEM
+          | SyntaxKind::BLOCK
+          | SyntaxKind::BLOCK_EXPR
+          | SyntaxKind::IF_EXPR
+          | SyntaxKind::MATCH_EXPR
+          | SyntaxKind::CASE_ITEM
+          | SyntaxKind::CALL_EXPR
+          | SyntaxKind::PAREN_ARGUMENTS
+          | SyntaxKind::BLOCK_ARGUMENTS
+          | SyntaxKind::SPREAD_ARGUMENTS => {
+            next_pass.push((vec![node], id, visible));
           }
           _ => continue,
         };
