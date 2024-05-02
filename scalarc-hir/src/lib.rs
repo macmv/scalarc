@@ -75,6 +75,8 @@ pub trait HirDatabase: SourceDatabase {
 
   #[salsa::invoke(scope::scopes_of)]
   fn scopes_of(&self, file: FileId) -> Arena<Scope>;
+  #[salsa::invoke(scope::defs_at_index)]
+  fn defs_at_index(&self, file: FileId, index: TextSize) -> Vec<Definition>;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {

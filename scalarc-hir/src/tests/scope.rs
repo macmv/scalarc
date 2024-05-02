@@ -1,8 +1,9 @@
 use std::fmt;
 
-use crate::{scope::Scope, HirDatabase};
+use crate::{scope::Scope, Definition, HirDatabase};
 use la_arena::Arena;
 use scalarc_source::{FileId, SourceDatabase};
+use scalarc_syntax::TextSize;
 use scalarc_test::{expect, Expect};
 
 use super::TestDB;
@@ -18,6 +19,15 @@ fn scopes_of(src: &str, expected: Expect) {
   let db = new_db(src);
   let actual = db.scopes_of(FileId::temp_new());
   expected.assert_eq(&DebugScopes(&actual).to_string());
+}
+
+fn defs_at(src: &str, expected: Expect) {
+  let cursor = src.find("@@").unwrap();
+  let src = format!("{}{}", &src[..cursor], &src[cursor + 2..]);
+
+  let db = new_db(&src);
+  let actual = db.defs_at_index(FileId::temp_new(), TextSize::from(cursor as u32));
+  expected.assert_eq(&DebugDefList(&actual).to_string());
 }
 
 struct DebugScopes<'a>(&'a Arena<Scope>);
@@ -37,6 +47,20 @@ impl fmt::Display for DebugScopes<'_> {
       }
       writeln!(f, "    }}")?;
       writeln!(f, "  }}")?;
+    }
+    write!(f, "]\n")
+  }
+}
+
+struct DebugDefList<'a>(&'a Vec<Definition>);
+impl fmt::Display for DebugDefList<'_> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "[\n")?;
+    for def in self.0.iter() {
+      write!(f, "  Definition {{ ")?;
+      write!(f, "pos: {:?}, ", def.pos.range)?;
+      write!(f, "kind: {:?} ", def.kind)?;
+      writeln!(f, "}}")?;
     }
     write!(f, "]\n")
   }
@@ -90,6 +114,28 @@ fn scopes_of_example() {
             "b": Definition { pos: 59..60, kind: Local(Val) }
           }
         }
+      ]
+    "#],
+  );
+}
+
+#[test]
+fn definitions_at() {
+  defs_at(
+    r#"
+    val foo = 3
+    val bar = {
+      val a = 6
+      @@
+      val b = 7
+    }
+    val baz = 5
+    "#,
+    expect![@r#"
+      [
+        Definition { pos: 43..44, kind: Local(Val) }
+        Definition { pos: 25..28, kind: Local(Val) }
+        Definition { pos: 9..12, kind: Local(Val) }
       ]
     "#],
   );
