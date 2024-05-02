@@ -84,10 +84,7 @@ impl Analysis {
   }
 
   pub fn highlight(&self, file: FileId) -> Cancellable<Highlight> {
-    self.with_db(|db| {
-      let ast = db.parse(file);
-      Highlight::from_ast(ast)
-    })
+    self.with_db(|db| Highlight::from_ast(db, file))
   }
 
   pub fn parse(

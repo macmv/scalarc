@@ -1,7 +1,7 @@
 //! Handles global state and the main loop of the server.
 
 use crossbeam_channel::{Receiver, Select, Sender};
-use lsp_server::RequestId;
+use lsp_server::{ErrorCode, RequestId};
 use parking_lot::RwLock;
 use scalarc_analysis::{Analysis, AnalysisHost};
 use scalarc_bsp::{client::BspClient, types as bsp_types};
@@ -348,15 +348,25 @@ impl RequestDispatcher<'_> {
     // TODO: Dispatch this to a thread pool.
     let responder = self.global.response_sender.clone();
     let id = self.req.id.clone();
-    std::thread::spawn(move || {
-      let response = f(snapshot, params).unwrap();
-      responder
+    std::thread::spawn(move || match f(snapshot, params) {
+      Ok(r) => responder
         .send(lsp_server::Message::Response(lsp_server::Response {
           id,
-          result: Some(serde_json::to_value(response).unwrap()),
+          result: Some(serde_json::to_value(r).unwrap()),
           error: None,
         }))
-        .unwrap();
+        .unwrap(),
+      Err(_) => responder
+        .send(lsp_server::Message::Response(lsp_server::Response {
+          id,
+          result: None,
+          error: Some(lsp_server::ResponseError {
+            code:    ErrorCode::RequestCanceled as i32,
+            message: "request canceled".to_string(),
+            data:    None,
+          }),
+        }))
+        .unwrap(),
     });
 
     self

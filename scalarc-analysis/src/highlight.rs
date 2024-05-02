@@ -1,7 +1,9 @@
+use scalarc_hir::{DefinitionKind, GlobalDefinition, HirDatabase, LocalDefinition};
+use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode},
   node::SyntaxToken,
-  Parse, SourceFile, TextRange,
+  TextRange,
 };
 
 #[derive(Debug, Clone)]
@@ -21,6 +23,9 @@ pub struct HighlightToken {
 pub enum HighlightKind {
   /// Class names and references.
   Class,
+
+  /// Object names and references.
+  Object,
 
   /// Function calls and definitions.
   Function,
@@ -42,23 +47,18 @@ pub enum HighlightKind {
   Variable,
 }
 
-struct Highlighter {
-  // Stack of function scopes.
-  frames: Vec<usize>,
-  // Arguments in the current scope.
-  params: Vec<String>,
-
-  // Stack of block scopes.
-  local_frames: Vec<usize>,
-  // Locals in the current scope.
-  locals:       Vec<String>,
+struct Highlighter<'a> {
+  db:   &'a dyn HirDatabase,
+  file: FileId,
 
   hl: Highlight,
 }
 
 impl Highlight {
-  pub fn from_ast(ast: Parse<SourceFile>) -> Highlight {
-    let mut hl = Highlighter::new();
+  pub fn from_ast(db: &dyn HirDatabase, file: FileId) -> Highlight {
+    let mut hl = Highlighter::new(db, file);
+
+    let ast = db.parse(file);
 
     for item in ast.tree().items() {
       hl.visit_item(item);
@@ -68,30 +68,9 @@ impl Highlight {
   }
 }
 
-// FIXME: Replace with HIR
-impl Highlighter {
-  pub fn new() -> Self {
-    Highlighter {
-      frames:       vec![],
-      params:       vec![],
-      local_frames: vec![],
-      locals:       vec![],
-      hl:           Highlight { tokens: vec![] },
-    }
-  }
-
-  pub fn push(&mut self) { self.frames.push(self.params.len()); }
-
-  pub fn pop(&mut self) {
-    let idx = self.frames.pop().expect("empty stack");
-    self.params.truncate(idx);
-  }
-
-  pub fn push_block(&mut self) { self.local_frames.push(self.locals.len()); }
-
-  pub fn pop_block(&mut self) {
-    let idx = self.local_frames.pop().expect("empty stack");
-    self.locals.truncate(idx);
+impl<'a> Highlighter<'a> {
+  pub fn new(db: &'a dyn HirDatabase, file: FileId) -> Self {
+    Highlighter { db, file, hl: Highlight { tokens: vec![] } }
   }
 
   pub fn visit_item(&mut self, item: ast::Item) {
@@ -114,10 +93,6 @@ impl Highlighter {
         self.highlight_opt(d.id_token(), HighlightKind::Variable);
         self.highlight_opt(d.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
 
-        if let Some(name) = d.id_token() {
-          self.locals.push(name.text().to_string());
-        }
-
         if let Some(body) = d.expr() {
           self.visit_expr(body);
         }
@@ -126,17 +101,11 @@ impl Highlighter {
       ast::Item::FunDef(d) => {
         self.highlight_opt(d.def_token(), HighlightKind::Keyword);
 
-        self.push();
-
         if let Some(sig) = d.fun_sig() {
           self.highlight_opt(sig.id_token(), HighlightKind::Function);
 
           for params in sig.fun_paramss() {
             for param in params.fun_params() {
-              if let Some(name) = param.id_token() {
-                self.params.push(name.text().to_string());
-              }
-
               self.highlight_opt(param.id_token(), HighlightKind::Parameter);
               self.highlight_opt(param.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
             }
@@ -148,8 +117,6 @@ impl Highlighter {
         if let Some(body) = d.expr() {
           self.visit_expr(body);
         }
-
-        self.pop();
       }
       _ => {}
     }
@@ -160,16 +127,22 @@ impl Highlighter {
     match expr {
       ast::Expr::IdentExpr(id) => {
         if let Some(id) = id.id_token() {
-          let kind = if self.params.contains(&id.text().to_string()) {
-            Some(HighlightKind::Parameter)
-          } else if self.locals.contains(&id.text().to_string()) {
-            Some(HighlightKind::Variable)
-          } else {
-            None
-          };
+          // FIXME: This isn't particularly efficient. However, the scopes for the whole
+          // file will get cached, so its not all that bad.
+          let def = self.db.def_at_index(self.file, id.text_range().start());
 
-          if let Some(kind) = kind {
-            self.highlight(id.text_range(), kind);
+          if let Some(def) = def {
+            self.highlight(
+              id.text_range(),
+              match def.kind {
+                DefinitionKind::Local(LocalDefinition::Val) => HighlightKind::Variable,
+                DefinitionKind::Local(LocalDefinition::Var) => HighlightKind::Variable,
+                DefinitionKind::Local(LocalDefinition::Parameter) => HighlightKind::Parameter,
+                DefinitionKind::Local(LocalDefinition::Def) => HighlightKind::Function,
+                DefinitionKind::Global(GlobalDefinition::Class) => HighlightKind::Class,
+                DefinitionKind::Global(GlobalDefinition::Object) => HighlightKind::Object,
+              },
+            );
           }
         }
       }
@@ -177,11 +150,9 @@ impl Highlighter {
         self.highlight(lit.syntax().text_range(), HighlightKind::Number);
       }
       ast::Expr::BlockExpr(b) => {
-        self.push_block();
         for item in b.items() {
           self.visit_item(item);
         }
-        self.pop_block();
       }
       ast::Expr::InfixExpr(i) => {
         if let Some(lhs) = i.lhs() {
