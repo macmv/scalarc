@@ -19,7 +19,7 @@ object Main extends App {
 }
 
 class Foo(a: String) {
-  println("Hello, World!")
+  println("Hello, World!", a)
 
   val b = 3
 
@@ -27,7 +27,7 @@ class Foo(a: String) {
   b
 
   Foo
-  Bar
+  Main
 }
 
 val x = 3

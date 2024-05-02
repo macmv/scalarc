@@ -36,6 +36,9 @@ pub enum HighlightKind {
   /// Number literals.
   Number,
 
+  // String literals.
+  String,
+
   /// Parameters in function definitions, like the `x` in `def foo(x: Int)`.
   Parameter,
 
@@ -148,6 +151,9 @@ impl<'a> Highlighter<'a> {
       }
       ast::Expr::LitExpr(lit) => {
         self.highlight(lit.syntax().text_range(), HighlightKind::Number);
+      }
+      ast::Expr::DoubleQuotedString(d) => {
+        self.highlight(d.syntax().text_range(), HighlightKind::String);
       }
       ast::Expr::BlockExpr(b) => {
         for item in b.items() {
