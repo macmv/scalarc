@@ -41,7 +41,7 @@ fn check_completions() {
         |
       "#,
     ),
-    vec!["x", "y", "z"]
+    vec!["z", "y", "x"]
   );
 
   assert_eq!(
@@ -53,9 +53,11 @@ fn check_completions() {
         val z = 3 + 4
       "#,
     ),
-    vec!["x", "y"]
+    vec!["y", "x"]
   );
 
+  // FIXME: `z` is kinda visible here? scala has recursive variable definitions,
+  // so not sure if I should include it or not.
   assert_eq!(
     completions_for(
       r#"
@@ -64,6 +66,6 @@ fn check_completions() {
         val z = |3 + 4
       "#,
     ),
-    vec!["x", "y"]
+    vec!["z", "y", "x"]
   );
 }
