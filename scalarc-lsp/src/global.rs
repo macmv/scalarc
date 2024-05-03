@@ -37,6 +37,9 @@ pub struct GlobalState {
 
   response_sender:   Sender<lsp_server::Message>,
   response_receiver: Receiver<lsp_server::Message>,
+
+  pool_sender: Sender<Box<dyn FnOnce() + Send>>,
+  pool:        Vec<std::thread::JoinHandle<()>>,
 }
 
 pub(crate) struct GlobalStateSnapshot {
@@ -57,6 +60,19 @@ impl GlobalState {
     bsp_client: Option<BspClient>,
     workspace: Url,
   ) -> Self {
+    let (pool_tx, pool_rx) = crossbeam_channel::bounded::<Box<dyn FnOnce() + Send>>(0);
+
+    let pool = (0..16)
+      .map(|_| {
+        let rx = pool_rx.clone();
+        std::thread::spawn(move || {
+          while let Ok(f) = rx.recv() {
+            f();
+          }
+        })
+      })
+      .collect();
+
     let (tx, rx) = crossbeam_channel::bounded(0);
 
     GlobalState {
@@ -73,6 +89,9 @@ impl GlobalState {
 
       response_sender: tx,
       response_receiver: rx,
+
+      pool_sender: pool_tx,
+      pool,
     }
   }
 
@@ -363,29 +382,32 @@ impl RequestDispatcher<'_> {
 
     let snapshot = self.global.snapshot();
 
-    // TODO: Dispatch this to a thread pool.
     let responder = self.global.response_sender.clone();
     let id = self.req.id.clone();
-    std::thread::spawn(move || match f(snapshot, params) {
-      Ok(r) => responder
-        .send(lsp_server::Message::Response(lsp_server::Response {
-          id,
-          result: Some(serde_json::to_value(r).unwrap()),
-          error: None,
-        }))
-        .unwrap(),
-      Err(_) => responder
-        .send(lsp_server::Message::Response(lsp_server::Response {
-          id,
-          result: None,
-          error: Some(lsp_server::ResponseError {
-            code:    ErrorCode::RequestCanceled as i32,
-            message: "request canceled".to_string(),
-            data:    None,
-          }),
-        }))
-        .unwrap(),
-    });
+    self
+      .global
+      .pool_sender
+      .send(Box::new(move || match f(snapshot, params) {
+        Ok(r) => responder
+          .send(lsp_server::Message::Response(lsp_server::Response {
+            id,
+            result: Some(serde_json::to_value(r).unwrap()),
+            error: None,
+          }))
+          .unwrap(),
+        Err(_) => responder
+          .send(lsp_server::Message::Response(lsp_server::Response {
+            id,
+            result: None,
+            error: Some(lsp_server::ResponseError {
+              code:    ErrorCode::RequestCanceled as i32,
+              message: "request canceled".to_string(),
+              data:    None,
+            }),
+          }))
+          .unwrap(),
+      }))
+      .unwrap();
 
     self
   }
