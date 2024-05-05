@@ -45,7 +45,7 @@ pub fn connect(_dir: &Path) -> Result<client::BspClient, BspError> {
 
 fn bloop_config(port: u16) -> BspConfig {
   BspConfig {
-    command:  "bloop".to_string(),
+    command:  "/home/macmv/.local/share/coursier/bin/bloop".to_string(),
     argv:     vec![
       "bsp".to_string(),
       "--protocol".to_string(),
