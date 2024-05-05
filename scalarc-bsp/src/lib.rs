@@ -43,14 +43,33 @@ pub enum BspProtocol {
   Socket(PathBuf),
 }
 
-pub fn connect(_dir: &Path) -> Result<client::BspClient, BspError> {
+pub fn connect(dir: &Path) -> Result<client::BspClient, BspError> {
   // let config = sbt_config(dir)?;
-  let config = bloop_config(5101);
+  let config = bloop_socket_config(dir);
 
   Ok(client::BspClient::new(config))
 }
 
-fn bloop_config(port: u16) -> BspConfig {
+fn bloop_socket_config(dir: &Path) -> BspConfig {
+  // I'm not making _another_ dot directory in each project. I'll just reuse the
+  // `.bloop` directory.
+  let socket_path = dir.join(".bloop").join("socket");
+
+  BspConfig {
+    command:  "/home/macmv/.local/share/coursier/bin/bloop".to_string(),
+    argv:     vec![
+      "bsp".to_string(),
+      "--protocol".to_string(),
+      "local".to_string(),
+      "--socket".to_string(),
+      socket_path.to_string_lossy().to_string(),
+    ],
+    protocol: BspProtocol::Socket(socket_path),
+  }
+}
+
+#[allow(unused)]
+fn bloop_tcp_config(port: u16) -> BspConfig {
   BspConfig {
     command:  "/home/macmv/.local/share/coursier/bin/bloop".to_string(),
     argv:     vec![
