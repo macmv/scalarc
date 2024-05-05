@@ -36,12 +36,28 @@ pub enum BspProtocol {
   Tcp(SocketAddr),
 }
 
-pub fn connect(dir: &Path) -> Result<client::BspClient, BspError> {
-  let config = sbt_config(dir)?;
+pub fn connect(_dir: &Path) -> Result<client::BspClient, BspError> {
+  // let config = sbt_config(dir)?;
+  let config = bloop_config(5101);
 
   Ok(client::BspClient::new(config))
 }
 
+fn bloop_config(port: u16) -> BspConfig {
+  BspConfig {
+    command:  "bloop".to_string(),
+    argv:     vec![
+      "bsp".to_string(),
+      "--protocol".to_string(),
+      "tcp".to_string(),
+      "--port".to_string(),
+      port.to_string(),
+    ],
+    protocol: BspProtocol::Tcp(SocketAddr::from(([127, 0, 0, 1], port))),
+  }
+}
+
+#[allow(unused)]
 fn sbt_config(dir: &Path) -> Result<BspConfig, BspError> {
   let configs = discovery::find_bsp_servers(dir);
 
