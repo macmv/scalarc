@@ -15,8 +15,8 @@ pub enum BspError {
   #[error("no bsp servers found in workspace")]
   NoBspServers,
 
-  #[error("no sbt server found in workspace")]
-  NoSbtServer,
+  #[error("server type was not found in workspace")]
+  NotFound,
 
   #[error("error initializing bsp server: {0}")]
   InitializeError(String),
@@ -37,22 +37,23 @@ pub enum BspProtocol {
 }
 
 pub fn connect(dir: &Path) -> Result<client::BspClient, BspError> {
+  let config = sbt_config(dir)?;
+
+  Ok(client::BspClient::new(config))
+}
+
+fn sbt_config(dir: &Path) -> Result<BspConfig, BspError> {
   let configs = discovery::find_bsp_servers(dir);
 
   if configs.is_empty() {
     return Err(BspError::NoBspServers);
   }
 
-  for config in configs {
-    // Prefer sbt for now. TODO: Might want to make this configurable.
-    if config.name == "sbt" {
-      let config = BspConfig::from_json(config);
-
-      return Ok(client::BspClient::new(config));
-    }
+  if let Some(config) = configs.into_iter().find(|c| c.name == "sbt") {
+    Ok(BspConfig::from_json(config))
+  } else {
+    Err(BspError::NotFound)
   }
-
-  Err(BspError::NoSbtServer)
 }
 
 impl BspConfig {
