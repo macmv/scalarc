@@ -420,3 +420,11 @@ pub struct TaskId {
   /// field for that.
   parents: Option<Vec<String>>,
 }
+
+#[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ExitParams {}
+
+impl BspNotification for ExitParams {
+  const METHOD: &'static str = "build/exit";
+}

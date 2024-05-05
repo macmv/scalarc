@@ -13,7 +13,9 @@ extern crate log;
 
 fn main() {
   match run() {
-    Ok(()) => (),
+    Ok(()) => {
+      info!("exiting");
+    }
     Err(e) => {
       error!("{}", e);
       std::process::exit(1);

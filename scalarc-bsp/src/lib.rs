@@ -1,4 +1,8 @@
-use std::{net::SocketAddr, path::Path};
+use std::{
+  net::SocketAddr,
+  os::unix::fs::FileTypeExt,
+  path::{Path, PathBuf},
+};
 
 use discovery::BspJsonConfig;
 use thiserror::Error;
@@ -34,14 +38,95 @@ pub struct BspConfig {
 pub enum BspProtocol {
   Stdio,
   Tcp(SocketAddr),
+
+  // Sockets are nice, but they only exist on linux. Solution: use linux!
+  #[cfg(target_os = "linux")]
+  Socket(PathBuf),
 }
 
-pub fn connect(dir: &Path) -> Result<client::BspClient, BspError> {
-  let config = sbt_config(dir)?;
+pub fn connect(_dir: &Path) -> Result<client::BspClient, BspError> {
+  // let config = sbt_config(dir)?;
+  // let config = bloop_socket_config(dir);
+
+  let port = choose_port();
+  let config = bloop_tcp_config(port);
 
   Ok(client::BspClient::new(config))
 }
 
+fn choose_port() -> u16 {
+  // This is kinda dumb, but it works well.
+  let listener = std::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0))).unwrap();
+  listener.local_addr().unwrap().port()
+}
+
+#[allow(unused)]
+fn bloop_socket_config(dir: &Path) -> BspConfig {
+  restart_bloop();
+
+  // I'm not making _another_ dot directory in each project. I'll just reuse the
+  // `.bloop` directory.
+  let socket_path = dir.join(".bloop").join("socket");
+
+  if socket_path.exists() {
+    let kind = socket_path.metadata().unwrap().file_type();
+
+    // Remove the socket if it already exists. This assumes that there is only one
+    // editor open per project.
+    //
+    // Detecting if there's already a BSP server connected to this socket is
+    // difficult, so this ends up being a reliable solution.
+    if kind.is_socket() {
+      std::fs::remove_file(&socket_path).unwrap();
+    } else {
+      panic!("found a non-socket file at the socket path: {:?}", socket_path);
+    }
+  }
+
+  BspConfig {
+    command:  "/home/macmv/.local/share/coursier/bin/bloop".to_string(),
+    argv:     vec![
+      "bsp".to_string(),
+      "--protocol".to_string(),
+      "local".to_string(),
+      "--socket".to_string(),
+      socket_path.to_string_lossy().to_string(),
+    ],
+    protocol: BspProtocol::Socket(socket_path),
+  }
+}
+
+#[allow(unused)]
+fn bloop_tcp_config(port: u16) -> BspConfig {
+  restart_bloop();
+
+  BspConfig {
+    command:  "/home/macmv/.local/share/coursier/bin/bloop".to_string(),
+    argv:     vec![
+      "bsp".to_string(),
+      "--protocol".to_string(),
+      "tcp".to_string(),
+      "--port".to_string(),
+      port.to_string(),
+    ],
+    protocol: BspProtocol::Tcp(SocketAddr::from(([127, 0, 0, 1], port))),
+  }
+}
+
+fn restart_bloop() {
+  // Bloop gets busted if you kill a BSP server without closing it correctly. I've
+  // already tried to close it correctly, but it still gets in a screwy state.
+  // So I'll just restart the bloop server every time.
+  //
+  // TODO: Close the BSP server correctly.
+  // TODO: Disable this hack for production builds.
+  std::process::Command::new("/home/macmv/.local/share/coursier/bin/bloop")
+    .arg("exit")
+    .output()
+    .expect("failed to create socket directory");
+}
+
+#[allow(unused)]
 fn sbt_config(dir: &Path) -> Result<BspConfig, BspError> {
   let configs = discovery::find_bsp_servers(dir);
 

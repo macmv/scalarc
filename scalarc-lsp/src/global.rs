@@ -109,6 +109,11 @@ impl GlobalState {
           if method == lsp_types::notification::Exit::METHOD =>
         {
           info!("shutting down due to exit notification");
+
+          if let Some(c) = self.bsp_client {
+            c.shutdown();
+          }
+
           return Ok(());
         }
 
