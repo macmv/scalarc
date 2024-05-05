@@ -44,13 +44,15 @@ pub enum BspProtocol {
   Socket(PathBuf),
 }
 
-pub fn connect(dir: &Path) -> Result<client::BspClient, BspError> {
+pub fn connect(_dir: &Path) -> Result<client::BspClient, BspError> {
   // let config = sbt_config(dir)?;
-  let config = bloop_socket_config(dir);
+  // let config = bloop_socket_config(dir);
+  let config = bloop_tcp_config(5101);
 
   Ok(client::BspClient::new(config))
 }
 
+#[allow(unused)]
 fn bloop_socket_config(dir: &Path) -> BspConfig {
   // Bloop gets busted if you kill a BSP server without closing it correctly. I'm
   // too lazy to close it correctly, so I'll just restart the BSP server every
