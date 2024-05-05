@@ -47,9 +47,17 @@ pub enum BspProtocol {
 pub fn connect(_dir: &Path) -> Result<client::BspClient, BspError> {
   // let config = sbt_config(dir)?;
   // let config = bloop_socket_config(dir);
-  let config = bloop_tcp_config(5101);
+
+  let port = choose_port();
+  let config = bloop_tcp_config(port);
 
   Ok(client::BspClient::new(config))
+}
+
+fn choose_port() -> u16 {
+  // This is kinda dumb, but it works well.
+  let listener = std::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0))).unwrap();
+  listener.local_addr().unwrap().port()
 }
 
 #[allow(unused)]
@@ -99,6 +107,17 @@ fn bloop_socket_config(dir: &Path) -> BspConfig {
 
 #[allow(unused)]
 fn bloop_tcp_config(port: u16) -> BspConfig {
+  // Bloop gets busted if you kill a BSP server without closing it correctly. I'm
+  // too lazy to close it correctly, so I'll just restart the BSP server every
+  // time.
+  //
+  // TODO: Close the BSP server correctly.
+  // TODO: Disable this hack for production builds.
+  std::process::Command::new("/home/macmv/.local/share/coursier/bin/bloop")
+    .arg("exit")
+    .output()
+    .expect("failed to create socket directory");
+
   BspConfig {
     command:  "/home/macmv/.local/share/coursier/bin/bloop".to_string(),
     argv:     vec![
