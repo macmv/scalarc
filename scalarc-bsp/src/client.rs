@@ -109,10 +109,12 @@ impl BspClient {
 
         use std::os::unix::net::UnixStream;
 
+        const MAX_DURATION: Duration = Duration::from_secs(1);
         let mut delay = Duration::from_millis(100);
         let mut stream = None;
+        std::thread::sleep(delay);
 
-        for _ in 0..4 {
+        for _ in 0..8 {
           match UnixStream::connect(&path) {
             Ok(s) => stream = Some(s),
             Err(e) => {
@@ -122,6 +124,9 @@ impl BspClient {
 
           std::thread::sleep(delay);
           delay *= 2;
+          if delay > MAX_DURATION {
+            delay = MAX_DURATION;
+          }
         }
 
         let Some(stream) = stream else {
@@ -143,6 +148,12 @@ impl BspClient {
         }
       }
     }
+  }
+
+  pub fn shutdown(self) {
+    self.notify(crate::types::ExitParams {});
+
+    self.threads.join();
   }
 
   pub fn request<R: BspRequest>(&self, params: R) -> RequestId {
@@ -215,6 +226,13 @@ pub struct IoThreads {
   writer: thread::JoinHandle<io::Result<()>>,
 }
 
+impl IoThreads {
+  pub fn join(self) {
+    self.reader.join().unwrap().unwrap();
+    self.writer.join().unwrap().unwrap();
+  }
+}
+
 fn spawn_writer(
   mut child_stdin: impl Write + Send + 'static,
 ) -> (thread::JoinHandle<io::Result<()>>, crossbeam_channel::Sender<Message>) {
@@ -276,7 +294,7 @@ fn log_reader(name: &'static str, mut reader: impl BufRead + Send + 'static) {
         break;
       }
       Ok(_) => {
-        info!("bsp server {name}: {buf}");
+        info!("bsp server {name}: {}", buf.trim());
       }
       Err(e) => {
         info!("bsp server {name} error: {e}");
