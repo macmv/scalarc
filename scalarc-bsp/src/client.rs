@@ -1,5 +1,5 @@
 use std::{
-  io::{self, BufRead, BufReader, Write},
+  io::{self, BufRead, BufReader, Read, Write},
   net::TcpStream,
   process::Command,
   sync::atomic::{AtomicI32, Ordering},
@@ -101,8 +101,35 @@ impl BspClient {
 
       #[cfg(target_os = "linux")]
       crate::BspProtocol::Socket(path) => {
+        let child_stdin = proc.stdin.unwrap();
+        let child_stdout = BufReader::new(proc.stdout.unwrap());
+        let child_stderr = BufReader::new(proc.stderr.unwrap());
+
+        // Don't close stdin.
+        std::mem::forget(child_stdin);
+        log_reader("stdout", child_stdout);
+        log_reader("stderr", child_stderr);
+
         use std::os::unix::net::UnixStream;
-        let stream = UnixStream::connect(path).unwrap();
+
+        let mut delay = Duration::from_millis(100);
+        let mut stream = None;
+
+        for _ in 0..4 {
+          match UnixStream::connect(&path) {
+            Ok(s) => stream = Some(s),
+            Err(e) => {
+              warn!("failed to connect to BSP server: {}", e);
+            }
+          }
+
+          std::thread::sleep(delay);
+          delay *= 2;
+        }
+
+        let Some(stream) = stream else {
+          panic!("failed to connect to BSP server");
+        };
 
         let child_stdin = stream.try_clone().unwrap();
         let child_stdout = BufReader::new(stream);
@@ -241,4 +268,23 @@ fn spawn_reader(
     }
   });
   (reader, reader_receiver)
+}
+
+fn log_reader(name: &'static str, mut reader: impl BufRead + Send + 'static) {
+  thread::spawn(move || loop {
+    let mut buf = String::new();
+    match reader.read_line(&mut buf) {
+      Ok(0) => {
+        info!("bsp server closed {name}");
+        break;
+      }
+      Ok(_) => {
+        info!("bsp server {name}: {buf}");
+      }
+      Err(e) => {
+        info!("bsp server {name} error: {e}");
+        break;
+      }
+    }
+  });
 }

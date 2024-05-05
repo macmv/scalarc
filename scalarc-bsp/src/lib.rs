@@ -1,5 +1,6 @@
 use std::{
   net::SocketAddr,
+  os::unix::fs::FileTypeExt,
   path::{Path, PathBuf},
 };
 
@@ -51,9 +52,35 @@ pub fn connect(dir: &Path) -> Result<client::BspClient, BspError> {
 }
 
 fn bloop_socket_config(dir: &Path) -> BspConfig {
+  // Bloop gets busted if you kill a BSP server without closing it correctly. I'm
+  // too lazy to close it correctly, so I'll just restart the BSP server every
+  // time.
+  //
+  // TODO: Close the BSP server correctly.
+  // TODO: Disable this hack for production builds.
+  std::process::Command::new("/home/macmv/.local/share/coursier/bin/bloop")
+    .arg("exit")
+    .output()
+    .expect("failed to create socket directory");
+
   // I'm not making _another_ dot directory in each project. I'll just reuse the
   // `.bloop` directory.
   let socket_path = dir.join(".bloop").join("socket");
+
+  if socket_path.exists() {
+    let kind = socket_path.metadata().unwrap().file_type();
+
+    // Remove the socket if it already exists. This assumes that there is only one
+    // editor open per project.
+    //
+    // Detecting if there's already a BSP server connected to this socket is
+    // difficult, so this ends up being a reliable solution.
+    if kind.is_socket() {
+      std::fs::remove_file(&socket_path).unwrap();
+    } else {
+      panic!("found a non-socket file at the socket path: {:?}", socket_path);
+    }
+  }
 
   BspConfig {
     command:  "/home/macmv/.local/share/coursier/bin/bloop".to_string(),
