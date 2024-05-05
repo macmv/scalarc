@@ -1,6 +1,5 @@
 use std::{
-  io::{self, BufRead, BufReader, Read, Write},
-  iter::once,
+  io::{self, BufRead, BufReader, Write},
   net::TcpStream,
   process::Command,
   sync::atomic::{AtomicI32, Ordering},
@@ -84,6 +83,26 @@ impl BspClient {
         let Some(stream) = stream else {
           panic!("failed to connect to BSP server");
         };
+
+        let child_stdin = stream.try_clone().unwrap();
+        let child_stdout = BufReader::new(stream);
+
+        let (writer, writer_sender) = spawn_writer(child_stdin);
+        let (reader, reader_receiver) = spawn_reader(child_stdout);
+        let threads = IoThreads { reader, writer };
+
+        BspClient {
+          id: AtomicI32::new(1),
+          sender: writer_sender,
+          receiver: reader_receiver,
+          threads,
+        }
+      }
+
+      #[cfg(target_os = "linux")]
+      crate::BspProtocol::Socket(path) => {
+        use std::os::unix::net::UnixStream;
+        let stream = UnixStream::connect(path).unwrap();
 
         let child_stdin = stream.try_clone().unwrap();
         let child_stdout = BufReader::new(stream);

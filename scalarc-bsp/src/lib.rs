@@ -1,4 +1,7 @@
-use std::{net::SocketAddr, path::Path};
+use std::{
+  net::SocketAddr,
+  path::{Path, PathBuf},
+};
 
 use discovery::BspJsonConfig;
 use thiserror::Error;
@@ -34,6 +37,10 @@ pub struct BspConfig {
 pub enum BspProtocol {
   Stdio,
   Tcp(SocketAddr),
+
+  // Sockets are nice, but they only exist on linux. Solution: use linux!
+  #[cfg(target_os = "linux")]
+  Socket(PathBuf),
 }
 
 pub fn connect(_dir: &Path) -> Result<client::BspClient, BspError> {
