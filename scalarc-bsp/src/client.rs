@@ -53,17 +53,14 @@ impl BspClient {
         }
       }
       crate::BspProtocol::Tcp(addr) => {
-        // FIXME: Hook these up to log messages? Maybe?
-        //
-        // For now, we need to make sure we pipe these, and then we need to keep the
-        // pipes open. We can't leave them on the default, or the child process will
-        // write to our stdout, which will break the LSP connection. We also can't close
-        // the pipes, as that'll crash bloop.
         let child_stdin = proc.stdin.unwrap();
         let child_stdout = BufReader::new(proc.stdout.unwrap());
+        let child_stderr = BufReader::new(proc.stderr.unwrap());
 
+        // Don't close stdin.
         std::mem::forget(child_stdin);
-        std::mem::forget(child_stdout);
+        log_reader("stdout", child_stdout);
+        log_reader("stderr", child_stderr);
 
         let mut delay = Duration::from_millis(100);
         let mut stream = None;
