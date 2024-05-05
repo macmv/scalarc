@@ -27,15 +27,16 @@ impl BspClient {
   pub fn new(config: crate::BspConfig) -> Self {
     info!("creating BSP client with config: {:?}", config);
 
-    assert_eq!(config.protocol, crate::BspProtocol::Stdio);
+    let mut cmd = Command::new(&config.command);
+    cmd.args(&config.argv);
+    if config.protocol == crate::BspProtocol::Stdio {
+      cmd
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .stdin(std::process::Stdio::piped());
+    }
 
-    let proc = Command::new(&config.command)
-      .args(&config.argv)
-      .stdout(std::process::Stdio::piped())
-      .stderr(std::process::Stdio::piped())
-      .stdin(std::process::Stdio::piped())
-      .spawn()
-      .expect("failed to start BSP server");
+    let proc = cmd.spawn().expect("failed to start BSP server");
 
     let mut child_stdin = proc.stdin.unwrap();
     let mut child_stdout = BufReader::new(proc.stdout.unwrap());
