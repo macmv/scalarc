@@ -62,16 +62,7 @@ fn choose_port() -> u16 {
 
 #[allow(unused)]
 fn bloop_socket_config(dir: &Path) -> BspConfig {
-  // Bloop gets busted if you kill a BSP server without closing it correctly. I'm
-  // too lazy to close it correctly, so I'll just restart the BSP server every
-  // time.
-  //
-  // TODO: Close the BSP server correctly.
-  // TODO: Disable this hack for production builds.
-  std::process::Command::new("/home/macmv/.local/share/coursier/bin/bloop")
-    .arg("exit")
-    .output()
-    .expect("failed to create socket directory");
+  restart_bloop();
 
   // I'm not making _another_ dot directory in each project. I'll just reuse the
   // `.bloop` directory.
@@ -107,16 +98,7 @@ fn bloop_socket_config(dir: &Path) -> BspConfig {
 
 #[allow(unused)]
 fn bloop_tcp_config(port: u16) -> BspConfig {
-  // Bloop gets busted if you kill a BSP server without closing it correctly. I'm
-  // too lazy to close it correctly, so I'll just restart the BSP server every
-  // time.
-  //
-  // TODO: Close the BSP server correctly.
-  // TODO: Disable this hack for production builds.
-  std::process::Command::new("/home/macmv/.local/share/coursier/bin/bloop")
-    .arg("exit")
-    .output()
-    .expect("failed to create socket directory");
+  restart_bloop();
 
   BspConfig {
     command:  "/home/macmv/.local/share/coursier/bin/bloop".to_string(),
@@ -129,6 +111,19 @@ fn bloop_tcp_config(port: u16) -> BspConfig {
     ],
     protocol: BspProtocol::Tcp(SocketAddr::from(([127, 0, 0, 1], port))),
   }
+}
+
+fn restart_bloop() {
+  // Bloop gets busted if you kill a BSP server without closing it correctly. I've
+  // already tried to close it correctly, but it still gets in a screwy state.
+  // So I'll just restart the bloop server every time.
+  //
+  // TODO: Close the BSP server correctly.
+  // TODO: Disable this hack for production builds.
+  std::process::Command::new("/home/macmv/.local/share/coursier/bin/bloop")
+    .arg("exit")
+    .output()
+    .expect("failed to create socket directory");
 }
 
 #[allow(unused)]
