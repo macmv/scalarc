@@ -1,9 +1,11 @@
 use std::{
-  io,
-  io::BufReader,
+  io::{self, BufRead, BufReader, Read, Write},
+  iter::once,
+  net::TcpStream,
   process::Command,
   sync::atomic::{AtomicI32, Ordering},
   thread,
+  time::Duration,
 };
 
 use crate::{
@@ -27,62 +29,77 @@ impl BspClient {
   pub fn new(config: crate::BspConfig) -> Self {
     info!("creating BSP client with config: {:?}", config);
 
-    let mut cmd = Command::new(&config.command);
-    cmd.args(&config.argv);
-    if config.protocol == crate::BspProtocol::Stdio {
-      cmd
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .stdin(std::process::Stdio::piped());
+    let proc = Command::new(&config.command)
+      .args(&config.argv)
+      .stdout(std::process::Stdio::piped())
+      .stderr(std::process::Stdio::piped())
+      .stdin(std::process::Stdio::piped())
+      .spawn()
+      .expect("failed to start BSP server");
+
+    match config.protocol {
+      crate::BspProtocol::Stdio => {
+        let child_stdin = proc.stdin.unwrap();
+        let child_stdout = BufReader::new(proc.stdout.unwrap());
+
+        let (writer, writer_sender) = spawn_writer(child_stdin);
+        let (reader, reader_receiver) = spawn_reader(child_stdout);
+        let threads = IoThreads { reader, writer };
+
+        BspClient {
+          id: AtomicI32::new(1),
+          sender: writer_sender,
+          receiver: reader_receiver,
+          threads,
+        }
+      }
+      crate::BspProtocol::Tcp(addr) => {
+        // FIXME: Hook these up to log messages? Maybe?
+        //
+        // For now, we need to make sure we pipe these, and then we need to keep the
+        // pipes open. We can't leave them on the default, or the child process will
+        // write to our stdout, which will break the LSP connection. We also can't close
+        // the pipes, as that'll crash bloop.
+        let child_stdin = proc.stdin.unwrap();
+        let child_stdout = BufReader::new(proc.stdout.unwrap());
+
+        std::mem::forget(child_stdin);
+        std::mem::forget(child_stdout);
+
+        let mut delay = Duration::from_millis(100);
+        let mut stream = None;
+
+        for _ in 0..4 {
+          match TcpStream::connect(addr) {
+            Ok(s) => stream = Some(s),
+            Err(e) => {
+              warn!("failed to connect to BSP server: {}", e);
+            }
+          }
+
+          std::thread::sleep(delay);
+          delay *= 2;
+        }
+
+        let Some(stream) = stream else {
+          panic!("failed to connect to BSP server");
+        };
+
+        let child_stdin = stream.try_clone().unwrap();
+        let child_stdout = BufReader::new(stream);
+
+        let (writer, writer_sender) = spawn_writer(child_stdin);
+        let (reader, reader_receiver) = spawn_reader(child_stdout);
+        let threads = IoThreads { reader, writer };
+
+        BspClient {
+          id: AtomicI32::new(1),
+          sender: writer_sender,
+          receiver: reader_receiver,
+          threads,
+        }
+      }
     }
-
-    let proc = cmd.spawn().expect("failed to start BSP server");
-
-    let mut child_stdin = proc.stdin.unwrap();
-    let mut child_stdout = BufReader::new(proc.stdout.unwrap());
-
-    let (writer_sender, writer_receiver) = crossbeam_channel::bounded::<Message>(0);
-    let writer = thread::spawn(move || {
-      for msg in writer_receiver {
-        match msg.write(&mut child_stdin) {
-          Ok(_) => {}
-          Err(e) => {
-            error!("failed to write message: {}", e);
-            break;
-          }
-        }
-      }
-      error!("closing writer thread");
-      Ok(())
-    });
-    let (reader_sender, reader_receiver) = crossbeam_channel::bounded::<Message>(0);
-    let reader = thread::spawn(move || loop {
-      match Message::read(&mut child_stdout) {
-        Ok(Some(msg)) => {
-          let is_exit = match &msg {
-            Message::Notification(n) => n.method == "exit",
-            _ => false,
-          };
-
-          reader_sender.send(msg).unwrap();
-
-          if is_exit {
-            break Ok(());
-          }
-        }
-        Ok(None) => {
-          error!("closing reader thread");
-          break Ok(());
-        }
-        Err(e) => {
-          error!("failed to read message: {}", e);
-          break Err(e);
-        }
-      }
-    });
-    let threads = IoThreads { reader, writer };
-
-    BspClient { id: AtomicI32::new(1), sender: writer_sender, receiver: reader_receiver, threads }
   }
 
   pub fn request<R: BspRequest>(&self, params: R) -> RequestId {
@@ -153,4 +170,56 @@ impl BspClient {
 pub struct IoThreads {
   reader: thread::JoinHandle<io::Result<()>>,
   writer: thread::JoinHandle<io::Result<()>>,
+}
+
+fn spawn_writer(
+  mut child_stdin: impl Write + Send + 'static,
+) -> (thread::JoinHandle<io::Result<()>>, crossbeam_channel::Sender<Message>) {
+  let (writer_sender, writer_receiver) = crossbeam_channel::bounded::<Message>(0);
+  let writer = thread::spawn(move || {
+    for msg in writer_receiver {
+      match msg.write(&mut child_stdin) {
+        Ok(_) => {}
+        Err(e) => {
+          error!("failed to write message: {}", e);
+          break;
+        }
+      }
+    }
+    error!("closing writer thread");
+    Ok(())
+  });
+
+  (writer, writer_sender)
+}
+
+fn spawn_reader(
+  mut child_stdout: impl BufRead + Send + 'static,
+) -> (thread::JoinHandle<io::Result<()>>, crossbeam_channel::Receiver<Message>) {
+  let (reader_sender, reader_receiver) = crossbeam_channel::bounded::<Message>(0);
+  let reader = thread::spawn(move || loop {
+    match Message::read(&mut child_stdout) {
+      Ok(Some(msg)) => {
+        let is_exit = match &msg {
+          Message::Notification(n) => n.method == "exit",
+          _ => false,
+        };
+
+        reader_sender.send(msg).unwrap();
+
+        if is_exit {
+          break Ok(());
+        }
+      }
+      Ok(None) => {
+        error!("closing reader thread");
+        break Ok(());
+      }
+      Err(e) => {
+        error!("failed to read message: {}", e);
+        break Err(e);
+      }
+    }
+  });
+  (reader, reader_receiver)
 }
