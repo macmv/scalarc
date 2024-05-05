@@ -259,9 +259,8 @@ impl GlobalState {
 
     dispatcher
       .on_sync::<lsp_notification::DidOpenTextDocument>(notification::handle_open_text_document)
-      .on_sync::<lsp_notification::DidChangeTextDocument>(
-        notification::handle_change_text_document,
-      );
+      .on_sync::<lsp_notification::DidChangeTextDocument>(notification::handle_change_text_document)
+      .on_sync::<lsp_notification::DidSaveTextDocument>(notification::handle_save_text_document);
   }
 
   fn handle_bsp_response(&mut self, res: lsp_server::Response) {

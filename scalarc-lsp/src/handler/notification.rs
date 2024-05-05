@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use crate::global::GlobalState;
+use scalarc_bsp::types::{self as bsp_types};
 
 pub fn handle_open_text_document(
   global: &mut GlobalState,
@@ -27,6 +28,32 @@ pub fn handle_change_text_document(
 
     if file != new_file {
       global.files.write().write(file_id, new_file.clone());
+    }
+  }
+
+  Ok(())
+}
+
+pub fn handle_save_text_document(
+  global: &mut GlobalState,
+  params: lsp_types::DidSaveTextDocumentParams,
+) -> Result<(), Box<dyn Error>> {
+  if let Some(path) = global.workspace_path(&params.text_document.uri) {
+    if let Some(ref client) = global.bsp_client {
+      let workspace = global.analysis_host.workspace();
+
+      let source_roots = workspace.source_roots.iter().filter(|s| path.starts_with(&s.1.path));
+      let targets = workspace
+        .targets
+        .iter()
+        .filter(|t| source_roots.clone().any(|s| t.1.source_roots.contains(&s.0)));
+
+      client.request(bsp_types::BuildTargetCompileRequest {
+        targets: targets
+          .map(|t| bsp_types::BuildTargetIdentifier { uri: Some(t.1.bsp_id.clone()) })
+          .collect(),
+        ..Default::default()
+      });
     }
   }
 
