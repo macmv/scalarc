@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct BspConfig {
+pub struct BspJsonConfig {
   pub name:        String,
   pub version:     String,
   pub bsp_version: String,
@@ -11,7 +11,7 @@ pub struct BspConfig {
   pub argv:        Vec<String>,
 }
 
-pub fn find_bsp_servers(dir: &Path) -> Vec<BspConfig> {
+pub fn find_bsp_servers(dir: &Path) -> Vec<BspJsonConfig> {
   let bsp_dir = dir.join(".bsp");
 
   let mut configs = vec![];

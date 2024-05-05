@@ -27,8 +27,10 @@ impl BspClient {
   pub fn new(config: crate::BspConfig) -> Self {
     info!("creating BSP client with config: {:?}", config);
 
-    let proc = Command::new(&config.argv[0])
-      .args(&config.argv[1..])
+    assert_eq!(config.protocol, crate::BspProtocol::Stdio);
+
+    let proc = Command::new(&config.command)
+      .args(&config.argv)
       .stdout(std::process::Stdio::piped())
       .stderr(std::process::Stdio::piped())
       .stdin(std::process::Stdio::piped())
