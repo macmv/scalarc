@@ -1,5 +1,5 @@
 use std::{
-  io::{self, BufRead, BufReader, Read, Write},
+  io::{self, BufRead, BufReader, Write},
   net::TcpStream,
   process::Command,
   sync::atomic::{AtomicI32, Ordering},
@@ -153,6 +153,9 @@ impl BspClient {
   pub fn shutdown(self) {
     self.notify(crate::types::ExitParams {});
 
+    drop(self.sender);
+    drop(self.receiver);
+
     self.threads.join();
   }
 
@@ -227,7 +230,7 @@ pub struct IoThreads {
 }
 
 impl IoThreads {
-  pub fn join(self) {
+  fn join(self) {
     self.reader.join().unwrap().unwrap();
     self.writer.join().unwrap().unwrap();
   }
