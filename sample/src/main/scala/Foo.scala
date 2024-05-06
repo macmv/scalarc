@@ -1,1 +1,3 @@
+package sample
+
 class Foo {}

@@ -1,6 +1,7 @@
 
+package sample
 
-class Foo(a: String) {
+class Bar(a: String) {
   println("Hello, World!", a)
 
   val b = 3
@@ -16,5 +17,5 @@ class Foo(a: String) {
     }
   }
 
-  Foo
+  new Foo()
 }
