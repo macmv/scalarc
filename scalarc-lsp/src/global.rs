@@ -202,7 +202,7 @@ impl GlobalState {
 
     let snap = self.analysis_host.snapshot();
 
-    for &file_id in &changes {
+    for &file_id in changes.iter().chain(self.diagnostics.keys()) {
       let line_index = snap.line_index(file_id).unwrap();
       let diagnostics = snap.diagnostics(file_id).unwrap();
 
@@ -234,6 +234,7 @@ impl GlobalState {
                   ..Default::default()
                 })
               })
+              .chain(self.diagnostics.get(&file_id).unwrap_or(&vec![]).iter().cloned())
               .collect(),
             version:     None,
           })
