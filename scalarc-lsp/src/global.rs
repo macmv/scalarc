@@ -30,7 +30,8 @@ pub struct GlobalState {
   /// Diagnostics from the build server. These are not all the diagnostics seen
   /// from the client, as parsing errors from `scalarc-syntax` will be fetched
   /// of the analysis host instead.
-  pub diagnostics: HashMap<FileId, Vec<lsp_types::Diagnostic>>,
+  pub diagnostics:        HashMap<FileId, Vec<lsp_types::Diagnostic>>,
+  pub diagnostic_changes: Vec<FileId>,
 
   // Temporary state between BSP requests.
   pub bsp_targets: Option<bsp_types::WorkspaceBuildTargetsResult>,
@@ -89,7 +90,9 @@ impl GlobalState {
 
       analysis_host: AnalysisHost::new(),
       bsp_client,
+
       diagnostics: HashMap::new(),
+      diagnostic_changes: vec![],
 
       bsp_targets: None,
       bsp_requests: HashMap::new(),
@@ -202,7 +205,7 @@ impl GlobalState {
 
     let snap = self.analysis_host.snapshot();
 
-    for &file_id in changes.iter().chain(self.diagnostics.keys()) {
+    for file_id in changes.iter().copied().chain(self.diagnostic_changes.drain(..)) {
       let line_index = snap.line_index(file_id).unwrap();
       let diagnostics = snap.diagnostics(file_id).unwrap();
 

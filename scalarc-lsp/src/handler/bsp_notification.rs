@@ -33,10 +33,16 @@ pub fn handle_diagnostics(
 
     let diagnostics = global.diagnostics.entry(file_id).or_insert_with(Vec::new);
 
+    let original_diagnostics = diagnostics.clone();
+
     if params.reset {
       diagnostics.clear();
     }
     diagnostics.extend(params.diagnostics);
+
+    if original_diagnostics != *diagnostics {
+      global.diagnostic_changes.push(file_id);
+    }
 
     Ok(())
   } else {
