@@ -272,7 +272,8 @@ impl GlobalState {
       .on_sync_mut::<bsp_types::WorkspaceBuildTargetsRequest>(
         bsp_response::handle_workspace_build_targets,
       )
-      .on_sync_mut::<bsp_types::SourcesParams>(bsp_response::handle_sources);
+      .on_sync_mut::<bsp_types::SourcesParams>(bsp_response::handle_sources)
+      .on_sync_mut::<bsp_types::BuildTargetCompileRequest>(bsp_response::handle_compile_result);
   }
 
   fn handle_bsp_notification(&mut self, not: lsp_server::Notification) {

@@ -36,3 +36,14 @@ pub fn handle_sources(
 
   Ok(())
 }
+
+pub fn handle_compile_result(
+  _state: &mut GlobalState,
+  result: bsp_types::BuildTargetCompileResult,
+) -> Result<(), Box<dyn Error>> {
+  // debug!("got sources: {:#?}", sources);
+
+  info!("compiler output: {:#?}", result);
+
+  Ok(())
+}

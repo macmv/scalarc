@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use crate::global::GlobalState;
-use scalarc_bsp::types::{self as bsp_types};
+use scalarc_bsp::types::{self as bsp_types, BspRequest};
 
 pub fn handle_open_text_document(
   global: &mut GlobalState,
@@ -39,21 +39,28 @@ pub fn handle_save_text_document(
   params: lsp_types::DidSaveTextDocumentParams,
 ) -> Result<(), Box<dyn Error>> {
   if let Some(path) = global.workspace_path(&params.text_document.uri) {
+    let abs_path = global.workspace.join(&path);
+
     if let Some(ref client) = global.bsp_client {
       let workspace = global.analysis_host.workspace();
 
-      let source_roots = workspace.source_roots.iter().filter(|s| path.starts_with(&s.1.path));
+      let source_roots = workspace
+        .source_roots
+        .iter()
+        .filter(|s| abs_path.starts_with(&s.1.path))
+        .collect::<Vec<_>>();
       let targets = workspace
         .targets
         .iter()
-        .filter(|t| source_roots.clone().any(|s| t.1.source_roots.contains(&s.0)));
+        .filter(|t| source_roots.iter().any(|s| t.1.source_roots.contains(&s.0)));
 
-      client.request(bsp_types::BuildTargetCompileRequest {
+      let id = client.request(bsp_types::BuildTargetCompileRequest {
         targets: targets
           .map(|t| bsp_types::BuildTargetIdentifier { uri: Some(t.1.bsp_id.clone()) })
           .collect(),
         ..Default::default()
       });
+      global.bsp_requests.insert(id, bsp_types::BuildTargetCompileRequest::METHOD);
     }
   }
 
