@@ -27,6 +27,11 @@ pub struct GlobalState {
   pub analysis_host: AnalysisHost,
   pub bsp_client:    Option<BspClient>,
 
+  /// Diagnostics from the build server. These are not all the diagnostics seen
+  /// from the client, as parsing errors from `scalarc-syntax` will be fetched
+  /// of the analysis host instead.
+  pub diagnostics: HashMap<FileId, Vec<lsp_types::Diagnostic>>,
+
   // Temporary state between BSP requests.
   pub bsp_targets: Option<bsp_types::WorkspaceBuildTargetsResult>,
 
@@ -84,6 +89,8 @@ impl GlobalState {
 
       analysis_host: AnalysisHost::new(),
       bsp_client,
+      diagnostics: HashMap::new(),
+
       bsp_targets: None,
       bsp_requests: HashMap::new(),
 
@@ -281,7 +288,9 @@ impl GlobalState {
 
     use crate::handler::bsp_notification;
 
-    dispatcher.on_sync::<bsp_types::LogMessageParams>(bsp_notification::handle_log_message);
+    dispatcher
+      .on_sync::<bsp_types::LogMessageParams>(bsp_notification::handle_log_message)
+      .on_sync::<bsp_types::PublishDiagnosticsParams>(bsp_notification::handle_diagnostics);
   }
 
   pub fn workspace_path(&self, uri: &Url) -> Option<PathBuf> {

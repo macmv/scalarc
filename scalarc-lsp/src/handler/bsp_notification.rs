@@ -23,3 +23,23 @@ pub fn handle_log_message(
 
   Ok(())
 }
+
+pub fn handle_diagnostics(
+  global: &mut GlobalState,
+  params: bsp_types::PublishDiagnosticsParams,
+) -> Result<(), Box<dyn Error>> {
+  if let Some(path) = global.workspace_path(&params.text_document.uri) {
+    let file_id = global.files.read().path_to_id(&path);
+
+    let diagnostics = global.diagnostics.entry(file_id).or_insert_with(Vec::new);
+
+    if params.reset {
+      diagnostics.clear();
+    }
+    diagnostics.extend(params.diagnostics);
+
+    Ok(())
+  } else {
+    Ok(())
+  }
+}

@@ -476,10 +476,40 @@ pub struct TaskId {
   parents: Option<Vec<String>>,
 }
 
+impl BspNotification for ExitParams {
+  const METHOD: &'static str = "build/exit";
+}
+
 #[derive(Debug, Default, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ExitParams {}
 
-impl BspNotification for ExitParams {
-  const METHOD: &'static str = "build/exit";
+impl BspNotification for PublishDiagnosticsParams {
+  const METHOD: &'static str = "build/publishDiagnostics";
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PublishDiagnosticsParams {
+  /// The document where the diagnostics are published.
+  pub text_document: lsp_types::TextDocumentIdentifier,
+
+  /// The build target where the diagnostics origin.
+  /// It is valid for one text document to belong to multiple
+  /// build targets, for example sources that are compiled against multiple
+  /// platforms (JVM, JavaScript).
+  pub build_target: BuildTargetIdentifier,
+
+  /// The request id that originated this notification.
+  pub origin_id: Option<String>,
+
+  /// The diagnostics to be published by the client.
+  ///
+  /// FIXME: This is a terrible idea! I don't want to rely on both the BSP and
+  /// LSP protocol to stay in sync. But it works so ah well.
+  pub diagnostics: Vec<lsp_types::Diagnostic>,
+
+  /// Whether the client should clear the previous diagnostics
+  /// mapped to the same `textDocument` and `buildTarget`.
+  pub reset: bool,
 }
