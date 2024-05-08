@@ -23,10 +23,6 @@ pub struct Scope {
   /// The erased item this scope is defined in.
   pub item_id: ErasedScopeId,
 
-  /// The roots of the scope. All definitions in the scope are children of these
-  /// nodes.
-  pub body: Vec<SyntaxNodePtr>,
-
   /// All the names declared by the scope.
   pub declarations: Vec<(String, Definition)>,
 }
@@ -150,12 +146,7 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
     let parent = None; // FIXME
 
     let scope_id = Idx::<Scope>::from_raw(RawIdx::from(scopes.len() as u32));
-    let mut scope = Scope {
-      parent,
-      item_id,
-      body: vec![], // FIXME
-      declarations: vec![],
-    };
+    let mut scope = Scope { parent, item_id, declarations: vec![] };
 
     if let Some(it) = Item::cast(item.clone()) {
       match it {
@@ -297,6 +288,7 @@ fn def_of_node(
 
 pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<Reference> {
   let ast = db.parse(file_id);
+  let item_id_map = db.item_id_map(file_id);
   let tree = ast.tree();
 
   let file_scopes = db.scopes_of(file_id);
@@ -307,7 +299,8 @@ pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
 
   let mut references = vec![];
 
-  let mut this_pass: Vec<_> = scope.body.iter().map(|ptr| ptr.to_node(tree.syntax())).collect();
+  let item = item_id_map.get_erased(scope.item_id);
+  let mut this_pass: Vec<_> = vec![item.to_node(tree.syntax())];
   let mut next_pass = vec![];
 
   while !this_pass.is_empty() {
