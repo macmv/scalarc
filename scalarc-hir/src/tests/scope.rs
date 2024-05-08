@@ -11,7 +11,7 @@ use super::new_db;
 fn scopes_of(src: &str, expected: Expect) {
   let db = new_db(src);
   let actual = db.scopes_of(FileId::temp_new());
-  expected.assert_eq(&DebugScopes(&actual.scopes).to_string());
+  expected.assert_eq(&DebugUtil { db: &db, item: &actual.scopes }.to_string());
 }
 
 fn defs_at(src: &str, expected: Expect) {
@@ -20,7 +20,7 @@ fn defs_at(src: &str, expected: Expect) {
 
   let db = new_db(&src);
   let actual = db.defs_at_index(FileId::temp_new(), TextSize::from(cursor as u32));
-  expected.assert_eq(&DebugDefList(&actual).to_string());
+  expected.assert_eq(&DebugUtil { db: &db, item: &actual }.to_string());
 }
 
 fn def_at(src: &str, expected: Expect) {
@@ -29,7 +29,7 @@ fn def_at(src: &str, expected: Expect) {
 
   let db = new_db(&src);
   let actual = db.def_at_index(FileId::temp_new(), TextSize::from(cursor as u32));
-  expected.assert_eq(&DebugDefOpt(&actual).to_string());
+  expected.assert_eq(&DebugUtil { db: &db, item: &actual }.to_string());
 }
 
 fn refs_to(src: &str, expected: Expect) {
@@ -57,69 +57,71 @@ fn refs_to(src: &str, expected: Expect) {
 
 fn indent(s: String) -> String { s.replace("    ", "  ") }
 
-struct DebugScopes<'a>(&'a Arena<Scope>);
-impl fmt::Display for DebugScopes<'_> {
+struct DebugUtil<'db, 'it: 'db, T> {
+  db:   &'db dyn HirDatabase,
+  item: &'it T,
+}
+
+impl<'db, T> DebugUtil<'db, '_, T> {
+  fn child<'it, U>(&self, item: &'it U) -> DebugUtil<'db, 'it, U> {
+    DebugUtil { db: self.db, item }
+  }
+}
+
+impl<'db, 'it, T> fmt::Display for DebugUtil<'db, 'it, T>
+where
+  DebugUtil<'db, 'it, T>: fmt::Debug,
+{
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     write!(f, "{}", indent(format!("{:#?}", self)))
   }
 }
-impl fmt::Debug for DebugScopes<'_> {
+
+impl fmt::Debug for DebugUtil<'_, '_, Arena<Scope>> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.debug_list().entries(self.0.iter().map(|(_, s)| DebugScope(s))).finish()
+    f.debug_list().entries(self.item.iter().map(|(_, s)| self.child(s))).finish()
   }
 }
 
-struct DebugScope<'a>(&'a Scope);
-impl fmt::Debug for DebugScope<'_> {
+impl fmt::Debug for DebugUtil<'_, '_, Scope> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.debug_struct("Scope")
-      .field("range", &self.0.item_id)
-      .field("declarations", &DebugDeclarations(&self.0.declarations))
+      .field("range", &self.item.item_id)
+      .field("declarations", &self.child(&self.item.declarations))
       .finish()
   }
 }
 
-struct DebugDeclarations<'a>(&'a Vec<(String, Definition)>);
-impl fmt::Debug for DebugDeclarations<'_> {
+impl fmt::Debug for DebugUtil<'_, '_, Vec<(String, Definition)>> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.debug_map().entries(self.0.iter().map(|&(ref k, ref v)| (k, DebugDef(v)))).finish()
+    f.debug_map().entries(self.item.iter().map(|&(ref k, ref v)| (k, self.child(v)))).finish()
   }
 }
 
-struct DebugDefList<'a>(&'a Vec<Definition>);
-impl fmt::Display for DebugDefList<'_> {
+impl fmt::Debug for DebugUtil<'_, '_, Vec<Definition>> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "{}", indent(format!("{:#?}", self)))
-  }
-}
-impl fmt::Debug for DebugDefList<'_> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.debug_list().entries(self.0.iter().map(DebugDef)).finish()
+    f.debug_list().entries(self.item.iter().map(|d| self.child(d))).finish()
   }
 }
 
-struct DebugDefOpt<'a>(&'a Option<Definition>);
-impl fmt::Display for DebugDefOpt<'_> {
+impl<'db, 'it, T> fmt::Debug for DebugUtil<'db, 'it, Option<T>>
+where
+  DebugUtil<'db, 'it, T>: fmt::Debug,
+{
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "{}", indent(format!("{:#?}", self)))
-  }
-}
-impl fmt::Debug for DebugDefOpt<'_> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    match self.0 {
-      Some(def) => write!(f, "{:#?}", DebugDef(&def)),
+    match self.item {
+      Some(v) => write!(f, "{:#?}", &self.child(v)),
       None => writeln!(f, "None"),
     }
   }
 }
 
-struct DebugDef<'a>(&'a Definition);
-impl fmt::Debug for DebugDef<'_> {
+impl fmt::Debug for DebugUtil<'_, '_, Definition> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.debug_struct("Definition")
       // .field("pos", &self.0.pos.range)
-      .field("name", &self.0.name.as_str())
-      .field("kind", &self.0.kind)
+      .field("name", &self.item.name.as_str())
+      .field("kind", &self.item.kind)
       .finish()
   }
 }
