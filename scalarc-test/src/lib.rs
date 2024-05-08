@@ -652,7 +652,7 @@ mod tests {
     .assert_eq(&patch);
 
     let patch = format_patch(Some(4), "single line");
-    expect![@r#""single line""#].assert_eq(&patch);
+    expect![@r#"@"single line""#].assert_eq(&patch);
   }
 
   #[test]
