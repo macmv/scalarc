@@ -223,94 +223,87 @@ fn definitions_of(
   n: &SyntaxNode,
   scope: ScopeId,
 ) -> impl Iterator<Item = (String, Definition)> {
-  n.children().flat_map(move |n| {
-    match n.kind() {
-      SyntaxKind::VAL_DEF => {
-        let v = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
-        if let Some(id) = v.id_token() {
-          Some((
-            id.text().into(),
-            Definition {
-              pos: FileRange { file: file_id, range: id.text_range() },
-              name: id.text().into(),
-              scope,
-              kind: DefinitionKind::Local(LocalDefinition::Val),
-
-              node: SyntaxNodePtr::new(&n),
-            },
-          ))
-        } else {
-          None
-        }
-      }
-
-      SyntaxKind::CLASS_DEF => {
-        let c = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
-        if let Some(id) = c.id_token() {
-          Some((
-            id.text().into(),
-            Definition {
-              pos: FileRange { file: file_id, range: id.text_range() },
-              name: id.text().into(),
-              scope,
-              kind: DefinitionKind::Global(GlobalDefinition::Class),
-
-              node: SyntaxNodePtr::new(&n),
-            },
-          ))
-        } else {
-          None
-        }
-      }
-
-      SyntaxKind::FUN_DEF => {
-        let f = scalarc_syntax::ast::FunDef::cast(n.clone()).unwrap();
-
-        if let Some(sig) = f.fun_sig() {
-          if let Some(id) = sig.id_token() {
-            Some((
-              id.text().into(),
-              Definition {
-                pos: FileRange { file: file_id, range: id.text_range() },
-                name: id.text().into(),
-                scope,
-                kind: DefinitionKind::Local(LocalDefinition::Def),
-
-                node: SyntaxNodePtr::new(&n),
-              },
-            ))
-          } else {
-            None
-          }
-        } else {
-          None
-        }
-      }
-
-      // TODO: This is `FUN_PARAM` for both functions and classes right now. It should be updated
-      // to `CLASS_PARAM`, as those can define `val`s on the class.
-      SyntaxKind::FUN_PARAM => {
-        let p = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
-        if let Some(id) = p.id_token() {
-          Some((
-            id.text().into(),
-            Definition {
-              pos: FileRange { file: file_id, range: id.text_range() },
-              name: id.text().into(),
-              scope,
-              kind: DefinitionKind::Local(LocalDefinition::Parameter),
-
-              node: SyntaxNodePtr::new(&n),
-            },
-          ))
-        } else {
-          None
-        }
-      }
-
-      _ => None,
-    }
+  n.children().filter_map(move |n| {
+    let def = def_of_node(file_id, scope, n);
+    def.map(|def| (def.name.as_str().into(), def))
   })
+}
+
+fn def_of_node(file_id: FileId, scope: ScopeId, n: SyntaxNode) -> Option<Definition> {
+  match n.kind() {
+    SyntaxKind::VAL_DEF => {
+      let v = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
+      if let Some(id) = v.id_token() {
+        Some(Definition {
+          pos: FileRange { file: file_id, range: id.text_range() },
+          name: id.text().into(),
+          scope,
+          kind: DefinitionKind::Local(LocalDefinition::Val),
+
+          node: SyntaxNodePtr::new(&n),
+        })
+      } else {
+        None
+      }
+    }
+
+    SyntaxKind::CLASS_DEF => {
+      let c = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
+      if let Some(id) = c.id_token() {
+        Some(Definition {
+          pos: FileRange { file: file_id, range: id.text_range() },
+          name: id.text().into(),
+          scope,
+          kind: DefinitionKind::Global(GlobalDefinition::Class),
+
+          node: SyntaxNodePtr::new(&n),
+        })
+      } else {
+        None
+      }
+    }
+
+    SyntaxKind::FUN_DEF => {
+      let f = scalarc_syntax::ast::FunDef::cast(n.clone()).unwrap();
+
+      if let Some(sig) = f.fun_sig() {
+        if let Some(id) = sig.id_token() {
+          Some(Definition {
+            pos: FileRange { file: file_id, range: id.text_range() },
+            name: id.text().into(),
+            scope,
+            kind: DefinitionKind::Local(LocalDefinition::Def),
+
+            node: SyntaxNodePtr::new(&n),
+          })
+        } else {
+          None
+        }
+      } else {
+        None
+      }
+    }
+
+    // TODO: This is `FUN_PARAM` for both functions and classes right now. It should be updated
+    // to `CLASS_PARAM`, as those can define `val`s on the class.
+    SyntaxKind::FUN_PARAM => {
+      let p = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
+      if let Some(id) = p.id_token() {
+        Some(Definition {
+          pos: FileRange { file: file_id, range: id.text_range() },
+          name: id.text().into(),
+          scope,
+          kind: DefinitionKind::Local(LocalDefinition::Parameter),
+
+          node: SyntaxNodePtr::new(&n),
+        })
+      } else {
+        None
+      }
+    }
+
+    _ => None,
+  }
 }
 
 pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<Reference> {
