@@ -11,9 +11,13 @@ use scalarc_syntax::{
   TextSize, T,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Type {
   pub path: Path,
+}
+
+impl fmt::Debug for Type {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { write!(f, "Type({})", self) }
 }
 
 impl fmt::Display for Type {

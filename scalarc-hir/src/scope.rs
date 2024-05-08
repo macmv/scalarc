@@ -10,7 +10,7 @@ use scalarc_syntax::{
 
 use crate::{
   tree::Name, Definition, DefinitionKind, FileRange, GlobalDefinition, HirDatabase,
-  LocalDefinition, Path, Reference,
+  LocalDefinition, Params, Path, Reference, Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -261,12 +261,31 @@ fn def_of_node(file_id: FileId, scope: ScopeId, n: SyntaxNode) -> Option<Definit
       let f = scalarc_syntax::ast::FunDef::cast(n.clone()).unwrap();
 
       let sig = f.fun_sig()?;
+
+      let hir_sig = Signature {
+        params: sig
+          .fun_paramss()
+          .map(|p| Params {
+            implicit: false,
+            params:   p
+              .fun_params()
+              .filter_map(|p| {
+                p.ty()
+                  .map(|ty| Type { path: Path { elems: vec![Name(ty.syntax().text().into())] } })
+              })
+              .collect(),
+          })
+          .collect(),
+        ret:    None,
+      };
+
       let id = sig.id_token()?;
+
       Some(Definition {
         pos: FileRange { file: file_id, range: id.text_range() },
         name: id.text().into(),
         scope,
-        kind: DefinitionKind::Local(LocalDefinition::Def),
+        kind: DefinitionKind::Local(LocalDefinition::Def(hir_sig)),
 
         node: SyntaxNodePtr::new(&n),
       })

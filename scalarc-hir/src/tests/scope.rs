@@ -99,22 +99,15 @@ struct DebugDef<'a>(&'a Definition);
 impl fmt::Display for DebugDef<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let def = self.0;
-    write!(f, "Definition {{ ")?;
-    write!(f, "pos: {:?}, ", def.pos.range)?;
-    write!(f, "name: {:?}, ", def.name.as_str())?;
-    write!(f, "kind: {:?} ", def.kind)?;
+    write!(f, "Definition {{\n")?;
+    write!(f, "  pos: {:#?},\n", def.pos.range)?;
+    write!(f, "  name: {:#?},\n", def.name.as_str())?;
+    write!(
+      f,
+      "  kind: {}\n",
+      format!("{:#?}", def.kind).replace("    ", "  ").replace('\n', "\n  ")
+    )?;
     writeln!(f, "}}")
-  }
-}
-
-struct DebugReferences<'a>(&'a Vec<TextRange>);
-impl fmt::Display for DebugReferences<'_> {
-  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "[\n")?;
-    for r in self.0.iter() {
-      writeln!(f, "  {:?},", r)?;
-    }
-    write!(f, "]\n")
   }
 }
 
@@ -221,6 +214,37 @@ fn definition_at() {
     "#,
     expect![@r#"
       Definition { pos: 43..44, name: "a", kind: Local(Val) }
+    "#],
+  );
+}
+
+#[test]
+fn def_sigs() {
+  def_at(
+    r#"
+    def foo(a: Int): String = "hi"
+    foo@@
+    "#,
+    expect![@r#"
+      Definition {
+        pos: 9..12,
+        name: "foo",
+        kind: Local(
+          Def(
+            Signature {
+              params: [
+                Params {
+                  implicit: false,
+                  params: [
+                    Type(Int),
+                  ],
+                },
+              ],
+              ret: None,
+            },
+          ),
+        )
+      }
     "#],
   );
 }

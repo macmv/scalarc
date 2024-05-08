@@ -66,13 +66,25 @@ pub enum LocalDefinition {
   Val,
   Var,
   Parameter,
-  Def,
+  Def(Signature),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GlobalDefinition {
   Class,
   Object,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Signature {
+  pub params: Vec<Params>,
+  pub ret:    Option<Type>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Params {
+  pub implicit: bool,
+  pub params:   Vec<Type>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
