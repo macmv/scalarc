@@ -83,8 +83,8 @@ pub struct Path {
 
 #[salsa::query_group(HirDatabaseStorage)]
 pub trait HirDatabase: SourceDatabase {
-  #[salsa::invoke(ast::ast_id_map)]
-  fn ast_id_map(&self, file: FileId) -> Arc<ast::AstIdMap>;
+  #[salsa::invoke(ast::item_id_map)]
+  fn item_id_map(&self, file: FileId) -> Arc<ast::ItemIdMap>;
 
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
 

@@ -17,31 +17,31 @@ use scalarc_syntax::{
 use crate::HirDatabase;
 
 #[derive(Default, Debug)]
-pub struct AstIdMap {
+pub struct ItemIdMap {
   arena: Arena<SyntaxNodePtr>,
   map:   hashbrown::HashMap<Idx<SyntaxNodePtr>, (), ()>,
 }
 
-pub struct AstId<N: AstItem> {
+pub struct ItemId<N: AstItem> {
   raw:     Idx<SyntaxNodePtr>,
   phantom: PhantomData<N>,
 }
 
-impl PartialEq for AstIdMap {
+impl PartialEq for ItemIdMap {
   fn eq(&self, other: &Self) -> bool { self.arena == other.arena }
 }
-impl Eq for AstIdMap {}
+impl Eq for ItemIdMap {}
 
-pub(crate) fn ast_id_map(db: &dyn HirDatabase, file_id: FileId) -> Arc<AstIdMap> {
+pub(crate) fn item_id_map(db: &dyn HirDatabase, file_id: FileId) -> Arc<ItemIdMap> {
   let node = db.parse(file_id);
 
-  Arc::new(AstIdMap::from_source(&node.syntax_node()))
+  Arc::new(ItemIdMap::from_source(&node.syntax_node()))
 }
 
-impl AstIdMap {
-  pub(crate) fn from_source(node: &SyntaxNode) -> AstIdMap {
+impl ItemIdMap {
+  pub(crate) fn from_source(node: &SyntaxNode) -> ItemIdMap {
     assert!(node.parent().is_none());
-    let mut res = AstIdMap::default();
+    let mut res = ItemIdMap::default();
 
     // make sure to allocate the root node
     if !should_alloc_id(node.kind()) {
@@ -73,9 +73,9 @@ impl AstIdMap {
     res
   }
 
-  pub fn ast_id<N: AstItem>(&self, item: &N) -> AstId<N> {
+  pub fn ast_id<N: AstItem>(&self, item: &N) -> ItemId<N> {
     let raw = self.erased_ast_id(item.syntax());
-    AstId { raw, phantom: PhantomData }
+    ItemId { raw, phantom: PhantomData }
   }
 
   fn erased_ast_id(&self, item: &SyntaxNode) -> Idx<SyntaxNodePtr> {
@@ -84,7 +84,7 @@ impl AstIdMap {
     match self.map.raw_entry().from_hash(hash, |&idx| self.arena[idx] == ptr) {
       Some((&idx, &())) => idx,
       None => panic!(
-        "Can't find {:?} in AstIdMap:\n{:?}",
+        "can't find {:?} in ItemIdMap:\n{:?}",
         item,
         self.arena.iter().map(|(_id, i)| i).collect::<Vec<_>>(),
       ),
