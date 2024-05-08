@@ -20,7 +20,7 @@ pub mod scope;
 pub mod tree;
 pub mod types;
 
-pub use types::Type;
+pub use types::{Params, Signature, Type};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefinitionMap {
@@ -73,18 +73,6 @@ pub enum LocalDefinition {
 pub enum GlobalDefinition {
   Class,
   Object,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Signature {
-  pub params: Vec<Params>,
-  pub ret:    Option<Type>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Params {
-  pub implicit: bool,
-  pub params:   Vec<Type>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

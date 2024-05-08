@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use crate::{HirDatabase, Path};
+use crate::{tree::Name, HirDatabase, Path};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{AstNode, SyntaxKind},
@@ -14,6 +14,18 @@ use scalarc_syntax::{
 #[derive(Clone, PartialEq, Eq)]
 pub struct Type {
   pub path: Path,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Signature {
+  pub params: Vec<Params>,
+  pub ret:    Option<Type>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Params {
+  pub implicit: bool,
+  pub params:   Vec<(Name, Type)>,
 }
 
 impl fmt::Debug for Type {
@@ -27,6 +39,27 @@ impl fmt::Display for Type {
         write!(f, ".")?;
       }
       write!(f, "{}", elem.as_str())?;
+    }
+
+    Ok(())
+  }
+}
+
+impl fmt::Display for Signature {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    for params in &self.params {
+      write!(f, "(")?;
+      for (i, param) in params.params.iter().enumerate() {
+        if i != 0 {
+          write!(f, ", ")?;
+        }
+        write!(f, "{}: {}", param.0.as_str(), param.1)?;
+      }
+      write!(f, ")")?;
+    }
+
+    if let Some(ret) = &self.ret {
+      write!(f, " => {}", ret)?;
     }
 
     Ok(())

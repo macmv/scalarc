@@ -33,7 +33,9 @@ pub fn handle_completion(
               }
               LocalDefinition::Var => (lsp_types::CompletionItemKind::VARIABLE, None),
               LocalDefinition::Parameter => (lsp_types::CompletionItemKind::VARIABLE, None),
-              LocalDefinition::Def(_) => (lsp_types::CompletionItemKind::FUNCTION, None),
+              LocalDefinition::Def(sig) => {
+                (lsp_types::CompletionItemKind::FUNCTION, Some(sig.to_string()))
+              }
             },
           };
 

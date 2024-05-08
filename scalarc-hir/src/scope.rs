@@ -284,8 +284,14 @@ fn def_of_node(
             params:   p
               .fun_params()
               .filter_map(|p| {
-                p.ty()
-                  .map(|ty| Type { path: Path { elems: vec![Name(ty.syntax().text().into())] } })
+                if let (Some(id), Some(ty)) = (p.id_token(), p.ty()) {
+                  Some((
+                    id.text().into(),
+                    Type { path: Path { elems: vec![Name(ty.syntax().text().into())] } },
+                  ))
+                } else {
+                  None
+                }
               })
               .collect(),
           })
