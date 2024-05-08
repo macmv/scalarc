@@ -48,3 +48,14 @@ fn type_of_val() {
     expect![@"scala.Int"],
   );
 }
+
+#[test]
+fn type_of_call() {
+  type_at(
+    r#"
+    def foo(a: scala.Int): scala.Float = 3.0
+    foo(2)@@
+    "#,
+    expect![@"scala.Int"],
+  );
+}
