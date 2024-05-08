@@ -28,6 +28,15 @@ pub struct ItemId<N: AstItem> {
   phantom: PhantomData<N>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ErasedItemId {
+  raw: Idx<SyntaxNodePtr>,
+}
+
+impl<N: AstItem> ItemId<N> {
+  pub fn erased(&self) -> ErasedItemId { ErasedItemId { raw: self.raw } }
+}
+
 impl PartialEq for ItemIdMap {
   fn eq(&self, other: &Self) -> bool { self.arena == other.arena }
 }
@@ -78,6 +87,8 @@ impl ItemIdMap {
     let raw = self.erased_item_id(item.syntax());
     ItemId { raw, phantom: PhantomData }
   }
+
+  pub fn get_erased(&self, id: ErasedItemId) -> SyntaxNodePtr { self.arena[id.raw] }
 
   fn erased_item_id(&self, item: &SyntaxNode) -> Idx<SyntaxNodePtr> {
     let ptr = SyntaxNodePtr::new(item);

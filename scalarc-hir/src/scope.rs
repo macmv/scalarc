@@ -260,8 +260,6 @@ fn def_of_node(
         name: id.text().into(),
         scope,
         kind: DefinitionKind::Local(LocalDefinition::Val(ty)),
-
-        node: SyntaxNodePtr::new(&n),
       })
     }
 
@@ -272,8 +270,6 @@ fn def_of_node(
         name: id.text().into(),
         scope,
         kind: DefinitionKind::Local(LocalDefinition::Class),
-
-        node: SyntaxNodePtr::new(&n),
       })
     }
 
@@ -311,8 +307,6 @@ fn def_of_node(
         name: id.text().into(),
         scope,
         kind: DefinitionKind::Local(LocalDefinition::Def(hir_sig)),
-
-        node: SyntaxNodePtr::new(&n),
       })
     }
 
@@ -325,8 +319,6 @@ fn def_of_node(
         name: id.text().into(),
         scope,
         kind: DefinitionKind::Local(LocalDefinition::Parameter),
-
-        node: SyntaxNodePtr::new(&n),
       })
     }
 

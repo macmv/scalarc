@@ -4,10 +4,10 @@
 
 use std::fmt;
 
-use crate::{tree::Name, HirDatabase, Path};
+use crate::{ast::ErasedItemId, tree::Name, HirDatabase, Path};
 use scalarc_source::FileId;
 use scalarc_syntax::{
-  ast::{AstNode, SyntaxKind},
+  ast::{self, AstNode, SyntaxKind},
   TextSize, T,
 };
 
@@ -66,6 +66,7 @@ impl fmt::Display for Signature {
   }
 }
 
+// FIXME: This should be removed. Its borked.
 pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<Type> {
   let ast = db.parse(file_id);
 
@@ -88,12 +89,13 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     T![ident] => {
       let def = db.def_at_index(file_id, pos)?;
 
-      let node = def.node.to_node(&ast.syntax_node());
-
-      match node.kind() {
-        SyntaxKind::VAL_DEF => {
-          return db.type_at(file_id, node.text_range().end());
-        }
+      match def.kind {
+        crate::DefinitionKind::Global(g) => match g {
+          crate::GlobalDefinition::Val(id) => {
+            return db.type_at_item(file_id, id.erased());
+          }
+          _ => None,
+        },
         _ => None,
       }
     }
@@ -131,6 +133,23 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
       }
     }
 
+    _ => None,
+  }
+}
+
+pub fn type_at_item(db: &dyn HirDatabase, file_id: FileId, item: ErasedItemId) -> Option<Type> {
+  let ast = db.parse(file_id);
+
+  let item_id_map = db.item_id_map(file_id);
+
+  let ptr = item_id_map.get_erased(item);
+
+  let item = ast::Item::cast(ptr.to_node(&ast.syntax_node()))?;
+
+  dbg!(&item);
+
+  match item {
+    scalarc_syntax::ast::Item::ValDef(_) => db.type_at(file_id, item.syntax().text_range().end()),
     _ => None,
   }
 }

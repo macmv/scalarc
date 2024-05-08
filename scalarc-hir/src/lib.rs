@@ -1,11 +1,11 @@
 use std::{collections::HashMap, sync::Arc};
 
-use ast::ItemId;
+use ast::{ErasedItemId, ItemId};
 use la_arena::{Idx, RawIdx};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
-  ast::{AstNode, ClassDef, FunDef, Item, ObjectDef, ValDef},
-  SyntaxNodePtr, TextRange, TextSize,
+  ast::{ClassDef, FunDef, Item, ObjectDef, ValDef},
+  TextRange, TextSize,
 };
 use scope::{FileScopes, ScopeId};
 use tree::Name;
@@ -46,9 +46,6 @@ pub struct Definition {
   pub name:  Name,
   pub scope: ScopeId,
   pub kind:  DefinitionKind,
-
-  /// This is a pointer to the definition node.
-  pub node: SyntaxNodePtr,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,6 +104,9 @@ pub trait HirDatabase: SourceDatabase {
 
   #[salsa::invoke(types::type_at)]
   fn type_at(&self, file: FileId, index: TextSize) -> Option<Type>;
+
+  #[salsa::invoke(types::type_at_item)]
+  fn type_at_item(&self, file: FileId, id: ErasedItemId) -> Option<Type>;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {
@@ -146,8 +146,6 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
             name:  name.text().into(),
             scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
             kind:  DefinitionKind::Global(GlobalDefinition::Object(item_map.item_id(&c))),
-
-            node: SyntaxNodePtr::new(c.syntax()),
           },
         ))
       }
@@ -160,8 +158,6 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
             name:  name.text().into(),
             scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
             kind:  DefinitionKind::Global(GlobalDefinition::Class(item_map.item_id(&c))),
-
-            node: SyntaxNodePtr::new(c.syntax()),
           },
         ))
       }
