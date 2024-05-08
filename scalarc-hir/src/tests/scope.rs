@@ -121,10 +121,13 @@ where
 
 impl fmt::Debug for DebugUtil<'_, '_, Definition> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let item_id_map = self.db.item_id_map(FileId::temp_new());
+    let item = item_id_map.get_erased(self.item.item_id);
+
     f.debug_struct("Definition")
-      // .field("pos", &self.0.pos.range)
       .field("name", &self.item.name.as_str())
       .field("kind", &self.item.kind)
+      .field("item", &item)
       .finish()
   }
 }
@@ -152,6 +155,10 @@ fn scopes_of_example() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 5..16,
+              },
             },
             "bar": Definition {
               name: "bar",
@@ -160,6 +167,10 @@ fn scopes_of_example() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 21..32,
+              },
             },
             "baz": Definition {
               name: "baz",
@@ -168,6 +179,10 @@ fn scopes_of_example() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 37..48,
+              },
             },
           },
         },
@@ -198,12 +213,20 @@ fn scopes_of_example() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 5..16,
+              },
             },
             "bar": Definition {
               name: "bar",
               kind: Val(
                 None,
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 21..70,
+              },
             },
             "baz": Definition {
               name: "baz",
@@ -212,6 +235,10 @@ fn scopes_of_example() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 75..86,
+              },
             },
           },
         },
@@ -228,6 +255,10 @@ fn scopes_of_example() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 39..48,
+              },
             },
             "b": Definition {
               name: "b",
@@ -236,6 +267,10 @@ fn scopes_of_example() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 55..64,
+              },
             },
           },
         },
@@ -264,6 +299,10 @@ fn definitions_at() {
               Type(scala.Int),
             ),
           ),
+          item: SyntaxNodePtr {
+            kind: VAL_DEF,
+            range: 39..48,
+          },
         },
       ]"#],
   );
@@ -303,6 +342,10 @@ fn definition_at() {
             Type(scala.Int),
           ),
         ),
+        item: SyntaxNodePtr {
+          kind: VAL_DEF,
+          range: 39..48,
+        },
       }"#],
   );
 }
@@ -320,6 +363,10 @@ fn def_sigs() {
         kind: Def(
           Signature((a: Int)),
         ),
+        item: SyntaxNodePtr {
+          kind: FUN_DEF,
+          range: 5..35,
+        },
       }"#],
   );
 }
@@ -344,6 +391,10 @@ fn class_scopes() {
             "Foo": Definition {
               name: "Foo",
               kind: Class,
+              item: SyntaxNodePtr {
+                kind: CLASS_DEF,
+                range: 5..59,
+              },
             },
           },
         },
@@ -360,6 +411,10 @@ fn class_scopes() {
                   Type(String),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 31..44,
+              },
             },
           },
         },
@@ -379,6 +434,10 @@ fn class_def() {
         Definition {
           name: "Foo",
           kind: Class,
+          item: SyntaxNodePtr {
+            kind: CLASS_DEF,
+            range: 5..29,
+          },
         },
       ]"#],
   );
@@ -406,6 +465,10 @@ fn class_def() {
               Type(String),
             ),
           ),
+          item: SyntaxNodePtr {
+            kind: VAL_DEF,
+            range: 31..44,
+          },
         },
       ]"#],
   );
@@ -432,6 +495,10 @@ fn fun_scopes() {
               kind: Def(
                 Signature((a: Int)),
               ),
+              item: SyntaxNodePtr {
+                kind: FUN_DEF,
+                range: 5..50,
+              },
             },
           },
         },
@@ -448,6 +515,10 @@ fn fun_scopes() {
                   Type(String),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 31..44,
+              },
             },
           },
         },
@@ -469,6 +540,10 @@ fn fun_def() {
           kind: Def(
             Signature((a: Int)),
           ),
+          item: SyntaxNodePtr {
+            kind: FUN_DEF,
+            range: 5..24,
+          },
         },
       ]"#],
   );
@@ -491,6 +566,10 @@ fn fun_def() {
           kind: Def(
             Signature((a: Int)),
           ),
+          item: SyntaxNodePtr {
+            kind: FUN_DEF,
+            range: 5..24,
+          },
         },
       ]"#],
   );
@@ -544,6 +623,10 @@ fn nested_scopes() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 5..14,
+              },
             },
           },
         },
@@ -560,6 +643,10 @@ fn nested_scopes() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 28..37,
+              },
             },
           },
         },
@@ -576,6 +663,10 @@ fn nested_scopes() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 69..78,
+              },
             },
           },
         },
@@ -592,6 +683,10 @@ fn nested_scopes() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 109..118,
+              },
             },
           },
         },
@@ -608,6 +703,10 @@ fn nested_scopes() {
                   Type(scala.Int),
                 ),
               ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 283..292,
+              },
             },
           },
         },
