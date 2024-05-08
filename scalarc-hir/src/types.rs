@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use crate::{ast::ErasedItemId, tree::Name, HirDatabase, Path};
+use crate::{ast::ErasedScopeId, tree::Name, HirDatabase, Path};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode, SyntaxKind},
@@ -88,16 +88,11 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
   match node.kind() {
     T![ident] => {
       let def = db.def_at_index(file_id, pos)?;
+      let scopes = db.scopes_of(file_id);
 
-      match def.kind {
-        crate::DefinitionKind::Global(g) => match g {
-          crate::GlobalDefinition::Val(id) => {
-            return db.type_at_item(file_id, id.erased());
-          }
-          _ => None,
-        },
-        _ => None,
-      }
+      let scope = &scopes.scopes[def.scope];
+
+      return db.type_at_item(file_id, scope.item_id);
     }
 
     SyntaxKind::INT_LIT_KW => Some(Type::int()),
@@ -137,7 +132,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
   }
 }
 
-pub fn type_at_item(db: &dyn HirDatabase, file_id: FileId, item: ErasedItemId) -> Option<Type> {
+pub fn type_at_item(db: &dyn HirDatabase, file_id: FileId, item: ErasedScopeId) -> Option<Type> {
   let ast = db.parse(file_id);
 
   let item_id_map = db.item_id_map(file_id);

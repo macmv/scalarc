@@ -3,14 +3,14 @@ use std::mem;
 use la_arena::{Arena, Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
-  ast::{AstNode, SyntaxKind},
+  ast::{AstNode, Item, SyntaxKind},
   node::SyntaxNode,
-  SyntaxNodePtr, TextRange, TextSize, T,
+  SyntaxNodePtr, TextSize, T,
 };
 
 use crate::{
-  tree::Name, Definition, DefinitionKind, FileRange, HirDatabase, LocalDefinition, Params, Path,
-  Reference, Signature, Type,
+  ast::ErasedScopeId, tree::Name, Definition, DefinitionKind, FileRange, HirDatabase,
+  LocalDefinition, Params, Path, Reference, Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -20,13 +20,8 @@ pub struct Scope {
   /// The parent of this scope. `None` if this is the top-level scope of a file.
   pub parent: Option<ScopeId>,
 
-  /// The range of text at which this scope is visible in.
-  ///
-  /// This might not be the same as the range of the node that defines the
-  /// scope. For example, class parameters are only visible within the body of
-  /// the class. So `visible` will be the class body for the scope that class
-  /// paramters define.
-  pub visible: TextRange,
+  /// The erased item this scope is defined in.
+  pub item_id: ErasedScopeId,
 
   /// The roots of the scope. All definitions in the scope are children of these
   /// nodes.
@@ -52,13 +47,15 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   return vec![];
 
   let file_scopes = db.scopes_of(file_id);
+  let item_id_map = db.item_id_map(file_id);
 
   let mut defs = vec![];
 
   // Find the last (ie, smallest) scope that contains the given span.
-  let Some(innermost) =
-    file_scopes.scopes.iter().rev().find(|(_, scope)| scope.visible.contains_inclusive(pos))
-  else {
+  let Some(innermost) = file_scopes.scopes.iter().rev().find(|(_, scope)| {
+    let item = item_id_map.get_erased(scope.item_id);
+    item.text_range().contains_inclusive(pos)
+  }) else {
     return vec![];
   };
 
@@ -149,81 +146,45 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
 pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
   // Breadth-first search of all scopes in the given file.
   let ast = db.parse(file_id);
+  let item_id_map = db.item_id_map(file_id);
 
   let mut scopes = Arena::new();
 
   let tree = ast.tree();
 
-  let mut this_pass = vec![(vec![tree.syntax().clone()], None, tree.syntax().text_range())];
-  let mut next_pass = vec![];
-  while !this_pass.is_empty() {
-    for (items, parent, parent_visible) in this_pass.drain(..) {
-      let mut scope = Scope {
-        parent,
-        visible: parent_visible,
-        body: items.iter().map(|n| SyntaxNodePtr::new(&n)).collect(),
-        declarations: vec![],
-      };
-      let scope_id = Idx::from_raw(RawIdx::from_u32(scopes.len() as u32));
-      for item in items.iter() {
-        scope.declarations.extend(definitions_of(db, file_id, &item, scope_id));
+  for (item_id, item) in item_id_map.iter() {
+    let item = item.to_node(tree.syntax());
+    let parent = None; // FIXME
+
+    dbg!(&item);
+
+    let scope_id = Idx::<Scope>::from_raw(RawIdx::from(scopes.len() as u32));
+    let mut scope = Scope {
+      parent,
+      item_id,
+      body: vec![], // FIXME
+      declarations: vec![],
+    };
+
+    if let Some(it) = Item::cast(item.clone()) {
+      match it {
+        Item::ClassDef(c) => {
+          if let Some(p) = c.fun_params() {
+            scope.declarations.extend(definitions_of(db, file_id, p.syntax(), scope_id));
+          }
+          if let Some(body) = c.body() {
+            scope.declarations.extend(definitions_of(db, file_id, body.syntax(), scope_id));
+          }
+        }
+        _ => {}
       }
-      let id = if !scope.is_empty() { Some(scopes.alloc(scope)) } else { parent };
-
-      for node in items.iter().flat_map(|it| it.children()) {
-        let visible = node.text_range();
-
-        match node.kind() {
-          SyntaxKind::VAL_DEF => {
-            let n = scalarc_syntax::ast::ValDef::cast(node.clone()).unwrap();
-
-            let Some(expr) = n.expr() else { continue };
-
-            next_pass.push((vec![expr.syntax().clone()], id, visible));
-          }
-          SyntaxKind::CLASS_DEF => {
-            let n = scalarc_syntax::ast::ClassDef::cast(node.clone()).unwrap();
-
-            // Walk one level deeper manually, so that parameters and defs in the body are
-            // both visible in only the class body.
-            let Some(params) = n.fun_params() else { continue };
-            let Some(body) = n.body() else { continue };
-
-            next_pass.push((
-              vec![params.syntax().clone(), body.syntax().clone()],
-              id,
-              body.syntax().text_range(),
-            ));
-          }
-          SyntaxKind::FUN_DEF => {
-            let n = scalarc_syntax::ast::FunDef::cast(node.clone()).unwrap();
-
-            let Some(sig) = n.fun_sig() else { continue };
-            let Some(body) = n.expr() else { continue };
-
-            next_pass.push((
-              sig.syntax().children().chain([body.syntax().clone()]).collect(),
-              id,
-              body.syntax().text_range(),
-            ));
-          }
-          SyntaxKind::EXPR_ITEM
-          | SyntaxKind::BLOCK
-          | SyntaxKind::BLOCK_EXPR
-          | SyntaxKind::IF_EXPR
-          | SyntaxKind::MATCH_EXPR
-          | SyntaxKind::CASE_ITEM
-          | SyntaxKind::CALL_EXPR
-          | SyntaxKind::PAREN_ARGUMENTS
-          | SyntaxKind::BLOCK_ARGUMENTS
-          | SyntaxKind::SPREAD_ARGUMENTS => {
-            next_pass.push((vec![node], id, visible));
-          }
-          _ => continue,
-        };
-      }
+    } else {
+      scope.declarations.extend(definitions_of(db, file_id, &item, scope_id));
     }
-    std::mem::swap(&mut this_pass, &mut next_pass);
+
+    if !scope.is_empty() {
+      scopes.alloc(scope);
+    }
   }
 
   FileScopes { scopes }

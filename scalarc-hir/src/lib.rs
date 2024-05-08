@@ -1,12 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
-use ast::{ErasedItemId, ItemId};
-use la_arena::RawIdx;
+use ast::ErasedScopeId;
 use scalarc_source::{FileId, SourceDatabase, TargetId};
-use scalarc_syntax::{
-  ast::{ClassDef, FunDef, Item, ObjectDef, ValDef},
-  TextRange, TextSize,
-};
+use scalarc_syntax::{TextRange, TextSize};
 use scope::{FileScopes, ScopeId};
 use tree::Name;
 
@@ -70,10 +66,10 @@ pub enum LocalDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GlobalDefinition {
-  Class(ItemId<ClassDef>),
-  Object(ItemId<ObjectDef>),
-  Val(ItemId<ValDef>),
-  Def(ItemId<FunDef>),
+  Class,
+  Object,
+  Val,
+  Def,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -84,7 +80,7 @@ pub struct Path {
 #[salsa::query_group(HirDatabaseStorage)]
 pub trait HirDatabase: SourceDatabase {
   #[salsa::invoke(ast::item_id_map)]
-  fn item_id_map(&self, file: FileId) -> Arc<ast::ItemIdMap>;
+  fn item_id_map(&self, file: FileId) -> Arc<ast::ScopeIdMap>;
 
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
 
@@ -106,7 +102,7 @@ pub trait HirDatabase: SourceDatabase {
   fn type_at(&self, file: FileId, index: TextSize) -> Option<Type>;
 
   #[salsa::invoke(types::type_at_item)]
-  fn type_at_item(&self, file: FileId, id: ErasedItemId) -> Option<Type>;
+  fn type_at_item(&self, file: FileId, id: ErasedScopeId) -> Option<Type>;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {
@@ -123,61 +119,9 @@ fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionM
   DefinitionMap { items }
 }
 
-// Each file in scala declares its entire package at the top of the file. So the
-// resulting definition map for each file can be entirely determined just from
-// parsing a file. The path of the file doesn't affect the result of this
-// query.
+// FIXME: Replace with the zero scope for this file.
 fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
-  let ast = db.parse(file);
-  let item_map = db.item_id_map(file);
-
-  // TODO: Parse `package` statements out of `ast`.
-
-  let items = ast
-    .tree()
-    .items()
-    .filter_map(|item| match item {
-      Item::ObjectDef(c) => {
-        let name = c.id_token()?;
-
-        Some((
-          Path { elems: vec![name.text().into()] },
-          Definition {
-            name:  name.text().into(),
-            scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
-            kind:  DefinitionKind::Global(GlobalDefinition::Object(item_map.item_id(&c))),
-          },
-        ))
-      }
-      Item::ClassDef(c) => {
-        let name = c.id_token()?;
-
-        Some((
-          Path { elems: vec![name.text().into()] },
-          Definition {
-            name:  name.text().into(),
-            scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
-            kind:  DefinitionKind::Global(GlobalDefinition::Class(item_map.item_id(&c))),
-          },
-        ))
-      }
-      Item::ValDef(v) => {
-        let name = v.id_token()?;
-
-        Some((
-          Path { elems: vec![name.text().into()] },
-          Definition {
-            name:  name.text().into(),
-            scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
-            kind:  DefinitionKind::Global(GlobalDefinition::Val(item_map.item_id(&v))),
-          },
-        ))
-      }
-      _ => None,
-    })
-    .collect();
-
-  DefinitionMap { items }
+  DefinitionMap { items: HashMap::new() }
 }
 
 impl Path {

@@ -17,41 +17,42 @@ use scalarc_syntax::{
 use crate::HirDatabase;
 
 #[derive(Default, Debug)]
-pub struct ItemIdMap {
+pub struct ScopeIdMap {
   arena: Arena<SyntaxNodePtr>,
   map:   hashbrown::HashMap<Idx<SyntaxNodePtr>, (), ()>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ItemId<N: AstItem> {
+// FIXME: Maybe remove? The erased ID is a lot more useful.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ScopeId<N: AstItem> {
   raw:     Idx<SyntaxNodePtr>,
   phantom: PhantomData<N>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ErasedItemId {
-  raw: Idx<SyntaxNodePtr>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ErasedScopeId {
+  pub(crate) raw: Idx<SyntaxNodePtr>,
 }
 
-impl<N: AstItem> ItemId<N> {
-  pub fn erased(&self) -> ErasedItemId { ErasedItemId { raw: self.raw } }
+impl<N: AstItem> ScopeId<N> {
+  pub fn erased(&self) -> ErasedScopeId { ErasedScopeId { raw: self.raw } }
 }
 
-impl PartialEq for ItemIdMap {
+impl PartialEq for ScopeIdMap {
   fn eq(&self, other: &Self) -> bool { self.arena == other.arena }
 }
-impl Eq for ItemIdMap {}
+impl Eq for ScopeIdMap {}
 
-pub(crate) fn item_id_map(db: &dyn HirDatabase, file_id: FileId) -> Arc<ItemIdMap> {
+pub(crate) fn item_id_map(db: &dyn HirDatabase, file_id: FileId) -> Arc<ScopeIdMap> {
   let node = db.parse(file_id);
 
-  Arc::new(ItemIdMap::from_source(&node.syntax_node()))
+  Arc::new(ScopeIdMap::from_source(&node.syntax_node()))
 }
 
-impl ItemIdMap {
-  pub(crate) fn from_source(node: &SyntaxNode) -> ItemIdMap {
+impl ScopeIdMap {
+  pub(crate) fn from_source(node: &SyntaxNode) -> ScopeIdMap {
     assert!(node.parent().is_none());
-    let mut res = ItemIdMap::default();
+    let mut res = ScopeIdMap::default();
 
     // make sure to allocate the root node
     if !should_alloc_id(node.kind()) {
@@ -83,12 +84,16 @@ impl ItemIdMap {
     res
   }
 
-  pub fn item_id<N: AstItem>(&self, item: &N) -> ItemId<N> {
-    let raw = self.erased_item_id(item.syntax());
-    ItemId { raw, phantom: PhantomData }
+  pub fn iter(&self) -> impl Iterator<Item = (ErasedScopeId, &SyntaxNodePtr)> {
+    self.arena.iter().map(move |(id, ptr)| (ErasedScopeId { raw: id }, ptr))
   }
 
-  pub fn get_erased(&self, id: ErasedItemId) -> SyntaxNodePtr { self.arena[id.raw] }
+  pub fn item_id<N: AstItem>(&self, item: &N) -> ScopeId<N> {
+    let raw = self.erased_item_id(item.syntax());
+    ScopeId { raw, phantom: PhantomData }
+  }
+
+  pub fn get_erased(&self, id: ErasedScopeId) -> SyntaxNodePtr { self.arena[id.raw] }
 
   fn erased_item_id(&self, item: &SyntaxNode) -> Idx<SyntaxNodePtr> {
     let ptr = SyntaxNodePtr::new(item);
@@ -155,7 +160,8 @@ register_ast_item! {
     ClassDef,
     ObjectDef,
     FunDef,
-    ValDef
+    ValDef,
+  BlockExpr
 }
 
 fn hash_ptr(ptr: &SyntaxNodePtr) -> u64 {

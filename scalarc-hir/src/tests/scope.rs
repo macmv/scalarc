@@ -73,7 +73,7 @@ struct DebugScope<'a>(&'a Scope);
 impl fmt::Debug for DebugScope<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.debug_struct("Scope")
-      .field("range", &self.0.visible)
+      .field("range", &self.0.item_id)
       .field("declarations", &DebugDeclarations(&self.0.declarations))
       .finish()
   }
@@ -135,7 +135,9 @@ fn scopes_of_example() {
     expect![@r#"
       [
         Scope {
-          range: 0..49,
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(0),
+          },
           declarations: {
             "foo": Definition {
               name: "foo",
@@ -184,7 +186,9 @@ fn scopes_of_example() {
     expect![@r#"
       [
         Scope {
-          range: 0..87,
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(0),
+          },
           declarations: {
             "foo": Definition {
               name: "foo",
@@ -217,7 +221,9 @@ fn scopes_of_example() {
           },
         },
         Scope {
-          range: 21..70,
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(4),
+          },
           declarations: {
             "a": Definition {
               name: "a",
@@ -318,7 +324,9 @@ fn class_scopes() {
     expect![@r#"
       [
         Scope {
-          range: 0..60,
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(0),
+          },
           declarations: {
             "Foo": Definition {
               name: "Foo",
@@ -329,7 +337,9 @@ fn class_scopes() {
           },
         },
         Scope {
-          range: 23..59,
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(1),
+          },
           declarations: {
             "a": Definition {
               name: "a",
@@ -392,7 +402,9 @@ fn fun_scopes() {
     expect![@r#"
       [
         Scope {
-          range: 0..51,
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(0),
+          },
           declarations: {
             "foo": Definition {
               name: "foo",
@@ -420,14 +432,10 @@ fn fun_scopes() {
           },
         },
         Scope {
-          range: 23..50,
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(2),
+          },
           declarations: {
-            "a": Definition {
-              name: "a",
-              kind: Local(
-                Parameter,
-              ),
-            },
             "b": Definition {
               name: "b",
               kind: Local(
@@ -505,7 +513,9 @@ fn nested_scopes() {
     expect![@r#"
       [
         Scope {
-          range: 0..308,
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(0),
+          },
           declarations: {
             "a": Definition {
               name: "a",
@@ -520,7 +530,9 @@ fn nested_scopes() {
           },
         },
         Scope {
-          range: 20..43,
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(7),
+          },
           declarations: {
             "b": Definition {
               name: "b",
@@ -535,7 +547,9 @@ fn nested_scopes() {
           },
         },
         Scope {
-          range: 61..84,
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(8),
+          },
           declarations: {
             "c": Definition {
               name: "c",
@@ -550,22 +564,9 @@ fn nested_scopes() {
           },
         },
         Scope {
-          range: 230..261,
-          declarations: {
-            "g": Definition {
-              name: "g",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
-                ),
-              ),
-            },
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(9),
           },
-        },
-        Scope {
-          range: 101..124,
           declarations: {
             "d": Definition {
               name: "d",
@@ -580,22 +581,9 @@ fn nested_scopes() {
           },
         },
         Scope {
-          range: 164..184,
-          declarations: {
-            "e": Definition {
-              name: "e",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
-                ),
-              ),
-            },
+          range: ErasedScopeId {
+            raw: Idx::<Scala>>(14),
           },
-        },
-        Scope {
-          range: 275..306,
           declarations: {
             "h": Definition {
               name: "h",
@@ -629,13 +617,13 @@ fn refs_to_val() {
     "#,
     expect![@r#"
       val a = 3
-      @a@
-      @a@ + b
-      println(@a@)
+      a
+      a + b
+      println(a)
 
-      if (@a@ > 3) {
+      if (a > 3) {
         val a = 4
-        @a@
+        a
       }
     "#],
   );

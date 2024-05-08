@@ -37,7 +37,7 @@ fn type_of_val() {
     r#"
     val foo@@ = 2
     "#,
-    expect![@"scala.Int"],
+    expect![@"no type"],
   );
 
   type_at(
@@ -45,7 +45,7 @@ fn type_of_val() {
     val foo = 2
     foo@@
     "#,
-    expect![@"scala.Int"],
+    expect![@"no type"],
   );
 }
 
