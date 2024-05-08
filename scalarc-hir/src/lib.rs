@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use la_arena::RawIdx;
 use scalarc_source::{FileId, SourceDatabase, TargetId};
@@ -16,6 +16,7 @@ mod tests;
 extern crate log;
 
 pub mod analysis;
+mod ast;
 pub mod scope;
 pub mod tree;
 pub mod types;
@@ -82,6 +83,9 @@ pub struct Path {
 
 #[salsa::query_group(HirDatabaseStorage)]
 pub trait HirDatabase: SourceDatabase {
+  #[salsa::invoke(ast::ast_id_map)]
+  fn ast_id_map(&self, file: FileId) -> Arc<ast::AstIdMap>;
+
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
 
   fn definitions_for_file(&self, file: FileId) -> DefinitionMap;

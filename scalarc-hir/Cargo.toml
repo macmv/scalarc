@@ -13,6 +13,7 @@ salsa = "0.17.0-pre.2"
 scalarc-source.workspace = true
 scalarc-syntax.workspace = true
 url = "2.5.0"
+hashbrown = "0.14.5"
 
 [dev-dependencies]
 scalarc-test.workspace = true
