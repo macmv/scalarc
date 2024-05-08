@@ -21,21 +21,31 @@ pub fn handle_completion(
     Ok(Some(lsp_types::CompletionResponse::Array(
       completions
         .into_iter()
-        .map(|c| lsp_types::CompletionItem {
-          label: c.label,
-          kind: Some(match c.kind {
+        .map(|c| {
+          let (kind, detail) = match c.kind {
             DefinitionKind::Global(g) => match g {
-              GlobalDefinition::Class => lsp_types::CompletionItemKind::CLASS,
-              GlobalDefinition::Object => lsp_types::CompletionItemKind::CLASS,
+              GlobalDefinition::Class => (lsp_types::CompletionItemKind::CLASS, None),
+              GlobalDefinition::Object => (lsp_types::CompletionItemKind::CLASS, None),
             },
             DefinitionKind::Local(l) => match l {
-              LocalDefinition::Val => lsp_types::CompletionItemKind::VARIABLE,
-              LocalDefinition::Var => lsp_types::CompletionItemKind::VARIABLE,
-              LocalDefinition::Parameter => lsp_types::CompletionItemKind::VARIABLE,
-              LocalDefinition::Def => lsp_types::CompletionItemKind::FUNCTION,
+              LocalDefinition::Val(ty) => {
+                (lsp_types::CompletionItemKind::VARIABLE, ty.map(|t| t.to_string()))
+              }
+              LocalDefinition::Var => (lsp_types::CompletionItemKind::VARIABLE, None),
+              LocalDefinition::Parameter => (lsp_types::CompletionItemKind::VARIABLE, None),
+              LocalDefinition::Def(_) => (lsp_types::CompletionItemKind::FUNCTION, None),
             },
-          }),
-          ..Default::default()
+          };
+
+          lsp_types::CompletionItem {
+            label: c.label,
+            label_details: detail.map(|d| lsp_types::CompletionItemLabelDetails {
+              detail: Some(d),
+              ..Default::default()
+            }),
+            kind: Some(kind),
+            ..Default::default()
+          }
         })
         .collect(),
     )))

@@ -138,10 +138,10 @@ impl<'a> Highlighter<'a> {
             self.highlight(
               id.text_range(),
               match def.kind {
-                DefinitionKind::Local(LocalDefinition::Val) => HighlightKind::Variable,
+                DefinitionKind::Local(LocalDefinition::Val(_)) => HighlightKind::Variable,
                 DefinitionKind::Local(LocalDefinition::Var) => HighlightKind::Variable,
                 DefinitionKind::Local(LocalDefinition::Parameter) => HighlightKind::Parameter,
-                DefinitionKind::Local(LocalDefinition::Def) => HighlightKind::Function,
+                DefinitionKind::Local(LocalDefinition::Def(_)) => HighlightKind::Function,
                 DefinitionKind::Global(GlobalDefinition::Class) => HighlightKind::Class,
                 DefinitionKind::Global(GlobalDefinition::Object) => HighlightKind::Object,
               },
