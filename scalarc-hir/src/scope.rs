@@ -5,12 +5,12 @@ use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{AstNode, Item, SyntaxKind},
   node::SyntaxNode,
-  SyntaxNodePtr, TextSize, T,
+  TextSize, T,
 };
 
 use crate::{
-  ast::ErasedScopeId, tree::Name, Definition, DefinitionKind, FileRange, HirDatabase,
-  LocalDefinition, Params, Path, Reference, Signature, Type,
+  ast::ErasedScopeId, tree::Name, Definition, DefinitionKind, FileRange, HirDatabase, Params, Path,
+  Reference, Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -208,7 +208,7 @@ fn def_of_node(
         name: id.text().into(),
         parent_scope: scope,
         item_id,
-        kind: DefinitionKind::Local(LocalDefinition::Val(ty)),
+        kind: DefinitionKind::Val(ty),
       })
     }
 
@@ -221,7 +221,7 @@ fn def_of_node(
         name: id.text().into(),
         parent_scope: scope,
         item_id,
-        kind: DefinitionKind::Local(LocalDefinition::Class),
+        kind: DefinitionKind::Class,
       })
     }
 
@@ -261,7 +261,7 @@ fn def_of_node(
         name: id.text().into(),
         parent_scope: scope,
         item_id,
-        kind: DefinitionKind::Local(LocalDefinition::Def(hir_sig)),
+        kind: DefinitionKind::Def(hir_sig),
       })
     }
 

@@ -2,7 +2,7 @@ use std::{error::Error, path::Path};
 
 use lsp_types::SemanticTokenType;
 use scalarc_analysis::highlight::{Highlight, HighlightKind};
-use scalarc_hir::{DefinitionKind, FileLocation, GlobalDefinition, LocalDefinition};
+use scalarc_hir::{DefinitionKind, FileLocation};
 use scalarc_source::FileId;
 use scalarc_syntax::TextSize;
 
@@ -23,20 +23,15 @@ pub fn handle_completion(
         .into_iter()
         .map(|c| {
           let (kind, detail) = match c.kind {
-            DefinitionKind::Global(g) => match g {
-              GlobalDefinition::Class => (lsp_types::CompletionItemKind::CLASS, None),
-              GlobalDefinition::Object => (lsp_types::CompletionItemKind::CLASS, None),
-            },
-            DefinitionKind::Local(l) => match l {
-              LocalDefinition::Val(ty) => {
-                (lsp_types::CompletionItemKind::VARIABLE, ty.map(|t| t.to_string()))
-              }
-              LocalDefinition::Var => (lsp_types::CompletionItemKind::VARIABLE, None),
-              LocalDefinition::Parameter => (lsp_types::CompletionItemKind::VARIABLE, None),
-              LocalDefinition::Def(sig) => {
-                (lsp_types::CompletionItemKind::FUNCTION, Some(sig.to_string()))
-              }
-            },
+            DefinitionKind::Val(ty) => {
+              (lsp_types::CompletionItemKind::VARIABLE, ty.map(|t| t.to_string()))
+            }
+            DefinitionKind::Var => (lsp_types::CompletionItemKind::VARIABLE, None),
+            DefinitionKind::Parameter => (lsp_types::CompletionItemKind::VARIABLE, None),
+            DefinitionKind::Def(sig) => {
+              (lsp_types::CompletionItemKind::FUNCTION, Some(sig.to_string()))
+            }
+            DefinitionKind::Class => (lsp_types::CompletionItemKind::CLASS, None),
           };
 
           lsp_types::CompletionItem {
@@ -83,12 +78,12 @@ pub fn handle_goto_definition(
   let pos = file_position(&snap, params.text_document_position_params)?;
   let definition = snap.analysis.definition_for_name(pos)?;
 
-  if let Some(def) = definition {
+  if let Some((_, pos)) = definition {
     let files = snap.files.read();
 
-    let line_index = snap.analysis.line_index(def.pos.file)?;
-    let start = line_index.line_col(def.pos.range.start());
-    let end = line_index.line_col(def.pos.range.end());
+    let line_index = snap.analysis.line_index(pos.file)?;
+    let start = line_index.line_col(pos.range.start());
+    let end = line_index.line_col(pos.range.end());
 
     let start = lsp_types::Position { line: start.line, character: start.col };
     let end = lsp_types::Position { line: end.line, character: end.col };
@@ -96,7 +91,7 @@ pub fn handle_goto_definition(
     Ok(Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_types::Location::new(
       lsp_types::Url::parse(&format!(
         "file://{}",
-        files.workspace.join(files.id_to_path(def.pos.file)).display()
+        files.workspace.join(files.id_to_path(pos.file)).display()
       ))
       .unwrap(),
       lsp_types::Range { start, end },
@@ -115,13 +110,13 @@ pub fn handle_document_highlight(
   let definition = snap.analysis.definition_for_name(pos)?;
   let refs = snap.analysis.references_for_name(pos)?;
 
-  if let Some(def) = definition {
-    if def.pos.file != pos.file {
+  if let Some((_, pos)) = definition {
+    if pos.file != pos.file {
       return Ok(None);
     }
 
-    let start = line_index.line_col(def.pos.range.start());
-    let end = line_index.line_col(def.pos.range.end());
+    let start = line_index.line_col(pos.range.start());
+    let end = line_index.line_col(pos.range.end());
 
     let start = lsp_types::Position { line: start.line, character: start.col };
     let end = lsp_types::Position { line: end.line, character: end.col };
@@ -160,9 +155,9 @@ pub fn handle_hover(
   let ty = snap.analysis.type_at(pos)?;
 
   if let Some(ty) = ty {
-    let range = def.map(|d| {
-      let start = line_index.line_col(d.pos.range.start());
-      let end = line_index.line_col(d.pos.range.end());
+    let range = def.map(|(_, pos)| {
+      let start = line_index.line_col(pos.range.start());
+      let end = line_index.line_col(pos.range.end());
 
       let start = lsp_types::Position { line: start.line, character: start.col };
       let end = lsp_types::Position { line: end.line, character: end.col };

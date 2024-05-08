@@ -52,25 +52,11 @@ pub struct Reference {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DefinitionKind {
-  Local(LocalDefinition),
-  Global(GlobalDefinition),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum LocalDefinition {
   Val(Option<Type>),
   Var,
   Parameter,
   Def(Signature),
   Class,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum GlobalDefinition {
-  Class,
-  Object,
-  Val,
-  Def,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

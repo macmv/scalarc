@@ -1,4 +1,4 @@
-use scalarc_hir::{DefinitionKind, GlobalDefinition, HirDatabase, LocalDefinition};
+use scalarc_hir::{DefinitionKind, HirDatabase};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode},
@@ -138,12 +138,11 @@ impl<'a> Highlighter<'a> {
             self.highlight(
               id.text_range(),
               match def.kind {
-                DefinitionKind::Local(LocalDefinition::Val(_)) => HighlightKind::Variable,
-                DefinitionKind::Local(LocalDefinition::Var) => HighlightKind::Variable,
-                DefinitionKind::Local(LocalDefinition::Parameter) => HighlightKind::Parameter,
-                DefinitionKind::Local(LocalDefinition::Def(_)) => HighlightKind::Function,
-                DefinitionKind::Global(GlobalDefinition::Class) => HighlightKind::Class,
-                DefinitionKind::Global(GlobalDefinition::Object) => HighlightKind::Object,
+                DefinitionKind::Val(_) => HighlightKind::Variable,
+                DefinitionKind::Var => HighlightKind::Variable,
+                DefinitionKind::Parameter => HighlightKind::Parameter,
+                DefinitionKind::Def(_) => HighlightKind::Function,
+                DefinitionKind::Class => HighlightKind::Class,
               },
             );
           }

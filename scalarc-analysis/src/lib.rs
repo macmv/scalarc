@@ -17,9 +17,9 @@ use diagnostic::Diagnostic;
 
 use database::{LineIndexDatabase, RootDatabase};
 use highlight::Highlight;
-use line_index::LineIndex;
+use line_index::{LineIndex, TextRange};
 use salsa::{Cancelled, ParallelDatabase};
-use scalarc_hir::{Definition, FileLocation, HirDatabase, Reference, Type};
+use scalarc_hir::{Definition, FileLocation, FileRange, HirDatabase, Reference, Type};
 use scalarc_source::{FileId, SourceDatabase, Workspace};
 
 pub struct AnalysisHost {
@@ -98,8 +98,16 @@ impl Analysis {
     self.with_db(|db| db.parse(file))
   }
 
-  pub fn definition_for_name(&self, pos: FileLocation) -> Cancellable<Option<Definition>> {
-    self.with_db(|db| db.def_at_index(pos.file, pos.index))
+  pub fn definition_for_name(
+    &self,
+    pos: FileLocation,
+  ) -> Cancellable<Option<(Definition, FileRange)>> {
+    self.with_db(|db| {
+      db.def_at_index(pos.file, pos.index).map(|def| {
+        let item = db.item_id_map(pos.file).get_erased(def.item_id);
+        (def, FileRange { file: pos.file, range: item.text_range() })
+      })
+    })
   }
 
   pub fn references_for_name(&self, pos: FileLocation) -> Cancellable<Vec<Reference>> {
