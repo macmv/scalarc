@@ -370,7 +370,12 @@ fn def_sigs() {
                 Params {
                   implicit: false,
                   params: [
-                    Type(Int),
+                    (
+                      Name(
+                        "a",
+                      ),
+                      Type(Int),
+                    ),
                   ],
                 },
               ],
@@ -535,7 +540,12 @@ fn fun_scopes() {
                       Params {
                         implicit: false,
                         params: [
-                          Type(Int),
+                          (
+                            Name(
+                              "a",
+                            ),
+                            Type(Int),
+                          ),
                         ],
                       },
                     ],
@@ -592,7 +602,12 @@ fn fun_def() {
                   Params {
                     implicit: false,
                     params: [
-                      Type(Int),
+                      (
+                        Name(
+                          "a",
+                        ),
+                        Type(Int),
+                      ),
                     ],
                   },
                 ],
@@ -627,7 +642,12 @@ fn fun_def() {
                   Params {
                     implicit: false,
                     params: [
-                      Type(Int),
+                      (
+                        Name(
+                          "a",
+                        ),
+                        Type(Int),
+                      ),
                     ],
                   },
                 ],
@@ -662,7 +682,12 @@ fn fun_def() {
                   Params {
                     implicit: false,
                     params: [
-                      Type(Int),
+                      (
+                        Name(
+                          "a",
+                        ),
+                        Type(Int),
+                      ),
                     ],
                   },
                 ],
