@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use ast::{ErasedItemId, ItemId};
-use la_arena::{Idx, RawIdx};
+use la_arena::RawIdx;
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
   ast::{ClassDef, FunDef, Item, ObjectDef, ValDef},
@@ -158,6 +158,18 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
             name:  name.text().into(),
             scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
             kind:  DefinitionKind::Global(GlobalDefinition::Class(item_map.item_id(&c))),
+          },
+        ))
+      }
+      Item::ValDef(v) => {
+        let name = v.id_token()?;
+
+        Some((
+          Path { elems: vec![name.text().into()] },
+          Definition {
+            name:  name.text().into(),
+            scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
+            kind:  DefinitionKind::Global(GlobalDefinition::Val(item_map.item_id(&v))),
           },
         ))
       }

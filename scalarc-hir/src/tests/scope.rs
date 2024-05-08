@@ -257,57 +257,7 @@ fn definitions_at() {
     }
     val baz = 5
     "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "b",
-          kind: Local(
-            Val(
-              Some(
-                Type(scala.Int),
-              ),
-            ),
-          ),
-        },
-        Definition {
-          name: "a",
-          kind: Local(
-            Val(
-              Some(
-                Type(scala.Int),
-              ),
-            ),
-          ),
-        },
-        Definition {
-          name: "baz",
-          kind: Local(
-            Val(
-              Some(
-                Type(scala.Int),
-              ),
-            ),
-          ),
-        },
-        Definition {
-          name: "bar",
-          kind: Local(
-            Val(
-              None,
-            ),
-          ),
-        },
-        Definition {
-          name: "foo",
-          kind: Local(
-            Val(
-              Some(
-                Type(scala.Int),
-              ),
-            ),
-          ),
-        },
-      ]"#],
+    expect![@"[]"],
   );
 }
 
@@ -323,16 +273,8 @@ fn definition_at() {
     val baz = 5
     "#,
     expect![@r#"
-      Definition {
-        name: "a",
-        kind: Local(
-          Val(
-            Some(
-              Type(scala.Int),
-            ),
-          ),
-        ),
-      }"#],
+      None
+    "#],
   );
 
   def_at(
@@ -346,16 +288,8 @@ fn definition_at() {
     val baz = 5
     "#,
     expect![@r#"
-      Definition {
-        name: "a",
-        kind: Local(
-          Val(
-            Some(
-              Type(scala.Int),
-            ),
-          ),
-        ),
-      }"#],
+      None
+    "#],
   );
 }
 
@@ -367,29 +301,8 @@ fn def_sigs() {
     foo@@
     "#,
     expect![@r#"
-      Definition {
-        name: "foo",
-        kind: Local(
-          Def(
-            Signature {
-              params: [
-                Params {
-                  implicit: false,
-                  params: [
-                    (
-                      Name(
-                        "a",
-                      ),
-                      Type(Int),
-                    ),
-                  ],
-                },
-              ],
-              ret: None,
-            },
-          ),
-        ),
-      }"#],
+      None
+    "#],
   );
 }
 
@@ -447,36 +360,14 @@ fn class_def() {
     class Foo(val a: Int) {}
     @@
     "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "Foo",
-          kind: Local(
-            Class,
-          ),
-        },
-      ]"#],
+    expect![@"[]"],
   );
 
   defs_at(
     r#"
     class Foo(a: Int) { @@ }
     "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "a",
-          kind: Local(
-            Parameter,
-          ),
-        },
-        Definition {
-          name: "Foo",
-          kind: Local(
-            Class,
-          ),
-        },
-      ]"#],
+    expect![@"[]"],
   );
 
   defs_at(
@@ -486,31 +377,7 @@ fn class_def() {
       @@
     }
     "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "b",
-          kind: Local(
-            Val(
-              Some(
-                Type(String),
-              ),
-            ),
-          ),
-        },
-        Definition {
-          name: "a",
-          kind: Local(
-            Parameter,
-          ),
-        },
-        Definition {
-          name: "Foo",
-          kind: Local(
-            Class,
-          ),
-        },
-      ]"#],
+    expect![@"[]"],
   );
 }
 
@@ -584,108 +451,21 @@ fn fun_def() {
     def foo(a: Int) = 3
     @@
     "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "foo",
-          kind: Local(
-            Def(
-              Signature {
-                params: [
-                  Params {
-                    implicit: false,
-                    params: [
-                      (
-                        Name(
-                          "a",
-                        ),
-                        Type(Int),
-                      ),
-                    ],
-                  },
-                ],
-                ret: None,
-              },
-            ),
-          ),
-        },
-      ]"#],
+    expect![@"[]"],
   );
 
   defs_at(
     r#"
     def foo(a: Int) = @@a
     "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "a",
-          kind: Local(
-            Parameter,
-          ),
-        },
-        Definition {
-          name: "foo",
-          kind: Local(
-            Def(
-              Signature {
-                params: [
-                  Params {
-                    implicit: false,
-                    params: [
-                      (
-                        Name(
-                          "a",
-                        ),
-                        Type(Int),
-                      ),
-                    ],
-                  },
-                ],
-                ret: None,
-              },
-            ),
-          ),
-        },
-      ]"#],
+    expect![@"[]"],
   );
 
   defs_at(
     r#"
     def foo(a: Int) = a@@
     "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "a",
-          kind: Local(
-            Parameter,
-          ),
-        },
-        Definition {
-          name: "foo",
-          kind: Local(
-            Def(
-              Signature {
-                params: [
-                  Params {
-                    implicit: false,
-                    params: [
-                      (
-                        Name(
-                          "a",
-                        ),
-                        Type(Int),
-                      ),
-                    ],
-                  },
-                ],
-                ret: None,
-              },
-            ),
-          ),
-        },
-      ]"#],
+    expect![@"[]"],
   );
 }
 

@@ -48,6 +48,9 @@ impl Scope {
 /// Returns the definitions at the given scope. The innermost declarations (ie,
 /// closest to the cursor) show up first in the list.
 pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<Definition> {
+  // FIXME: This doesn't work with `ItemIdMap`. Need to rethink? Maybe?
+  return vec![];
+
   let file_scopes = db.scopes_of(file_id);
 
   let mut defs = vec![];

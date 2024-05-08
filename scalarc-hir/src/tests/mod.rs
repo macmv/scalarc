@@ -1,5 +1,11 @@
-use scalarc_source::{FileId, SourceDatabase};
-use std::{fmt, sync::Mutex};
+use la_arena::{Arena, RawIdx};
+use scalarc_source::{FileId, SourceDatabase, SourceRoot, TargetData};
+use std::{
+  collections::HashMap,
+  fmt,
+  path::PathBuf,
+  sync::{Arc, Mutex},
+};
 
 mod incremental;
 mod scope;
@@ -32,6 +38,24 @@ fn new_db(content: &str) -> TestDB {
   let mut db = TestDB::default();
   let file = FileId::temp_new();
   db.set_file_text(file, content.into());
+
+  // Build a workspace with a single source root, with a single file in it.
+  let mut targets = Arena::new();
+  let mut source_roots = Arena::new();
+
+  let source_root = source_roots.alloc(SourceRoot { path: PathBuf::new(), sources: vec![file] });
+
+  targets.alloc(TargetData {
+    dependencies: vec![],
+    bsp_id:       "file:///".parse().unwrap(),
+    source_roots: vec![source_root],
+  });
+
+  db.set_file_source_root(file, Some(source_root));
+
+  let workspace = scalarc_source::Workspace { root: Default::default(), targets, source_roots };
+  db.set_workspace(Arc::new(workspace));
+
   db
 }
 
