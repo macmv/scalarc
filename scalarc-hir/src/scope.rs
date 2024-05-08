@@ -158,6 +158,13 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
             scope.declarations.extend(definitions_of(db, file_id, body.syntax(), scope_id));
           }
         }
+        Item::FunDef(c) => {
+          if let Some(p) = c.fun_sig() {
+            for params in p.fun_paramss() {
+              scope.declarations.extend(definitions_of(db, file_id, params.syntax(), scope_id));
+            }
+          }
+        }
         _ => {}
       }
     } else {
@@ -268,18 +275,17 @@ fn def_of_node(
     // TODO: This is `FUN_PARAM` for both functions and classes right now. It should be updated
     // to `CLASS_PARAM`, as those can define `val`s on the class.
     SyntaxKind::FUN_PARAM => {
-      // FIXME
-      /*
+      let item_id = db.item_id_map(file_id).erased_item_id(&n);
+
       let p = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
+
       let id = p.id_token()?;
       Some(Definition {
         name: id.text().into(),
         parent_scope: scope,
         item_id,
-        kind: DefinitionKind::Local(LocalDefinition::Parameter),
+        kind: DefinitionKind::Parameter,
       })
-      */
-      None
     }
 
     _ => None,

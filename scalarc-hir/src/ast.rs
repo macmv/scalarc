@@ -165,6 +165,7 @@ register_ast_item! {
     ClassDef,
     ObjectDef,
     FunDef,
+      FunParam,
     ValDef,
   BlockExpr
 }

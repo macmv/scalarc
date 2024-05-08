@@ -404,6 +404,14 @@ fn class_scopes() {
             range: 5..59,
           },
           declarations: {
+            "a": Definition {
+              name: "a",
+              kind: Parameter,
+              item: SyntaxNodePtr {
+                kind: FUN_PARAM,
+                range: 15..21,
+              },
+            },
             "b": Definition {
               name: "b",
               kind: Val(
@@ -446,7 +454,17 @@ fn class_def() {
     r#"
     class Foo(a: Int) { @@ }
     "#,
-    expect![@"[]"],
+    expect![@r#"
+      [
+        Definition {
+          name: "a",
+          kind: Parameter,
+          item: SyntaxNodePtr {
+            kind: FUN_PARAM,
+            range: 15..21,
+          },
+        },
+      ]"#],
   );
 
   defs_at(
@@ -468,6 +486,14 @@ fn class_def() {
           item: SyntaxNodePtr {
             kind: VAL_DEF,
             range: 31..44,
+          },
+        },
+        Definition {
+          name: "a",
+          kind: Parameter,
+          item: SyntaxNodePtr {
+            kind: FUN_PARAM,
+            range: 15..21,
           },
         },
       ]"#],
@@ -498,6 +524,22 @@ fn fun_scopes() {
               item: SyntaxNodePtr {
                 kind: FUN_DEF,
                 range: 5..50,
+              },
+            },
+          },
+        },
+        Scope {
+          item: SyntaxNodePtr {
+            kind: FUN_DEF,
+            range: 5..50,
+          },
+          declarations: {
+            "a": Definition {
+              name: "a",
+              kind: Parameter,
+              item: SyntaxNodePtr {
+                kind: FUN_PARAM,
+                range: 13..19,
               },
             },
           },
@@ -552,7 +594,17 @@ fn fun_def() {
     r#"
     def foo(a: Int) = @@a
     "#,
-    expect![@"[]"],
+    expect![@r#"
+      [
+        Definition {
+          name: "a",
+          kind: Parameter,
+          item: SyntaxNodePtr {
+            kind: FUN_PARAM,
+            range: 13..19,
+          },
+        },
+      ]"#],
   );
 
   defs_at(
@@ -562,13 +614,11 @@ fn fun_def() {
     expect![@r#"
       [
         Definition {
-          name: "foo",
-          kind: Def(
-            Signature((a: Int)),
-          ),
+          name: "a",
+          kind: Parameter,
           item: SyntaxNodePtr {
-            kind: FUN_DEF,
-            range: 5..24,
+            kind: FUN_PARAM,
+            range: 13..19,
           },
         },
       ]"#],
