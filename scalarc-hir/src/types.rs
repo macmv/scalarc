@@ -16,7 +16,7 @@ pub struct Type {
   pub path: Path,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Signature {
   pub params: Vec<Params>,
   pub ret:    Option<Type>,
@@ -30,6 +30,9 @@ pub struct Params {
 
 impl fmt::Debug for Type {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { write!(f, "Type({})", self) }
+}
+impl fmt::Debug for Signature {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { write!(f, "Signature({})", self) }
 }
 
 impl fmt::Display for Type {

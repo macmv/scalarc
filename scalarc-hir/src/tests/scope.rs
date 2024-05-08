@@ -141,31 +141,25 @@ fn scopes_of_example() {
           declarations: {
             "foo": Definition {
               name: "foo",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
             "bar": Definition {
               name: "bar",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
             "baz": Definition {
               name: "baz",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
@@ -192,29 +186,23 @@ fn scopes_of_example() {
           declarations: {
             "foo": Definition {
               name: "foo",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
             "bar": Definition {
               name: "bar",
-              kind: Local(
-                Val(
-                  None,
-                ),
+              kind: Val(
+                None,
               ),
             },
             "baz": Definition {
               name: "baz",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
@@ -227,21 +215,17 @@ fn scopes_of_example() {
           declarations: {
             "a": Definition {
               name: "a",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
             "b": Definition {
               name: "b",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
@@ -267,11 +251,9 @@ fn definitions_at() {
       [
         Definition {
           name: "a",
-          kind: Local(
-            Val(
-              Some(
-                Type(scala.Int),
-              ),
+          kind: Val(
+            Some(
+              Type(scala.Int),
             ),
           ),
         },
@@ -308,11 +290,9 @@ fn definition_at() {
     expect![@r#"
       Definition {
         name: "a",
-        kind: Local(
-          Val(
-            Some(
-              Type(scala.Int),
-            ),
+        kind: Val(
+          Some(
+            Type(scala.Int),
           ),
         ),
       }"#],
@@ -329,25 +309,8 @@ fn def_sigs() {
     expect![@r#"
       Definition {
         name: "foo",
-        kind: Local(
-          Def(
-            Signature {
-              params: [
-                Params {
-                  implicit: false,
-                  params: [
-                    (
-                      Name(
-                        "a",
-                      ),
-                      Type(Int),
-                    ),
-                  ],
-                },
-              ],
-              ret: None,
-            },
-          ),
+        kind: Def(
+          Signature((a: Int)),
         ),
       }"#],
   );
@@ -371,9 +334,7 @@ fn class_scopes() {
           declarations: {
             "Foo": Definition {
               name: "Foo",
-              kind: Local(
-                Class,
-              ),
+              kind: Class,
             },
           },
         },
@@ -384,11 +345,9 @@ fn class_scopes() {
           declarations: {
             "b": Definition {
               name: "b",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(String),
-                  ),
+              kind: Val(
+                Some(
+                  Type(String),
                 ),
               ),
             },
@@ -409,9 +368,7 @@ fn class_def() {
       [
         Definition {
           name: "Foo",
-          kind: Local(
-            Class,
-          ),
+          kind: Class,
         },
       ]"#],
   );
@@ -434,11 +391,9 @@ fn class_def() {
       [
         Definition {
           name: "b",
-          kind: Local(
-            Val(
-              Some(
-                Type(String),
-              ),
+          kind: Val(
+            Some(
+              Type(String),
             ),
           ),
         },
@@ -463,25 +418,8 @@ fn fun_scopes() {
           declarations: {
             "foo": Definition {
               name: "foo",
-              kind: Local(
-                Def(
-                  Signature {
-                    params: [
-                      Params {
-                        implicit: false,
-                        params: [
-                          (
-                            Name(
-                              "a",
-                            ),
-                            Type(Int),
-                          ),
-                        ],
-                      },
-                    ],
-                    ret: None,
-                  },
-                ),
+              kind: Def(
+                Signature((a: Int)),
               ),
             },
           },
@@ -493,11 +431,9 @@ fn fun_scopes() {
           declarations: {
             "b": Definition {
               name: "b",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(String),
-                  ),
+              kind: Val(
+                Some(
+                  Type(String),
                 ),
               ),
             },
@@ -518,25 +454,8 @@ fn fun_def() {
       [
         Definition {
           name: "foo",
-          kind: Local(
-            Def(
-              Signature {
-                params: [
-                  Params {
-                    implicit: false,
-                    params: [
-                      (
-                        Name(
-                          "a",
-                        ),
-                        Type(Int),
-                      ),
-                    ],
-                  },
-                ],
-                ret: None,
-              },
-            ),
+          kind: Def(
+            Signature((a: Int)),
           ),
         },
       ]"#],
@@ -557,25 +476,8 @@ fn fun_def() {
       [
         Definition {
           name: "foo",
-          kind: Local(
-            Def(
-              Signature {
-                params: [
-                  Params {
-                    implicit: false,
-                    params: [
-                      (
-                        Name(
-                          "a",
-                        ),
-                        Type(Int),
-                      ),
-                    ],
-                  },
-                ],
-                ret: None,
-              },
-            ),
+          kind: Def(
+            Signature((a: Int)),
           ),
         },
       ]"#],
@@ -624,11 +526,9 @@ fn nested_scopes() {
           declarations: {
             "a": Definition {
               name: "a",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
@@ -641,11 +541,9 @@ fn nested_scopes() {
           declarations: {
             "b": Definition {
               name: "b",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
@@ -658,11 +556,9 @@ fn nested_scopes() {
           declarations: {
             "c": Definition {
               name: "c",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
@@ -675,11 +571,9 @@ fn nested_scopes() {
           declarations: {
             "d": Definition {
               name: "d",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
@@ -692,11 +586,9 @@ fn nested_scopes() {
           declarations: {
             "h": Definition {
               name: "h",
-              kind: Local(
-                Val(
-                  Some(
-                    Type(scala.Int),
-                  ),
+              kind: Val(
+                Some(
+                  Type(scala.Int),
                 ),
               ),
             },
