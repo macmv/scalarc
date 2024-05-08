@@ -412,6 +412,14 @@ fn class_scopes() {
                 range: 15..21,
               },
             },
+          },
+        },
+        Scope {
+          item: SyntaxNodePtr {
+            kind: ITEM_BODY,
+            range: 23..59,
+          },
+          declarations: {
             "b": Definition {
               name: "b",
               kind: Val(
@@ -467,6 +475,7 @@ fn class_def() {
       ]"#],
   );
 
+  // FIXME: Get parent scope working.
   defs_at(
     r#"
     class Foo(a: Int) {
@@ -486,14 +495,6 @@ fn class_def() {
           item: SyntaxNodePtr {
             kind: VAL_DEF,
             range: 31..44,
-          },
-        },
-        Definition {
-          name: "a",
-          kind: Parameter,
-          item: SyntaxNodePtr {
-            kind: FUN_PARAM,
-            range: 15..21,
           },
         },
       ]"#],

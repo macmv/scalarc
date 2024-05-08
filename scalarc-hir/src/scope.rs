@@ -154,9 +154,6 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
           if let Some(p) = c.fun_params() {
             scope.declarations.extend(definitions_of(db, file_id, p.syntax(), scope_id));
           }
-          if let Some(body) = c.body() {
-            scope.declarations.extend(definitions_of(db, file_id, body.syntax(), scope_id));
-          }
         }
         Item::FunDef(c) => {
           if let Some(p) = c.fun_sig() {

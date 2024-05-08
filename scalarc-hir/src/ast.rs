@@ -167,7 +167,7 @@ register_ast_item! {
     FunDef,
       FunParam,
     ValDef,
-  BlockExpr
+  ItemBody, BlockExpr
 }
 
 fn hash_ptr(ptr: &SyntaxNodePtr) -> u64 {
