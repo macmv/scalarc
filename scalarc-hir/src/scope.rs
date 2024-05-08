@@ -137,13 +137,25 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
   let ast = db.parse(file_id);
   let item_id_map = db.item_id_map(file_id);
 
-  let mut scopes = Arena::new();
+  let mut scopes: Arena<Scope> = Arena::new();
 
   let tree = ast.tree();
 
   for (item_id, item) in item_id_map.iter() {
     let item = item.to_node(tree.syntax());
-    let parent = None; // FIXME
+    let mut parent = None;
+    let mut it = item.clone();
+    while let Some(p) = it.parent() {
+      if item_id_map.contains_node(&p) {
+        let item_id = item_id_map.erased_item_id(&p);
+        // FIXME: Maybe use a map instead here?
+        if let Some((scope_id, _)) = scopes.iter().find(|(_, s)| s.item_id == item_id) {
+          parent = Some(scope_id);
+          break;
+        }
+      }
+      it = p;
+    }
 
     let scope_id = Idx::<Scope>::from_raw(RawIdx::from(scopes.len() as u32));
     let mut scope = Scope { parent, item_id, declarations: vec![] };

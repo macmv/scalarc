@@ -304,6 +304,18 @@ fn definitions_at() {
             range: 39..48,
           },
         },
+        Definition {
+          name: "foo",
+          kind: Val(
+            Some(
+              Type(scala.Int),
+            ),
+          ),
+          item: SyntaxNodePtr {
+            kind: VAL_DEF,
+            range: 5..16,
+          },
+        },
       ]"#],
   );
 }
@@ -475,7 +487,6 @@ fn class_def() {
       ]"#],
   );
 
-  // FIXME: Get parent scope working.
   defs_at(
     r#"
     class Foo(a: Int) {
@@ -495,6 +506,14 @@ fn class_def() {
           item: SyntaxNodePtr {
             kind: VAL_DEF,
             range: 31..44,
+          },
+        },
+        Definition {
+          name: "a",
+          kind: Parameter,
+          item: SyntaxNodePtr {
+            kind: FUN_PARAM,
+            range: 15..21,
           },
         },
       ]"#],
@@ -620,6 +639,16 @@ fn fun_def() {
           item: SyntaxNodePtr {
             kind: FUN_PARAM,
             range: 13..19,
+          },
+        },
+        Definition {
+          name: "foo",
+          kind: Def(
+            Signature((a: Int)),
+          ),
+          item: SyntaxNodePtr {
+            kind: FUN_DEF,
+            range: 5..24,
           },
         },
       ]"#],

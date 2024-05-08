@@ -98,6 +98,12 @@ impl ScopeIdMap {
     ErasedScopeId { raw }
   }
 
+  pub fn contains_node(&self, node: &SyntaxNode) -> bool {
+    let ptr = SyntaxNodePtr::new(node);
+    let hash = hash_ptr(&ptr);
+    self.map.raw_entry().from_hash(hash, |&idx| self.arena[idx] == ptr).is_some()
+  }
+
   pub fn get_erased(&self, id: ErasedScopeId) -> SyntaxNodePtr { self.arena[id.raw] }
 
   fn erased_item_idx(&self, item: &SyntaxNode) -> Idx<SyntaxNodePtr> {
