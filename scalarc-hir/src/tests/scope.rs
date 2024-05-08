@@ -263,7 +263,19 @@ fn definitions_at() {
     }
     val baz = 5
     "#,
-    expect![@"[]"],
+    expect![@r#"
+      [
+        Definition {
+          name: "a",
+          kind: Local(
+            Val(
+              Some(
+                Type(scala.Int),
+              ),
+            ),
+          ),
+        },
+      ]"#],
   );
 }
 
@@ -294,8 +306,16 @@ fn definition_at() {
     val baz = 5
     "#,
     expect![@r#"
-      None
-    "#],
+      Definition {
+        name: "a",
+        kind: Local(
+          Val(
+            Some(
+              Type(scala.Int),
+            ),
+          ),
+        ),
+      }"#],
   );
 }
 
@@ -307,8 +327,29 @@ fn def_sigs() {
     foo@@
     "#,
     expect![@r#"
-      None
-    "#],
+      Definition {
+        name: "foo",
+        kind: Local(
+          Def(
+            Signature {
+              params: [
+                Params {
+                  implicit: false,
+                  params: [
+                    (
+                      Name(
+                        "a",
+                      ),
+                      Type(Int),
+                    ),
+                  ],
+                },
+              ],
+              ret: None,
+            },
+          ),
+        ),
+      }"#],
   );
 }
 
@@ -341,12 +382,6 @@ fn class_scopes() {
             raw: Idx::<Scala>>(1),
           },
           declarations: {
-            "a": Definition {
-              name: "a",
-              kind: Local(
-                Parameter,
-              ),
-            },
             "b": Definition {
               name: "b",
               kind: Local(
@@ -370,7 +405,15 @@ fn class_def() {
     class Foo(val a: Int) {}
     @@
     "#,
-    expect![@"[]"],
+    expect![@r#"
+      [
+        Definition {
+          name: "Foo",
+          kind: Local(
+            Class,
+          ),
+        },
+      ]"#],
   );
 
   defs_at(
@@ -387,7 +430,19 @@ fn class_def() {
       @@
     }
     "#,
-    expect![@"[]"],
+    expect![@r#"
+      [
+        Definition {
+          name: "b",
+          kind: Local(
+            Val(
+              Some(
+                Type(String),
+              ),
+            ),
+          ),
+        },
+      ]"#],
   );
 }
 
@@ -459,7 +514,32 @@ fn fun_def() {
     def foo(a: Int) = 3
     @@
     "#,
-    expect![@"[]"],
+    expect![@r#"
+      [
+        Definition {
+          name: "foo",
+          kind: Local(
+            Def(
+              Signature {
+                params: [
+                  Params {
+                    implicit: false,
+                    params: [
+                      (
+                        Name(
+                          "a",
+                        ),
+                        Type(Int),
+                      ),
+                    ],
+                  },
+                ],
+                ret: None,
+              },
+            ),
+          ),
+        },
+      ]"#],
   );
 
   defs_at(
@@ -473,7 +553,32 @@ fn fun_def() {
     r#"
     def foo(a: Int) = a@@
     "#,
-    expect![@"[]"],
+    expect![@r#"
+      [
+        Definition {
+          name: "foo",
+          kind: Local(
+            Def(
+              Signature {
+                params: [
+                  Params {
+                    implicit: false,
+                    params: [
+                      (
+                        Name(
+                          "a",
+                        ),
+                        Type(Int),
+                      ),
+                    ],
+                  },
+                ],
+                ret: None,
+              },
+            ),
+          ),
+        },
+      ]"#],
   );
 }
 

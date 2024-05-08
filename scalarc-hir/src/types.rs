@@ -90,7 +90,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
       let def = db.def_at_index(file_id, pos)?;
       let scopes = db.scopes_of(file_id);
 
-      let scope = &scopes.scopes[def.scope];
+      let scope = &scopes.scopes[def.parent_scope];
 
       return db.type_at_item(file_id, scope.item_id);
     }

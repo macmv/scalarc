@@ -43,9 +43,6 @@ impl Scope {
 /// Returns the definitions at the given scope. The innermost declarations (ie,
 /// closest to the cursor) show up first in the list.
 pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<Definition> {
-  // FIXME: This doesn't work with `ItemIdMap`. Need to rethink? Maybe?
-  return vec![];
-
   let file_scopes = db.scopes_of(file_id);
   let item_id_map = db.item_id_map(file_id);
 
@@ -62,28 +59,24 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   // Now collect all the parents of that scope.
   let mut scope = innermost.1;
   defs.extend(scope.declarations.iter().rev().filter_map(|(_, def)| {
-    // FIXME
-    /*
-    if def.pos.range.end() <= pos {
+    let item = item_id_map.get_erased(def.item_id);
+
+    if item.text_range().end() <= pos {
       Some(def.clone())
     } else {
       None
     }
-    */
-    Some(def.clone())
   }));
   while let Some(parent) = scope.parent {
     scope = &file_scopes.scopes[parent];
     defs.extend(scope.declarations.iter().rev().filter_map(|(_, def)| {
-      // FIXME
-      /*
-      if def.pos.range.end() <= pos {
+      let item = item_id_map.get_erased(def.item_id);
+
+      if item.text_range().end() <= pos {
         Some(def.clone())
       } else {
         None
       }
-      */
-      Some(def.clone())
     }));
   }
 
@@ -156,8 +149,6 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
     let item = item.to_node(tree.syntax());
     let parent = None; // FIXME
 
-    dbg!(&item);
-
     let scope_id = Idx::<Scope>::from_raw(RawIdx::from(scopes.len() as u32));
     let mut scope = Scope {
       parent,
@@ -210,6 +201,8 @@ fn def_of_node(
 ) -> Option<Definition> {
   match n.kind() {
     SyntaxKind::VAL_DEF => {
+      let item_id = db.item_id_map(file_id).erased_item_id(&n);
+
       let v = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
       let id = v.id_token()?;
 
@@ -222,22 +215,28 @@ fn def_of_node(
 
       Some(Definition {
         name: id.text().into(),
-        scope,
+        parent_scope: scope,
+        item_id,
         kind: DefinitionKind::Local(LocalDefinition::Val(ty)),
       })
     }
 
     SyntaxKind::CLASS_DEF => {
+      let item_id = db.item_id_map(file_id).erased_item_id(&n);
+
       let c = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
       Some(Definition {
         name: id.text().into(),
-        scope,
+        parent_scope: scope,
+        item_id,
         kind: DefinitionKind::Local(LocalDefinition::Class),
       })
     }
 
     SyntaxKind::FUN_DEF => {
+      let item_id = db.item_id_map(file_id).erased_item_id(&n);
+
       let f = scalarc_syntax::ast::FunDef::cast(n.clone()).unwrap();
 
       let sig = f.fun_sig()?;
@@ -269,7 +268,8 @@ fn def_of_node(
 
       Some(Definition {
         name: id.text().into(),
-        scope,
+        parent_scope: scope,
+        item_id,
         kind: DefinitionKind::Local(LocalDefinition::Def(hir_sig)),
       })
     }
@@ -277,13 +277,18 @@ fn def_of_node(
     // TODO: This is `FUN_PARAM` for both functions and classes right now. It should be updated
     // to `CLASS_PARAM`, as those can define `val`s on the class.
     SyntaxKind::FUN_PARAM => {
+      // FIXME
+      /*
       let p = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
       let id = p.id_token()?;
       Some(Definition {
         name: id.text().into(),
-        scope,
+        parent_scope: scope,
+        item_id,
         kind: DefinitionKind::Local(LocalDefinition::Parameter),
       })
+      */
+      None
     }
 
     _ => None,
@@ -298,7 +303,7 @@ pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
 
   let Some(def) = db.def_at_index(file_id, pos) else { return vec![] };
 
-  let scope = &file_scopes.scopes[def.scope];
+  let scope = &file_scopes.scopes[def.parent_scope];
 
   let mut references = vec![];
 

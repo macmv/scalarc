@@ -89,13 +89,18 @@ impl ScopeIdMap {
   }
 
   pub fn item_id<N: AstItem>(&self, item: &N) -> ScopeId<N> {
-    let raw = self.erased_item_id(item.syntax());
+    let raw = self.erased_item_id(item.syntax()).raw;
     ScopeId { raw, phantom: PhantomData }
+  }
+
+  pub fn erased_item_id(&self, node: &SyntaxNode) -> ErasedScopeId {
+    let raw = self.erased_item_idx(node);
+    ErasedScopeId { raw }
   }
 
   pub fn get_erased(&self, id: ErasedScopeId) -> SyntaxNodePtr { self.arena[id.raw] }
 
-  fn erased_item_id(&self, item: &SyntaxNode) -> Idx<SyntaxNodePtr> {
+  fn erased_item_idx(&self, item: &SyntaxNode) -> Idx<SyntaxNodePtr> {
     let ptr = SyntaxNodePtr::new(item);
     let hash = hash_ptr(&ptr);
     match self.map.raw_entry().from_hash(hash, |&idx| self.arena[idx] == ptr) {
