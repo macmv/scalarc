@@ -85,8 +85,11 @@ impl fmt::Debug for DebugUtil<'_, '_, Arena<Scope>> {
 
 impl fmt::Debug for DebugUtil<'_, '_, Scope> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let item_id_map = self.db.item_id_map(FileId::temp_new());
+    let item = item_id_map.get_erased(self.item.item_id);
+
     f.debug_struct("Scope")
-      .field("range", &self.item.item_id)
+      .field("item", &item)
       .field("declarations", &self.child(&self.item.declarations))
       .finish()
   }
@@ -137,8 +140,9 @@ fn scopes_of_example() {
     expect![@r#"
       [
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(0),
+          item: SyntaxNodePtr {
+            kind: SOURCE_FILE,
+            range: 0..49,
           },
           declarations: {
             "foo": Definition {
@@ -182,8 +186,9 @@ fn scopes_of_example() {
     expect![@r#"
       [
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(0),
+          item: SyntaxNodePtr {
+            kind: SOURCE_FILE,
+            range: 0..87,
           },
           declarations: {
             "foo": Definition {
@@ -211,8 +216,9 @@ fn scopes_of_example() {
           },
         },
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(4),
+          item: SyntaxNodePtr {
+            kind: BLOCK_EXPR,
+            range: 31..70,
           },
           declarations: {
             "a": Definition {
@@ -330,8 +336,9 @@ fn class_scopes() {
     expect![@r#"
       [
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(0),
+          item: SyntaxNodePtr {
+            kind: SOURCE_FILE,
+            range: 0..60,
           },
           declarations: {
             "Foo": Definition {
@@ -341,8 +348,9 @@ fn class_scopes() {
           },
         },
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(1),
+          item: SyntaxNodePtr {
+            kind: CLASS_DEF,
+            range: 5..59,
           },
           declarations: {
             "b": Definition {
@@ -414,8 +422,9 @@ fn fun_scopes() {
     expect![@r#"
       [
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(0),
+          item: SyntaxNodePtr {
+            kind: SOURCE_FILE,
+            range: 0..51,
           },
           declarations: {
             "foo": Definition {
@@ -427,8 +436,9 @@ fn fun_scopes() {
           },
         },
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(2),
+          item: SyntaxNodePtr {
+            kind: BLOCK_EXPR,
+            range: 23..50,
           },
           declarations: {
             "b": Definition {
@@ -522,8 +532,9 @@ fn nested_scopes() {
     expect![@r#"
       [
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(0),
+          item: SyntaxNodePtr {
+            kind: SOURCE_FILE,
+            range: 0..308,
           },
           declarations: {
             "a": Definition {
@@ -537,8 +548,9 @@ fn nested_scopes() {
           },
         },
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(7),
+          item: SyntaxNodePtr {
+            kind: BLOCK_EXPR,
+            range: 20..43,
           },
           declarations: {
             "b": Definition {
@@ -552,8 +564,9 @@ fn nested_scopes() {
           },
         },
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(8),
+          item: SyntaxNodePtr {
+            kind: BLOCK_EXPR,
+            range: 61..84,
           },
           declarations: {
             "c": Definition {
@@ -567,8 +580,9 @@ fn nested_scopes() {
           },
         },
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(9),
+          item: SyntaxNodePtr {
+            kind: BLOCK_EXPR,
+            range: 101..124,
           },
           declarations: {
             "d": Definition {
@@ -582,8 +596,9 @@ fn nested_scopes() {
           },
         },
         Scope {
-          range: ErasedScopeId {
-            raw: Idx::<Scala>>(14),
+          item: SyntaxNodePtr {
+            kind: BLOCK_EXPR,
+            range: 275..306,
           },
           declarations: {
             "h": Definition {
