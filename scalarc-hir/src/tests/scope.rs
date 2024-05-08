@@ -117,7 +117,7 @@ struct DebugDef<'a>(&'a Definition);
 impl fmt::Debug for DebugDef<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.debug_struct("Definition")
-      .field("pos", &self.0.pos.range)
+      // .field("pos", &self.0.pos.range)
       .field("name", &self.0.name.as_str())
       .field("kind", &self.0.kind)
       .finish()
@@ -138,7 +138,6 @@ fn scopes_of_example() {
           range: 0..49,
           declarations: {
             "foo": Definition {
-              pos: 9..12,
               name: "foo",
               kind: Local(
                 Val(
@@ -149,7 +148,6 @@ fn scopes_of_example() {
               ),
             },
             "bar": Definition {
-              pos: 25..28,
               name: "bar",
               kind: Local(
                 Val(
@@ -160,7 +158,6 @@ fn scopes_of_example() {
               ),
             },
             "baz": Definition {
-              pos: 41..44,
               name: "baz",
               kind: Local(
                 Val(
@@ -190,7 +187,6 @@ fn scopes_of_example() {
           range: 0..87,
           declarations: {
             "foo": Definition {
-              pos: 9..12,
               name: "foo",
               kind: Local(
                 Val(
@@ -201,7 +197,6 @@ fn scopes_of_example() {
               ),
             },
             "bar": Definition {
-              pos: 25..28,
               name: "bar",
               kind: Local(
                 Val(
@@ -210,7 +205,6 @@ fn scopes_of_example() {
               ),
             },
             "baz": Definition {
-              pos: 79..82,
               name: "baz",
               kind: Local(
                 Val(
@@ -226,7 +220,6 @@ fn scopes_of_example() {
           range: 21..70,
           declarations: {
             "a": Definition {
-              pos: 43..44,
               name: "a",
               kind: Local(
                 Val(
@@ -237,7 +230,6 @@ fn scopes_of_example() {
               ),
             },
             "b": Definition {
-              pos: 59..60,
               name: "b",
               kind: Local(
                 Val(
@@ -268,7 +260,16 @@ fn definitions_at() {
     expect![@r#"
       [
         Definition {
-          pos: 43..44,
+          name: "b",
+          kind: Local(
+            Val(
+              Some(
+                Type(scala.Int),
+              ),
+            ),
+          ),
+        },
+        Definition {
           name: "a",
           kind: Local(
             Val(
@@ -279,7 +280,16 @@ fn definitions_at() {
           ),
         },
         Definition {
-          pos: 25..28,
+          name: "baz",
+          kind: Local(
+            Val(
+              Some(
+                Type(scala.Int),
+              ),
+            ),
+          ),
+        },
+        Definition {
           name: "bar",
           kind: Local(
             Val(
@@ -288,7 +298,6 @@ fn definitions_at() {
           ),
         },
         Definition {
-          pos: 9..12,
           name: "foo",
           kind: Local(
             Val(
@@ -315,7 +324,6 @@ fn definition_at() {
     "#,
     expect![@r#"
       Definition {
-        pos: 43..44,
         name: "a",
         kind: Local(
           Val(
@@ -339,7 +347,6 @@ fn definition_at() {
     "#,
     expect![@r#"
       Definition {
-        pos: 43..44,
         name: "a",
         kind: Local(
           Val(
@@ -361,7 +368,6 @@ fn def_sigs() {
     "#,
     expect![@r#"
       Definition {
-        pos: 9..12,
         name: "foo",
         kind: Local(
           Def(
@@ -402,9 +408,8 @@ fn class_scopes() {
           range: 0..60,
           declarations: {
             "Foo": Definition {
-              pos: 11..14,
               name: "Foo",
-              kind: Global(
+              kind: Local(
                 Class,
               ),
             },
@@ -414,14 +419,12 @@ fn class_scopes() {
           range: 23..59,
           declarations: {
             "a": Definition {
-              pos: 15..16,
               name: "a",
               kind: Local(
                 Parameter,
               ),
             },
             "b": Definition {
-              pos: 35..36,
               name: "b",
               kind: Local(
                 Val(
@@ -447,9 +450,8 @@ fn class_def() {
     expect![@r#"
       [
         Definition {
-          pos: 11..14,
           name: "Foo",
-          kind: Global(
+          kind: Local(
             Class,
           ),
         },
@@ -463,16 +465,14 @@ fn class_def() {
     expect![@r#"
       [
         Definition {
-          pos: 15..16,
           name: "a",
           kind: Local(
             Parameter,
           ),
         },
         Definition {
-          pos: 11..14,
           name: "Foo",
-          kind: Global(
+          kind: Local(
             Class,
           ),
         },
@@ -489,7 +489,6 @@ fn class_def() {
     expect![@r#"
       [
         Definition {
-          pos: 35..36,
           name: "b",
           kind: Local(
             Val(
@@ -500,16 +499,14 @@ fn class_def() {
           ),
         },
         Definition {
-          pos: 15..16,
           name: "a",
           kind: Local(
             Parameter,
           ),
         },
         Definition {
-          pos: 11..14,
           name: "Foo",
-          kind: Global(
+          kind: Local(
             Class,
           ),
         },
@@ -531,7 +528,6 @@ fn fun_scopes() {
           range: 0..51,
           declarations: {
             "foo": Definition {
-              pos: 9..12,
               name: "foo",
               kind: Local(
                 Def(
@@ -560,14 +556,12 @@ fn fun_scopes() {
           range: 23..50,
           declarations: {
             "a": Definition {
-              pos: 13..14,
               name: "a",
               kind: Local(
                 Parameter,
               ),
             },
             "b": Definition {
-              pos: 35..36,
               name: "b",
               kind: Local(
                 Val(
@@ -593,7 +587,6 @@ fn fun_def() {
     expect![@r#"
       [
         Definition {
-          pos: 9..12,
           name: "foo",
           kind: Local(
             Def(
@@ -626,14 +619,12 @@ fn fun_def() {
     expect![@r#"
       [
         Definition {
-          pos: 13..14,
           name: "a",
           kind: Local(
             Parameter,
           ),
         },
         Definition {
-          pos: 9..12,
           name: "foo",
           kind: Local(
             Def(
@@ -666,14 +657,12 @@ fn fun_def() {
     expect![@r#"
       [
         Definition {
-          pos: 13..14,
           name: "a",
           kind: Local(
             Parameter,
           ),
         },
         Definition {
-          pos: 9..12,
           name: "foo",
           kind: Local(
             Def(
@@ -739,7 +728,6 @@ fn nested_scopes() {
           range: 0..308,
           declarations: {
             "a": Definition {
-              pos: 9..10,
               name: "a",
               kind: Local(
                 Val(
@@ -755,7 +743,6 @@ fn nested_scopes() {
           range: 20..43,
           declarations: {
             "b": Definition {
-              pos: 32..33,
               name: "b",
               kind: Local(
                 Val(
@@ -771,7 +758,6 @@ fn nested_scopes() {
           range: 61..84,
           declarations: {
             "c": Definition {
-              pos: 73..74,
               name: "c",
               kind: Local(
                 Val(
@@ -787,7 +773,6 @@ fn nested_scopes() {
           range: 230..261,
           declarations: {
             "g": Definition {
-              pos: 242..243,
               name: "g",
               kind: Local(
                 Val(
@@ -803,7 +788,6 @@ fn nested_scopes() {
           range: 101..124,
           declarations: {
             "d": Definition {
-              pos: 113..114,
               name: "d",
               kind: Local(
                 Val(
@@ -819,7 +803,6 @@ fn nested_scopes() {
           range: 164..184,
           declarations: {
             "e": Definition {
-              pos: 168..169,
               name: "e",
               kind: Local(
                 Val(
@@ -835,7 +818,6 @@ fn nested_scopes() {
           range: 275..306,
           declarations: {
             "h": Definition {
-              pos: 287..288,
               name: "h",
               kind: Local(
                 Val(

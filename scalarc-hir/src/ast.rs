@@ -22,6 +22,7 @@ pub struct ItemIdMap {
   map:   hashbrown::HashMap<Idx<SyntaxNodePtr>, (), ()>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemId<N: AstItem> {
   raw:     Idx<SyntaxNodePtr>,
   phantom: PhantomData<N>,
@@ -73,12 +74,12 @@ impl ItemIdMap {
     res
   }
 
-  pub fn ast_id<N: AstItem>(&self, item: &N) -> ItemId<N> {
-    let raw = self.erased_ast_id(item.syntax());
+  pub fn item_id<N: AstItem>(&self, item: &N) -> ItemId<N> {
+    let raw = self.erased_item_id(item.syntax());
     ItemId { raw, phantom: PhantomData }
   }
 
-  fn erased_ast_id(&self, item: &SyntaxNode) -> Idx<SyntaxNodePtr> {
+  fn erased_item_id(&self, item: &SyntaxNode) -> Idx<SyntaxNodePtr> {
     let ptr = SyntaxNodePtr::new(item);
     let hash = hash_ptr(&ptr);
     match self.map.raw_entry().from_hash(hash, |&idx| self.arena[idx] == ptr) {
@@ -141,6 +142,7 @@ register_ast_item! {
   impl AstItem for
   Item,
     ClassDef,
+    ObjectDef,
     FunDef,
     ValDef
 }

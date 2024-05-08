@@ -9,8 +9,8 @@ use scalarc_syntax::{
 };
 
 use crate::{
-  tree::Name, Definition, DefinitionKind, FileRange, GlobalDefinition, HirDatabase,
-  LocalDefinition, Params, Path, Reference, Signature, Type,
+  tree::Name, Definition, DefinitionKind, FileRange, HirDatabase, LocalDefinition, Params, Path,
+  Reference, Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -62,20 +62,28 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   // Now collect all the parents of that scope.
   let mut scope = innermost.1;
   defs.extend(scope.declarations.iter().rev().filter_map(|(_, def)| {
+    // FIXME
+    /*
     if def.pos.range.end() <= pos {
       Some(def.clone())
     } else {
       None
     }
+    */
+    Some(def.clone())
   }));
   while let Some(parent) = scope.parent {
     scope = &file_scopes.scopes[parent];
     defs.extend(scope.declarations.iter().rev().filter_map(|(_, def)| {
+      // FIXME
+      /*
       if def.pos.range.end() <= pos {
         Some(def.clone())
       } else {
         None
       }
+      */
+      Some(def.clone())
     }));
   }
 
@@ -249,7 +257,6 @@ fn def_of_node(
       };
 
       Some(Definition {
-        pos: FileRange { file: file_id, range: id.text_range() },
         name: id.text().into(),
         scope,
         kind: DefinitionKind::Local(LocalDefinition::Val(ty)),
@@ -262,10 +269,9 @@ fn def_of_node(
       let c = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
       Some(Definition {
-        pos: FileRange { file: file_id, range: id.text_range() },
         name: id.text().into(),
         scope,
-        kind: DefinitionKind::Global(GlobalDefinition::Class),
+        kind: DefinitionKind::Local(LocalDefinition::Class),
 
         node: SyntaxNodePtr::new(&n),
       })
@@ -302,7 +308,6 @@ fn def_of_node(
       let id = sig.id_token()?;
 
       Some(Definition {
-        pos: FileRange { file: file_id, range: id.text_range() },
         name: id.text().into(),
         scope,
         kind: DefinitionKind::Local(LocalDefinition::Def(hir_sig)),
@@ -317,7 +322,6 @@ fn def_of_node(
       let p = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
       let id = p.id_token()?;
       Some(Definition {
-        pos: FileRange { file: file_id, range: id.text_range() },
         name: id.text().into(),
         scope,
         kind: DefinitionKind::Local(LocalDefinition::Parameter),

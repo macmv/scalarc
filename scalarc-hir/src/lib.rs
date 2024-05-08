@@ -1,9 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
-use la_arena::RawIdx;
+use ast::ItemId;
+use la_arena::{Idx, RawIdx};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
-  ast::{AstNode, Item},
+  ast::{AstNode, ClassDef, FunDef, Item, ObjectDef, ValDef},
   SyntaxNodePtr, TextRange, TextSize,
 };
 use scope::{FileScopes, ScopeId};
@@ -42,7 +43,6 @@ pub struct FileRange {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Definition {
-  pub pos:   FileRange,
   pub name:  Name,
   pub scope: ScopeId,
   pub kind:  DefinitionKind,
@@ -68,12 +68,15 @@ pub enum LocalDefinition {
   Var,
   Parameter,
   Def(Signature),
+  Class,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GlobalDefinition {
-  Class,
-  Object,
+  Class(ItemId<ClassDef>),
+  Object(ItemId<ObjectDef>),
+  Val(ItemId<ValDef>),
+  Def(ItemId<FunDef>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -126,6 +129,7 @@ fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionM
 // query.
 fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
   let ast = db.parse(file);
+  let item_map = db.item_id_map(file);
 
   // TODO: Parse `package` statements out of `ast`.
 
@@ -139,10 +143,9 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
         Some((
           Path { elems: vec![name.text().into()] },
           Definition {
-            pos:   FileRange { file, range: name.text_range() },
             name:  name.text().into(),
             scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
-            kind:  DefinitionKind::Global(GlobalDefinition::Object),
+            kind:  DefinitionKind::Global(GlobalDefinition::Object(item_map.item_id(&c))),
 
             node: SyntaxNodePtr::new(c.syntax()),
           },
@@ -154,10 +157,9 @@ fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
         Some((
           Path { elems: vec![name.text().into()] },
           Definition {
-            pos:   FileRange { file, range: name.text_range() },
             name:  name.text().into(),
             scope: ScopeId::from_raw(RawIdx::from_u32(0)), // FIXME
-            kind:  DefinitionKind::Global(GlobalDefinition::Class),
+            kind:  DefinitionKind::Global(GlobalDefinition::Class(item_map.item_id(&c))),
 
             node: SyntaxNodePtr::new(c.syntax()),
           },
