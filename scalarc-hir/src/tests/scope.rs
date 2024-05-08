@@ -2,11 +2,11 @@ use std::fmt;
 
 use crate::{scope::Scope, Definition, HirDatabase};
 use la_arena::Arena;
-use scalarc_source::{FileId, SourceDatabase};
+use scalarc_source::FileId;
 use scalarc_syntax::{TextRange, TextSize};
 use scalarc_test::{expect, Expect};
 
-use super::{new_db, TestDB};
+use super::new_db;
 
 fn scopes_of(src: &str, expected: Expect) {
   let db = new_db(src);

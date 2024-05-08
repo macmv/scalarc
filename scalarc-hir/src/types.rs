@@ -6,10 +6,7 @@ use std::fmt;
 
 use crate::{HirDatabase, Path};
 use scalarc_source::FileId;
-use scalarc_syntax::{
-  ast::{AstNode, SyntaxKind},
-  TextSize, T,
-};
+use scalarc_syntax::{ast::SyntaxKind, TextSize, T};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Type {

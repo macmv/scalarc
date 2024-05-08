@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use la_arena::{Arena, RawIdx};
+use la_arena::RawIdx;
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
   ast::{AstNode, Item},
   SyntaxNodePtr, TextRange, TextSize,
 };
-use scope::{FileScopes, Scope, ScopeId};
+use scope::{FileScopes, ScopeId};
 use tree::Name;
 
 #[cfg(test)]
