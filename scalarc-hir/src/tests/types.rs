@@ -26,6 +26,7 @@ fn simple_type_at() {
   type_at("@@3", expect![@"scala.Int"]);
   type_at("3@@", expect![@"scala.Int"]);
   type_at("3.2@@", expect![@"scala.Float"]);
+  type_at("(3)@@", expect![@"scala.Int"]);
 
   type_at("@@ 3", expect![@"no type"]);
 }

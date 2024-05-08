@@ -6,7 +6,10 @@ use std::fmt;
 
 use crate::{HirDatabase, Path};
 use scalarc_source::FileId;
-use scalarc_syntax::{ast::SyntaxKind, TextSize, T};
+use scalarc_syntax::{
+  ast::{AstNode, SyntaxKind},
+  TextSize, T,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Type {
@@ -36,6 +39,10 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     .max_by_key(|token| match token.kind() {
       T![ident] => 10,
       SyntaxKind::INT_LIT_KW => 9,
+
+      // Whitespace is always lowest priority.
+      T![nl] => 0,
+
       _ => 1,
     })
     .unwrap();
@@ -56,6 +63,18 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
     SyntaxKind::INT_LIT_KW => Some(Type::int()),
     SyntaxKind::FLOAT_LIT_KW => Some(Type::float()),
+
+    SyntaxKind::OPEN_PAREN | SyntaxKind::CLOSE_PAREN => {
+      let parent = node.parent()?;
+      let tup = scalarc_syntax::ast::TupleExpr::cast(parent)?;
+
+      if tup.exprs().count() == 1 {
+        db.type_at(file_id, tup.exprs().next()?.syntax().text_range().end())
+      } else {
+        // TODO: Tuple type
+        None
+      }
+    }
 
     _ => None,
   }

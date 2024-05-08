@@ -93,6 +93,10 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
     .max_by_key(|token| match token.kind() {
       T![ident] => 10,
       SyntaxKind::INT_LIT_KW => 9,
+
+      // Whitespace is always lowest priority.
+      T![nl] => 0,
+
       _ => 1,
     })
     .unwrap();
