@@ -619,8 +619,8 @@ fn nested_scopes() {
 fn refs_to_val() {
   refs_to(
     r#"
-    val a@@ = 3
-    a
+    val a = 3
+    a@@
     a + b
     println(a)
 
@@ -631,13 +631,13 @@ fn refs_to_val() {
     "#,
     expect![@r#"
       val a = 3
-      a
-      a + b
-      println(a)
+      @a@
+      @a@ + b
+      println(@a@)
 
-      if (a > 3) {
+      if (@a@ > 3) {
         val a = 4
-        a
+        @a@
       }
     "#],
   );
