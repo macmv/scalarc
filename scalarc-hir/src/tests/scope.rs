@@ -141,21 +141,33 @@ fn scopes_of_example() {
               pos: 9..12,
               name: "foo",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
             "bar": Definition {
               pos: 25..28,
               name: "bar",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
             "baz": Definition {
               pos: 41..44,
               name: "baz",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
           },
@@ -181,21 +193,31 @@ fn scopes_of_example() {
               pos: 9..12,
               name: "foo",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
             "bar": Definition {
               pos: 25..28,
               name: "bar",
               kind: Local(
-                Val,
+                Val(
+                  None,
+                ),
               ),
             },
             "baz": Definition {
               pos: 79..82,
               name: "baz",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
           },
@@ -207,14 +229,22 @@ fn scopes_of_example() {
               pos: 43..44,
               name: "a",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
             "b": Definition {
               pos: 59..60,
               name: "b",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
           },
@@ -241,21 +271,31 @@ fn definitions_at() {
           pos: 43..44,
           name: "a",
           kind: Local(
-            Val,
+            Val(
+              Some(
+                Type(scala.Int),
+              ),
+            ),
           ),
         },
         Definition {
           pos: 25..28,
           name: "bar",
           kind: Local(
-            Val,
+            Val(
+              None,
+            ),
           ),
         },
         Definition {
           pos: 9..12,
           name: "foo",
           kind: Local(
-            Val,
+            Val(
+              Some(
+                Type(scala.Int),
+              ),
+            ),
           ),
         },
       ]"#],
@@ -278,7 +318,11 @@ fn definition_at() {
         pos: 43..44,
         name: "a",
         kind: Local(
-          Val,
+          Val(
+            Some(
+              Type(scala.Int),
+            ),
+          ),
         ),
       }"#],
   );
@@ -298,7 +342,11 @@ fn definition_at() {
         pos: 43..44,
         name: "a",
         kind: Local(
-          Val,
+          Val(
+            Some(
+              Type(scala.Int),
+            ),
+          ),
         ),
       }"#],
   );
@@ -371,7 +419,11 @@ fn class_scopes() {
               pos: 35..36,
               name: "b",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(String),
+                  ),
+                ),
               ),
             },
           },
@@ -435,7 +487,11 @@ fn class_def() {
           pos: 35..36,
           name: "b",
           kind: Local(
-            Val,
+            Val(
+              Some(
+                Type(String),
+              ),
+            ),
           ),
         },
         Definition {
@@ -504,7 +560,11 @@ fn fun_scopes() {
               pos: 35..36,
               name: "b",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(String),
+                  ),
+                ),
               ),
             },
           },
@@ -657,7 +717,11 @@ fn nested_scopes() {
               pos: 9..10,
               name: "a",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
           },
@@ -669,7 +733,11 @@ fn nested_scopes() {
               pos: 32..33,
               name: "b",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
           },
@@ -681,7 +749,11 @@ fn nested_scopes() {
               pos: 73..74,
               name: "c",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
           },
@@ -693,7 +765,11 @@ fn nested_scopes() {
               pos: 242..243,
               name: "g",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
           },
@@ -705,7 +781,11 @@ fn nested_scopes() {
               pos: 113..114,
               name: "d",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
           },
@@ -717,7 +797,11 @@ fn nested_scopes() {
               pos: 168..169,
               name: "e",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
           },
@@ -729,7 +813,11 @@ fn nested_scopes() {
               pos: 287..288,
               name: "h",
               kind: Local(
-                Val,
+                Val(
+                  Some(
+                    Type(scala.Int),
+                  ),
+                ),
               ),
             },
           },

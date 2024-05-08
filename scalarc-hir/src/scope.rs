@@ -155,7 +155,7 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
       };
       let scope_id = Idx::from_raw(RawIdx::from_u32(scopes.len() as u32));
       for item in items.iter() {
-        scope.declarations.extend(definitions_of(file_id, &item, scope_id));
+        scope.declarations.extend(definitions_of(db, file_id, &item, scope_id));
       }
       let id = if !scope.is_empty() { Some(scopes.alloc(scope)) } else { parent };
 
@@ -218,27 +218,41 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
   FileScopes { scopes }
 }
 
-fn definitions_of(
+fn definitions_of<'a>(
+  db: &'a dyn HirDatabase,
   file_id: FileId,
   n: &SyntaxNode,
   scope: ScopeId,
-) -> impl Iterator<Item = (String, Definition)> {
+) -> impl Iterator<Item = (String, Definition)> + 'a {
   n.children().filter_map(move |n| {
-    let def = def_of_node(file_id, scope, n);
+    let def = def_of_node(db, file_id, scope, n);
     def.map(|def| (def.name.as_str().into(), def))
   })
 }
 
-fn def_of_node(file_id: FileId, scope: ScopeId, n: SyntaxNode) -> Option<Definition> {
+fn def_of_node(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  scope: ScopeId,
+  n: SyntaxNode,
+) -> Option<Definition> {
   match n.kind() {
     SyntaxKind::VAL_DEF => {
       let v = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
       let id = v.id_token()?;
+
+      let ty = match v.ty() {
+        Some(ty) => Some(Type { path: Path { elems: vec![Name(ty.syntax().text().into())] } }),
+        None => v.expr().and_then(|e| {
+          db.type_at(file_id, e.syntax().text_range().end()).map(|ty| Type { path: ty.path })
+        }),
+      };
+
       Some(Definition {
         pos: FileRange { file: file_id, range: id.text_range() },
         name: id.text().into(),
         scope,
-        kind: DefinitionKind::Local(LocalDefinition::Val),
+        kind: DefinitionKind::Local(LocalDefinition::Val(ty)),
 
         node: SyntaxNodePtr::new(&n),
       })

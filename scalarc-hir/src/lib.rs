@@ -63,7 +63,7 @@ pub enum DefinitionKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LocalDefinition {
-  Val,
+  Val(Option<Type>),
   Var,
   Parameter,
   Def(Signature),
