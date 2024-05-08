@@ -3,7 +3,7 @@ use std::fmt;
 use crate::{scope::Scope, Definition, HirDatabase};
 use la_arena::Arena;
 use scalarc_source::FileId;
-use scalarc_syntax::{TextRange, TextSize};
+use scalarc_syntax::TextSize;
 use scalarc_test::{expect, Expect};
 
 use super::new_db;
@@ -55,59 +55,72 @@ fn refs_to(src: &str, expected: Expect) {
   expected.assert_eq(&actual_src);
 }
 
+fn indent(s: String) -> String { s.replace("    ", "  ") }
+
 struct DebugScopes<'a>(&'a Arena<Scope>);
 impl fmt::Display for DebugScopes<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "[\n")?;
-    for (_, s) in self.0.iter() {
-      writeln!(f, "  Scope {{")?;
-      writeln!(f, "    range: {:?},", s.visible)?;
-      writeln!(f, "    declarations: {{")?;
-      for (name, def) in &s.declarations {
-        write!(f, "      ")?;
-        write!(f, "{:?}: {}", name, DebugDef(&def))?;
-      }
-      writeln!(f, "    }}")?;
-      writeln!(f, "  }}")?;
-    }
-    write!(f, "]\n")
+    write!(f, "{}", indent(format!("{:#?}", self)))
+  }
+}
+impl fmt::Debug for DebugScopes<'_> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_list().entries(self.0.iter().map(|(_, s)| DebugScope(s))).finish()
+  }
+}
+
+struct DebugScope<'a>(&'a Scope);
+impl fmt::Debug for DebugScope<'_> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_struct("Scope")
+      .field("range", &self.0.visible)
+      .field("declarations", &DebugDeclarations(&self.0.declarations))
+      .finish()
+  }
+}
+
+struct DebugDeclarations<'a>(&'a Vec<(String, Definition)>);
+impl fmt::Debug for DebugDeclarations<'_> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_map().entries(self.0.iter().map(|&(ref k, ref v)| (k, DebugDef(v)))).finish()
   }
 }
 
 struct DebugDefList<'a>(&'a Vec<Definition>);
 impl fmt::Display for DebugDefList<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    write!(f, "[\n")?;
-    for def in self.0.iter() {
-      write!(f, "  {}", DebugDef(&def))?;
-    }
-    write!(f, "]\n")
+    write!(f, "{}", indent(format!("{:#?}", self)))
+  }
+}
+impl fmt::Debug for DebugDefList<'_> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_list().entries(self.0.iter().map(DebugDef)).finish()
   }
 }
 
 struct DebugDefOpt<'a>(&'a Option<Definition>);
 impl fmt::Display for DebugDefOpt<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "{}", indent(format!("{:#?}", self)))
+  }
+}
+impl fmt::Debug for DebugDefOpt<'_> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self.0 {
-      Some(def) => write!(f, "{}", DebugDef(&def)),
+      Some(def) => write!(f, "{:#?}", DebugDef(&def)),
       None => writeln!(f, "None"),
     }
   }
 }
 
 struct DebugDef<'a>(&'a Definition);
-impl fmt::Display for DebugDef<'_> {
+impl fmt::Debug for DebugDef<'_> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let def = self.0;
-    write!(f, "Definition {{\n")?;
-    write!(f, "  pos: {:#?},\n", def.pos.range)?;
-    write!(f, "  name: {:#?},\n", def.name.as_str())?;
-    write!(
-      f,
-      "  kind: {}\n",
-      format!("{:#?}", def.kind).replace("    ", "  ").replace('\n', "\n  ")
-    )?;
-    writeln!(f, "}}")
+    f.debug_struct("Definition")
+      .field("pos", &self.0.pos.range)
+      .field("name", &self.0.name.as_str())
+      .field("kind", &self.0.kind)
+      .finish()
   }
 }
 
@@ -124,13 +137,30 @@ fn scopes_of_example() {
         Scope {
           range: 0..49,
           declarations: {
-            "foo": Definition { pos: 9..12, name: "foo", kind: Local(Val) }
-            "bar": Definition { pos: 25..28, name: "bar", kind: Local(Val) }
-            "baz": Definition { pos: 41..44, name: "baz", kind: Local(Val) }
-          }
-        }
-      ]
-    "#],
+            "foo": Definition {
+              pos: 9..12,
+              name: "foo",
+              kind: Local(
+                Val,
+              ),
+            },
+            "bar": Definition {
+              pos: 25..28,
+              name: "bar",
+              kind: Local(
+                Val,
+              ),
+            },
+            "baz": Definition {
+              pos: 41..44,
+              name: "baz",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
+      ]"#],
   );
 
   scopes_of(
@@ -147,20 +177,49 @@ fn scopes_of_example() {
         Scope {
           range: 0..87,
           declarations: {
-            "foo": Definition { pos: 9..12, name: "foo", kind: Local(Val) }
-            "bar": Definition { pos: 25..28, name: "bar", kind: Local(Val) }
-            "baz": Definition { pos: 79..82, name: "baz", kind: Local(Val) }
-          }
-        }
+            "foo": Definition {
+              pos: 9..12,
+              name: "foo",
+              kind: Local(
+                Val,
+              ),
+            },
+            "bar": Definition {
+              pos: 25..28,
+              name: "bar",
+              kind: Local(
+                Val,
+              ),
+            },
+            "baz": Definition {
+              pos: 79..82,
+              name: "baz",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
         Scope {
           range: 21..70,
           declarations: {
-            "a": Definition { pos: 43..44, name: "a", kind: Local(Val) }
-            "b": Definition { pos: 59..60, name: "b", kind: Local(Val) }
-          }
-        }
-      ]
-    "#],
+            "a": Definition {
+              pos: 43..44,
+              name: "a",
+              kind: Local(
+                Val,
+              ),
+            },
+            "b": Definition {
+              pos: 59..60,
+              name: "b",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
+      ]"#],
   );
 }
 
@@ -178,11 +237,28 @@ fn definitions_at() {
     "#,
     expect![@r#"
       [
-        Definition { pos: 43..44, name: "a", kind: Local(Val) }
-        Definition { pos: 25..28, name: "bar", kind: Local(Val) }
-        Definition { pos: 9..12, name: "foo", kind: Local(Val) }
-      ]
-    "#],
+        Definition {
+          pos: 43..44,
+          name: "a",
+          kind: Local(
+            Val,
+          ),
+        },
+        Definition {
+          pos: 25..28,
+          name: "bar",
+          kind: Local(
+            Val,
+          ),
+        },
+        Definition {
+          pos: 9..12,
+          name: "foo",
+          kind: Local(
+            Val,
+          ),
+        },
+      ]"#],
   );
 }
 
@@ -198,8 +274,13 @@ fn definition_at() {
     val baz = 5
     "#,
     expect![@r#"
-      Definition { pos: 43..44, name: "a", kind: Local(Val) }
-    "#],
+      Definition {
+        pos: 43..44,
+        name: "a",
+        kind: Local(
+          Val,
+        ),
+      }"#],
   );
 
   def_at(
@@ -213,8 +294,13 @@ fn definition_at() {
     val baz = 5
     "#,
     expect![@r#"
-      Definition { pos: 43..44, name: "a", kind: Local(Val) }
-    "#],
+      Definition {
+        pos: 43..44,
+        name: "a",
+        kind: Local(
+          Val,
+        ),
+      }"#],
   );
 }
 
@@ -243,9 +329,8 @@ fn def_sigs() {
               ret: None,
             },
           ),
-        )
-      }
-    "#],
+        ),
+      }"#],
   );
 }
 
@@ -263,18 +348,35 @@ fn class_scopes() {
         Scope {
           range: 0..60,
           declarations: {
-            "Foo": Definition { pos: 11..14, name: "Foo", kind: Global(Class) }
-          }
-        }
+            "Foo": Definition {
+              pos: 11..14,
+              name: "Foo",
+              kind: Global(
+                Class,
+              ),
+            },
+          },
+        },
         Scope {
           range: 23..59,
           declarations: {
-            "a": Definition { pos: 15..16, name: "a", kind: Local(Parameter) }
-            "b": Definition { pos: 35..36, name: "b", kind: Local(Val) }
-          }
-        }
-      ]
-    "#],
+            "a": Definition {
+              pos: 15..16,
+              name: "a",
+              kind: Local(
+                Parameter,
+              ),
+            },
+            "b": Definition {
+              pos: 35..36,
+              name: "b",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
+      ]"#],
   );
 }
 
@@ -287,9 +389,14 @@ fn class_def() {
     "#,
     expect![@r#"
       [
-        Definition { pos: 11..14, name: "Foo", kind: Global(Class) }
-      ]
-    "#],
+        Definition {
+          pos: 11..14,
+          name: "Foo",
+          kind: Global(
+            Class,
+          ),
+        },
+      ]"#],
   );
 
   defs_at(
@@ -298,10 +405,21 @@ fn class_def() {
     "#,
     expect![@r#"
       [
-        Definition { pos: 15..16, name: "a", kind: Local(Parameter) }
-        Definition { pos: 11..14, name: "Foo", kind: Global(Class) }
-      ]
-    "#],
+        Definition {
+          pos: 15..16,
+          name: "a",
+          kind: Local(
+            Parameter,
+          ),
+        },
+        Definition {
+          pos: 11..14,
+          name: "Foo",
+          kind: Global(
+            Class,
+          ),
+        },
+      ]"#],
   );
 
   defs_at(
@@ -313,11 +431,28 @@ fn class_def() {
     "#,
     expect![@r#"
       [
-        Definition { pos: 35..36, name: "b", kind: Local(Val) }
-        Definition { pos: 15..16, name: "a", kind: Local(Parameter) }
-        Definition { pos: 11..14, name: "Foo", kind: Global(Class) }
-      ]
-    "#],
+        Definition {
+          pos: 35..36,
+          name: "b",
+          kind: Local(
+            Val,
+          ),
+        },
+        Definition {
+          pos: 15..16,
+          name: "a",
+          kind: Local(
+            Parameter,
+          ),
+        },
+        Definition {
+          pos: 11..14,
+          name: "Foo",
+          kind: Global(
+            Class,
+          ),
+        },
+      ]"#],
   );
 }
 
@@ -334,18 +469,47 @@ fn fun_scopes() {
         Scope {
           range: 0..51,
           declarations: {
-            "foo": Definition { pos: 9..12, name: "foo", kind: Local(Def) }
-          }
-        }
+            "foo": Definition {
+              pos: 9..12,
+              name: "foo",
+              kind: Local(
+                Def(
+                  Signature {
+                    params: [
+                      Params {
+                        implicit: false,
+                        params: [
+                          Type(Int),
+                        ],
+                      },
+                    ],
+                    ret: None,
+                  },
+                ),
+              ),
+            },
+          },
+        },
         Scope {
           range: 23..50,
           declarations: {
-            "a": Definition { pos: 13..14, name: "a", kind: Local(Parameter) }
-            "b": Definition { pos: 35..36, name: "b", kind: Local(Val) }
-          }
-        }
-      ]
-    "#],
+            "a": Definition {
+              pos: 13..14,
+              name: "a",
+              kind: Local(
+                Parameter,
+              ),
+            },
+            "b": Definition {
+              pos: 35..36,
+              name: "b",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
+      ]"#],
   );
 }
 
@@ -358,9 +522,26 @@ fn fun_def() {
     "#,
     expect![@r#"
       [
-        Definition { pos: 9..12, name: "foo", kind: Local(Def) }
-      ]
-    "#],
+        Definition {
+          pos: 9..12,
+          name: "foo",
+          kind: Local(
+            Def(
+              Signature {
+                params: [
+                  Params {
+                    implicit: false,
+                    params: [
+                      Type(Int),
+                    ],
+                  },
+                ],
+                ret: None,
+              },
+            ),
+          ),
+        },
+      ]"#],
   );
 
   defs_at(
@@ -369,10 +550,33 @@ fn fun_def() {
     "#,
     expect![@r#"
       [
-        Definition { pos: 13..14, name: "a", kind: Local(Parameter) }
-        Definition { pos: 9..12, name: "foo", kind: Local(Def) }
-      ]
-    "#],
+        Definition {
+          pos: 13..14,
+          name: "a",
+          kind: Local(
+            Parameter,
+          ),
+        },
+        Definition {
+          pos: 9..12,
+          name: "foo",
+          kind: Local(
+            Def(
+              Signature {
+                params: [
+                  Params {
+                    implicit: false,
+                    params: [
+                      Type(Int),
+                    ],
+                  },
+                ],
+                ret: None,
+              },
+            ),
+          ),
+        },
+      ]"#],
   );
 
   defs_at(
@@ -381,10 +585,33 @@ fn fun_def() {
     "#,
     expect![@r#"
       [
-        Definition { pos: 13..14, name: "a", kind: Local(Parameter) }
-        Definition { pos: 9..12, name: "foo", kind: Local(Def) }
-      ]
-    "#],
+        Definition {
+          pos: 13..14,
+          name: "a",
+          kind: Local(
+            Parameter,
+          ),
+        },
+        Definition {
+          pos: 9..12,
+          name: "foo",
+          kind: Local(
+            Def(
+              Signature {
+                params: [
+                  Params {
+                    implicit: false,
+                    params: [
+                      Type(Int),
+                    ],
+                  },
+                ],
+                ret: None,
+              },
+            ),
+          ),
+        },
+      ]"#],
   );
 }
 
@@ -426,47 +653,88 @@ fn nested_scopes() {
         Scope {
           range: 0..308,
           declarations: {
-            "a": Definition { pos: 9..10, name: "a", kind: Local(Val) }
-          }
-        }
+            "a": Definition {
+              pos: 9..10,
+              name: "a",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
         Scope {
           range: 20..43,
           declarations: {
-            "b": Definition { pos: 32..33, name: "b", kind: Local(Val) }
-          }
-        }
+            "b": Definition {
+              pos: 32..33,
+              name: "b",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
         Scope {
           range: 61..84,
           declarations: {
-            "c": Definition { pos: 73..74, name: "c", kind: Local(Val) }
-          }
-        }
+            "c": Definition {
+              pos: 73..74,
+              name: "c",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
         Scope {
           range: 230..261,
           declarations: {
-            "g": Definition { pos: 242..243, name: "g", kind: Local(Val) }
-          }
-        }
+            "g": Definition {
+              pos: 242..243,
+              name: "g",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
         Scope {
           range: 101..124,
           declarations: {
-            "d": Definition { pos: 113..114, name: "d", kind: Local(Val) }
-          }
-        }
+            "d": Definition {
+              pos: 113..114,
+              name: "d",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
         Scope {
           range: 164..184,
           declarations: {
-            "e": Definition { pos: 168..169, name: "e", kind: Local(Val) }
-          }
-        }
+            "e": Definition {
+              pos: 168..169,
+              name: "e",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
         Scope {
           range: 275..306,
           declarations: {
-            "h": Definition { pos: 287..288, name: "h", kind: Local(Val) }
-          }
-        }
-      ]
-    "#],
+            "h": Definition {
+              pos: 287..288,
+              name: "h",
+              kind: Local(
+                Val,
+              ),
+            },
+          },
+        },
+      ]"#],
   );
 }
 

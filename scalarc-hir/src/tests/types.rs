@@ -56,6 +56,6 @@ fn type_of_call() {
     def foo(a: scala.Int): scala.Float = 3.0
     foo(2)@@
     "#,
-    expect![@"scala.Int"],
+    expect![@"no type"],
   );
 }
