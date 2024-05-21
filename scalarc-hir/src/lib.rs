@@ -97,6 +97,14 @@ pub trait HirDatabase: SourceDatabase {
     file: FileId,
     scope: Option<ast::AstId<BlockExpr>>,
   ) -> Arc<ast::Block>;
+
+  #[salsa::invoke(types::type_of_expr)]
+  fn type_of_expr(
+    &self,
+    file_id: FileId,
+    scope: Option<ast::AstId<BlockExpr>>,
+    expr: ast::ExprId,
+  ) -> Option<Type>;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {

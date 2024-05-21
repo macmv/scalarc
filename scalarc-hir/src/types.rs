@@ -5,13 +5,13 @@
 use std::fmt;
 
 use crate::{
-  ast::{AstId, ErasedAstId},
+  ast::{AstId, ErasedAstId, ExprId},
   tree::Name,
   HirDatabase, Path,
 };
 use scalarc_source::FileId;
 use scalarc_syntax::{
-  ast::{self, AstNode, SyntaxKind, ValDef},
+  ast::{self, AstNode, BlockExpr, SyntaxKind},
   TextSize, T,
 };
 
@@ -73,6 +73,19 @@ impl fmt::Display for Signature {
   }
 }
 
+pub fn type_of_expr(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  scope: Option<AstId<BlockExpr>>,
+  expr: ExprId,
+) -> Option<Type> {
+  let hir_ast = db.hir_ast_for_scope(file_id, scope);
+
+  let expr = &hir_ast.exprs[expr];
+
+  None
+}
+
 // FIXME: This should be removed. Its borked.
 pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<Type> {
   let ast = db.parse(file_id);
@@ -104,17 +117,23 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
         let parent = val_def.syntax().parent()?;
 
-        if let Some(block) = ast::BlockExpr::cast(parent) {
+        let scope = if let Some(block) = ast::BlockExpr::cast(parent) {
           let block_id = item_id_map.item_id(&block);
-          let hir_ast = db.hir_ast_for_scope(file_id, Some(block_id));
-          let stmt = hir_ast.item_for_ast_id(val_id.erased());
-          dbg!(&stmt);
+          Some(block_id)
         } else {
           // TODO: Other parents might exist. For now, we assume the parent is the source
           // root.
-          let hir_ast = db.hir_ast_for_scope(file_id, None);
-          let stmt = hir_ast.item_for_ast_id(val_id.erased());
-          dbg!(&stmt);
+          None
+        };
+
+        let hir_ast = db.hir_ast_for_scope(file_id, scope);
+        let stmt = hir_ast.item_for_ast_id(val_id.erased())?;
+
+        match stmt {
+          crate::ast::Stmt::Binding(b) => {
+            db.type_of_expr(file_id, scope, b.expr);
+          }
+          _ => return None,
         }
       }
 

@@ -3,7 +3,6 @@
 use std::{
   hash::{BuildHasher, BuildHasherDefault, DefaultHasher, Hash, Hasher},
   marker::PhantomData,
-  panic::RefUnwindSafe,
   sync::Arc,
 };
 
@@ -27,12 +26,17 @@ pub struct AstIdMap {
   map:   hashbrown::HashMap<Idx<SyntaxNodePtr>, (), ()>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct AstId<N: AstItem> {
   raw: Idx<SyntaxNodePtr>,
 
   // fn() -> N so that `AstId` is still Send + Sync.
   phantom: PhantomData<fn() -> N>,
+}
+
+impl<N: AstItem> Copy for AstId<N> {}
+impl<N: AstItem> Clone for AstId<N> {
+  fn clone(&self) -> Self { *self }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

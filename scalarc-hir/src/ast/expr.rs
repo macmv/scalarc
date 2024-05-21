@@ -110,8 +110,11 @@ pub fn hir_ast_for_scope(
 }
 
 impl Block {
+  pub fn item_id_for_ast_id(&self, id: ErasedAstId) -> Option<StmtId> {
+    self.stmt_map.get(&id).copied()
+  }
   pub fn item_for_ast_id(&self, id: ErasedAstId) -> Option<&Stmt> {
-    Some(&self.stmts[self.stmt_map.get(&id).copied()?])
+    Some(&self.stmts[self.item_id_for_ast_id(id)?])
   }
 }
 
