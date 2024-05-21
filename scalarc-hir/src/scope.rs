@@ -9,7 +9,7 @@ use scalarc_syntax::{
 };
 
 use crate::{
-  ast::ErasedScopeId, tree::Name, Definition, DefinitionKind, FileRange, HirDatabase, Params, Path,
+  ast::ErasedAstId, tree::Name, Definition, DefinitionKind, FileRange, HirDatabase, Params, Path,
   Reference, Signature, Type,
 };
 
@@ -21,7 +21,7 @@ pub struct Scope {
   pub parent: Option<ScopeId>,
 
   /// The erased item this scope is defined in.
-  pub item_id: ErasedScopeId,
+  pub item_id: ErasedAstId,
 
   /// All the names declared by the scope.
   pub declarations: Vec<(String, Definition)>,

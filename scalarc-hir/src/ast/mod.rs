@@ -3,6 +3,7 @@
 use std::{
   hash::{BuildHasher, BuildHasherDefault, DefaultHasher, Hash, Hasher},
   marker::PhantomData,
+  panic::RefUnwindSafe,
   sync::Arc,
 };
 
@@ -11,50 +12,53 @@ use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode, SyntaxKind},
   node::SyntaxNode,
-  SyntaxNodePtr,
+  Parse, SourceFile, SyntaxNodePtr,
 };
 
 use crate::HirDatabase;
 
 mod expr;
 
+pub use expr::*;
+
 #[derive(Default, Debug)]
-pub struct ScopeIdMap {
+pub struct AstIdMap {
   arena: Arena<SyntaxNodePtr>,
   map:   hashbrown::HashMap<Idx<SyntaxNodePtr>, (), ()>,
 }
 
-// FIXME: Maybe remove? The erased ID is a lot more useful.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ScopeId<N: AstItem> {
-  raw:     Idx<SyntaxNodePtr>,
-  phantom: PhantomData<N>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AstId<N: AstItem> {
+  raw: Idx<SyntaxNodePtr>,
+
+  // fn() -> N so that `AstId` is still Send + Sync.
+  phantom: PhantomData<fn() -> N>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ErasedScopeId {
+pub struct ErasedAstId {
   pub(crate) raw: Idx<SyntaxNodePtr>,
 }
 
-impl<N: AstItem> ScopeId<N> {
-  pub fn erased(&self) -> ErasedScopeId { ErasedScopeId { raw: self.raw } }
+impl<N: AstItem> AstId<N> {
+  pub fn erased(&self) -> ErasedAstId { ErasedAstId { raw: self.raw } }
 }
 
-impl PartialEq for ScopeIdMap {
+impl PartialEq for AstIdMap {
   fn eq(&self, other: &Self) -> bool { self.arena == other.arena }
 }
-impl Eq for ScopeIdMap {}
+impl Eq for AstIdMap {}
 
-pub(crate) fn item_id_map(db: &dyn HirDatabase, file_id: FileId) -> Arc<ScopeIdMap> {
+pub(crate) fn item_id_map(db: &dyn HirDatabase, file_id: FileId) -> Arc<AstIdMap> {
   let node = db.parse(file_id);
 
-  Arc::new(ScopeIdMap::from_source(&node.syntax_node()))
+  Arc::new(AstIdMap::from_source(&node.syntax_node()))
 }
 
-impl ScopeIdMap {
-  pub(crate) fn from_source(node: &SyntaxNode) -> ScopeIdMap {
+impl AstIdMap {
+  pub(crate) fn from_source(node: &SyntaxNode) -> AstIdMap {
     assert!(node.parent().is_none());
-    let mut res = ScopeIdMap::default();
+    let mut res = AstIdMap::default();
 
     // make sure to allocate the root node
     if !should_alloc_id(node.kind()) {
@@ -86,18 +90,18 @@ impl ScopeIdMap {
     res
   }
 
-  pub fn iter(&self) -> impl Iterator<Item = (ErasedScopeId, &SyntaxNodePtr)> {
-    self.arena.iter().map(move |(id, ptr)| (ErasedScopeId { raw: id }, ptr))
+  pub fn iter(&self) -> impl Iterator<Item = (ErasedAstId, &SyntaxNodePtr)> {
+    self.arena.iter().map(move |(id, ptr)| (ErasedAstId { raw: id }, ptr))
   }
 
-  pub fn item_id<N: AstItem>(&self, item: &N) -> ScopeId<N> {
+  pub fn item_id<N: AstItem>(&self, item: &N) -> AstId<N> {
     let raw = self.erased_item_id(item.syntax()).raw;
-    ScopeId { raw, phantom: PhantomData }
+    AstId { raw, phantom: PhantomData }
   }
 
-  pub fn erased_item_id(&self, node: &SyntaxNode) -> ErasedScopeId {
+  pub fn erased_item_id(&self, node: &SyntaxNode) -> ErasedAstId {
     let raw = self.erased_item_idx(node);
-    ErasedScopeId { raw }
+    ErasedAstId { raw }
   }
 
   pub fn contains_node(&self, node: &SyntaxNode) -> bool {
@@ -106,7 +110,13 @@ impl ScopeIdMap {
     self.map.raw_entry().from_hash(hash, |&idx| self.arena[idx] == ptr).is_some()
   }
 
-  pub fn get_erased(&self, id: ErasedScopeId) -> SyntaxNodePtr { self.arena[id.raw] }
+  pub fn get_erased(&self, id: ErasedAstId) -> SyntaxNodePtr { self.arena[id.raw] }
+
+  pub fn get<N: AstItem>(&self, ast: &Parse<SourceFile>, id: AstId<N>) -> N {
+    let ptr = self.get_erased(id.erased());
+
+    N::cast(ptr.to_node(ast.tree().syntax())).unwrap()
+  }
 
   fn erased_item_idx(&self, item: &SyntaxNode) -> Idx<SyntaxNodePtr> {
     let ptr = SyntaxNodePtr::new(item);

@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use crate::{ast::ErasedScopeId, tree::Name, HirDatabase, Path};
+use crate::{ast::ErasedAstId, tree::Name, HirDatabase, Path};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode, SyntaxKind},
@@ -135,7 +135,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
   }
 }
 
-pub fn type_at_item(db: &dyn HirDatabase, file_id: FileId, item: ErasedScopeId) -> Option<Type> {
+pub fn type_at_item(db: &dyn HirDatabase, file_id: FileId, item: ErasedAstId) -> Option<Type> {
   let ast = db.parse(file_id);
 
   let item_id_map = db.item_id_map(file_id);

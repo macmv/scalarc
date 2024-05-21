@@ -1,8 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
-use ast::ErasedScopeId;
+use ast::ErasedAstId;
 use scalarc_source::{FileId, SourceDatabase, TargetId};
-use scalarc_syntax::{TextRange, TextSize};
+use scalarc_syntax::{ast::BlockExpr, TextRange, TextSize};
 use scope::{FileScopes, ScopeId};
 use tree::Name;
 
@@ -41,7 +41,7 @@ pub struct FileRange {
 pub struct Definition {
   pub name:         Name,
   pub parent_scope: ScopeId,
-  pub item_id:      ErasedScopeId,
+  pub item_id:      ErasedAstId,
   pub kind:         DefinitionKind,
 }
 
@@ -67,7 +67,7 @@ pub struct Path {
 #[salsa::query_group(HirDatabaseStorage)]
 pub trait HirDatabase: SourceDatabase {
   #[salsa::invoke(ast::item_id_map)]
-  fn item_id_map(&self, file: FileId) -> Arc<ast::ScopeIdMap>;
+  fn item_id_map(&self, file: FileId) -> Arc<ast::AstIdMap>;
 
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
 
@@ -89,7 +89,10 @@ pub trait HirDatabase: SourceDatabase {
   fn type_at(&self, file: FileId, index: TextSize) -> Option<Type>;
 
   #[salsa::invoke(types::type_at_item)]
-  fn type_at_item(&self, file: FileId, id: ErasedScopeId) -> Option<Type>;
+  fn type_at_item(&self, file: FileId, id: ErasedAstId) -> Option<Type>;
+
+  #[salsa::invoke(ast::hir_ast_for_scope)]
+  fn hir_ast_for_scope(&self, file: FileId, scope: ast::AstId<BlockExpr>) -> Arc<()>;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {
