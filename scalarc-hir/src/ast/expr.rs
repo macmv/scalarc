@@ -405,6 +405,14 @@ mod tests {
               ),
             ],
           },
+          stmt_map: {
+            ErasedAstId {
+              raw: Idx::<Scala>>(6),
+            }: Idx::<Stmt>(3),
+            ErasedAstId {
+              raw: Idx::<Scala>>(5),
+            }: Idx::<Stmt>(2),
+          },
           items: [
             Idx::<Stmt>(0),
             Idx::<Stmt>(1),

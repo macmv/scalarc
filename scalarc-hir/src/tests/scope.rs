@@ -402,7 +402,17 @@ fn class_scopes() {
           declarations: {
             "Foo": Definition {
               name: "Foo",
-              kind: Class,
+              kind: Class(
+                Class {
+                  vals: {
+                    "b": AstId {
+                      raw: Idx::<Scala>>(4),
+                      phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ValDef>,
+                    },
+                  },
+                  defs: {},
+                },
+              ),
               item: SyntaxNodePtr {
                 kind: CLASS_DEF,
                 range: 5..59,
@@ -461,7 +471,12 @@ fn class_def() {
       [
         Definition {
           name: "Foo",
-          kind: Class,
+          kind: Class(
+            Class {
+              vals: {},
+              defs: {},
+            },
+          ),
           item: SyntaxNodePtr {
             kind: CLASS_DEF,
             range: 5..29,
