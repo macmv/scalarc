@@ -56,6 +56,7 @@ pub struct Binding {
 pub enum BindingKind {
   Val,
   Var,
+  Def,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -178,6 +179,23 @@ impl BlockBuilder<'_> {
         let expr_id = self.walk_expr(&expr.expr()?)?;
         let stmt_id = self.block.stmts.alloc(Stmt::Expr(expr_id));
 
+        Some(stmt_id)
+      }
+
+      scalarc_syntax::ast::Item::FunDef(def) => {
+        let sig = def.fun_sig()?;
+        let name = sig.id_token()?.text().to_string();
+        let expr_id = self.walk_expr(&def.expr()?)?;
+
+        let stmt_id = self.block.stmts.alloc(Stmt::Binding(Binding {
+          implicit: false,
+          kind: BindingKind::Def,
+          name,
+          ty: None,
+          expr: expr_id,
+        }));
+
+        self.block.stmt_map.insert(self.id_map.item_id(def).erased(), stmt_id);
         Some(stmt_id)
       }
 

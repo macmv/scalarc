@@ -5,8 +5,8 @@
 use std::fmt;
 
 use crate::{
-  ast::{AstId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
-  tree::{ItemId, Name},
+  ast::{AstId, ErasedAstId, Expr, ExprId, Literal, Stmt},
+  tree::Name,
   DefinitionKind, HirDatabase, Path,
 };
 use la_arena::{Idx, RawIdx};
@@ -117,9 +117,13 @@ pub fn type_of_expr(
           let scope = Some(AstId::new(def.item_id));
 
           let hir_ast = db.hir_ast_for_scope(file_id, scope);
-          let val_id = c.vals.iter().find(|(n, _)| n.as_str() == name)?.1;
+          let id = c
+            .vals
+            .get(name)
+            .map(|id| id.erased())
+            .or_else(|| c.defs.get(name).map(|id| id.erased()))?;
 
-          let stmt_id = hir_ast.stmt_map[&val_id.erased()].clone();
+          let stmt_id = hir_ast.stmt_map[&id].clone();
 
           match &hir_ast.stmts[stmt_id] {
             Stmt::Binding(b) => db.type_of_expr(file_id, scope, b.expr),

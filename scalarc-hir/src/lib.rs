@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use ast::{AstId, ErasedAstId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
-  ast::{BlockExpr, Def, ValDef},
+  ast::{BlockExpr, FunDef, ValDef},
   TextRange, TextSize,
 };
 use scope::{FileScopes, ScopeId};
@@ -69,7 +69,8 @@ pub struct Path {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Class {
-  pub vals: HashMap<Name, AstId<ValDef>>,
+  pub vals: HashMap<String, AstId<ValDef>>,
+  pub defs: HashMap<String, AstId<FunDef>>,
 }
 
 #[salsa::query_group(HirDatabaseStorage)]

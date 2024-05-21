@@ -49,11 +49,11 @@ fn type_of_val_def() {
 }
 
 #[test]
-fn type_of_new() {
+fn type_of_object() {
   type_at(
     r#"
     object Foo {
-      val bar = 3
+      def bar = 3
     }
 
     val foo@@ = Foo
@@ -64,7 +64,7 @@ fn type_of_new() {
   type_at(
     r#"
     object Foo {
-      val bar = 3
+      def bar = 3
     }
 
     val foo@@ = Foo.bar

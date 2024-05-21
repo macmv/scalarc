@@ -235,7 +235,7 @@ fn def_of_node(
       let c = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
 
-      let mut cls = Class { vals: HashMap::new() };
+      let mut cls = Class { vals: HashMap::new(), defs: HashMap::new() };
 
       if let Some(body) = c.body() {
         for item in body.items() {
@@ -244,7 +244,17 @@ fn def_of_node(
               if let Some(name) = v.id_token() {
                 let id = item_id_map.item_id(&v);
 
-                cls.vals.insert(Name::new(name.text().to_string()), id);
+                cls.vals.insert(name.text().to_string(), id);
+              }
+            }
+
+            ast::Item::FunDef(v) => {
+              if let Some(sig) = v.fun_sig() {
+                if let Some(name) = sig.id_token() {
+                  let id = item_id_map.item_id(&v);
+
+                  cls.defs.insert(name.text().to_string(), id);
+                }
               }
             }
 
