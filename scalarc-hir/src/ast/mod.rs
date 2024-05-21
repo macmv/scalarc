@@ -16,6 +16,8 @@ use scalarc_syntax::{
 
 use crate::HirDatabase;
 
+mod expr;
+
 #[derive(Default, Debug)]
 pub struct ScopeIdMap {
   arena: Arena<SyntaxNodePtr>,
