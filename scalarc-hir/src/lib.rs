@@ -98,6 +98,9 @@ pub trait HirDatabase: SourceDatabase {
     scope: Option<ast::AstId<BlockExpr>>,
   ) -> Arc<ast::Block>;
 
+  #[salsa::invoke(types::type_of_block)]
+  fn type_of_block(&self, file_id: FileId, scope: Option<ast::AstId<BlockExpr>>) -> Option<Type>;
+
   #[salsa::invoke(types::type_of_expr)]
   fn type_of_expr(
     &self,

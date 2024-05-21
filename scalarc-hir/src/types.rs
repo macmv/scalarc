@@ -5,8 +5,8 @@
 use std::fmt;
 
 use crate::{
-  ast::{AstId, ErasedAstId, ExprId},
-  tree::Name,
+  ast::{AstId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
+  tree::{ItemId, Name},
   HirDatabase, Path,
 };
 use scalarc_source::FileId;
@@ -83,7 +83,30 @@ pub fn type_of_expr(
 
   let expr = &hir_ast.exprs[expr];
 
-  None
+  match expr {
+    Expr::Literal(lit) => match lit {
+      Literal::Int(_) => Some(Type::int()),
+      Literal::Float(_) => Some(Type::float()),
+      _ => None,
+    },
+
+    Expr::Block(block) => db.type_of_block(file_id, Some(*block)),
+
+    _ => None,
+  }
+}
+
+pub fn type_of_block(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  scope: Option<AstId<BlockExpr>>,
+) -> Option<Type> {
+  let hir_ast = db.hir_ast_for_scope(file_id, scope);
+
+  match hir_ast.stmts[*hir_ast.items.last()?] {
+    Stmt::Expr(e) => db.type_of_expr(file_id, scope, e),
+    _ => None,
+  }
 }
 
 // FIXME: This should be removed. Its borked.
@@ -130,22 +153,12 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
         let stmt = hir_ast.item_for_ast_id(val_id.erased())?;
 
         match stmt {
-          crate::ast::Stmt::Binding(b) => {
-            db.type_of_expr(file_id, scope, b.expr);
-          }
+          crate::ast::Stmt::Binding(b) => db.type_of_expr(file_id, scope, b.expr),
           _ => return None,
         }
+      } else {
+        None
       }
-
-      let def = db.def_at_index(file_id, pos)?;
-      let scopes = db.scopes_of(file_id);
-
-      let scope = &scopes.scopes[def.parent_scope];
-
-      let hir_ast = db.hir_ast_for_scope(file_id, Some(AstId::new(def.item_id)));
-      dbg!(&hir_ast);
-
-      return db.type_at_item(file_id, scope.item_id);
     }
 
     SyntaxKind::INT_LIT_KW => Some(Type::int()),
