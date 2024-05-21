@@ -1,8 +1,11 @@
 use std::{collections::HashMap, sync::Arc};
 
-use ast::ErasedAstId;
+use ast::{AstId, ErasedAstId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
-use scalarc_syntax::{ast::BlockExpr, TextRange, TextSize};
+use scalarc_syntax::{
+  ast::{BlockExpr, Def, ValDef},
+  TextRange, TextSize,
+};
 use scope::{FileScopes, ScopeId};
 use tree::Name;
 
@@ -56,12 +59,17 @@ pub enum DefinitionKind {
   Var,
   Parameter,
   Def(Signature),
-  Class,
+  Class(Class),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Path {
   pub elems: Vec<Name>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Class {
+  pub vals: HashMap<Name, AstId<ValDef>>,
 }
 
 #[salsa::query_group(HirDatabaseStorage)]

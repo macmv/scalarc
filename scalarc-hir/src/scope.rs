@@ -1,16 +1,16 @@
-use std::mem;
+use std::{collections::HashMap, mem};
 
 use la_arena::{Arena, Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
-  ast::{AstNode, Item, SyntaxKind},
+  ast::{self, AstNode, Item, SyntaxKind},
   node::SyntaxNode,
   TextSize, T,
 };
 
 use crate::{
-  ast::ErasedAstId, tree::Name, Definition, DefinitionKind, FileRange, HirDatabase, Params, Path,
-  Reference, Signature, Type,
+  ast::ErasedAstId, tree::Name, Class, Definition, DefinitionKind, FileRange, HirDatabase, Params,
+  Path, Reference, Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -229,15 +229,35 @@ fn def_of_node(
     }
 
     SyntaxKind::CLASS_DEF => {
-      let item_id = db.item_id_map(file_id).erased_item_id(&n);
+      let item_id_map = db.item_id_map(file_id);
+      let item_id = item_id_map.erased_item_id(&n);
 
       let c = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
+
+      let mut cls = Class { vals: HashMap::new() };
+
+      if let Some(body) = c.body() {
+        for item in body.items() {
+          match item {
+            ast::Item::ValDef(v) => {
+              if let Some(name) = v.id_token() {
+                let id = item_id_map.item_id(&v);
+
+                cls.vals.insert(Name::new(name.text().to_string()), id);
+              }
+            }
+
+            _ => {}
+          }
+        }
+      }
+
       Some(Definition {
         name: id.text().into(),
         parent_scope: scope,
         item_id,
-        kind: DefinitionKind::Class,
+        kind: DefinitionKind::Class(cls),
       })
     }
 
