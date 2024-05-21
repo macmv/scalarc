@@ -3,14 +3,14 @@ use std::{collections::HashMap, mem};
 use la_arena::{Arena, Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
-  ast::{self, AstNode, Item, SyntaxKind},
+  ast::{AstNode, Item, SyntaxKind},
   node::SyntaxNode,
   TextSize, T,
 };
 
 use crate::{
-  ast::ErasedAstId, tree::Name, Class, Definition, DefinitionKind, FileRange, HirDatabase, Params,
-  Path, Reference, Signature, Type,
+  ast::ErasedAstId, tree::Name, Definition, DefinitionKind, FileRange, HirDatabase, Params, Path,
+  Reference, Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -29,7 +29,8 @@ pub struct Scope {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FileScopes {
-  pub scopes: Arena<Scope>,
+  pub scopes:       Arena<Scope>,
+  pub ast_to_scope: HashMap<ErasedAstId, ScopeId>,
 }
 
 impl Scope {
@@ -138,6 +139,7 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
   let ast_id_map = db.ast_id_map(file_id);
 
   let mut scopes: Arena<Scope> = Arena::new();
+  let mut ast_to_scope = HashMap::new();
 
   let tree = ast.tree();
 
@@ -161,6 +163,7 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
     let mut scope = Scope { parent, ast_id, declarations: vec![] };
 
     if let Some(it) = Item::cast(item.clone()) {
+      dbg!(&it);
       match it {
         Item::ClassDef(c) => {
           if let Some(p) = c.fun_params() {
@@ -182,10 +185,13 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
 
     if !scope.is_empty() {
       scopes.alloc(scope);
+      ast_to_scope.insert(ast_id, scope_id);
     }
   }
 
-  FileScopes { scopes }
+  dbg!(&ast_to_scope);
+
+  FileScopes { scopes, ast_to_scope }
 }
 
 fn definitions_of<'a>(
@@ -235,39 +241,11 @@ fn def_of_node(
       let c = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
 
-      let mut cls = Class { vals: HashMap::new(), defs: HashMap::new() };
-
-      if let Some(body) = c.body() {
-        for item in body.items() {
-          match item {
-            ast::Item::ValDef(v) => {
-              if let Some(name) = v.id_token() {
-                let id = ast_id_map.ast_id(&v);
-
-                cls.vals.insert(name.text().to_string(), id);
-              }
-            }
-
-            ast::Item::FunDef(v) => {
-              if let Some(sig) = v.fun_sig() {
-                if let Some(name) = sig.id_token() {
-                  let id = ast_id_map.ast_id(&v);
-
-                  cls.defs.insert(name.text().to_string(), id);
-                }
-              }
-            }
-
-            _ => {}
-          }
-        }
-      }
-
       Some(Definition {
         name: id.text().into(),
         parent_scope: scope,
         ast_id,
-        kind: DefinitionKind::Class(cls),
+        kind: DefinitionKind::Class(c.body().map(|node| ast_id_map.ast_id(&node))),
       })
     }
 

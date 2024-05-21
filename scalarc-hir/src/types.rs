@@ -113,20 +113,29 @@ pub fn type_of_expr(
 
       // This is basically just "select field `name` off of `def`".
       match def.kind {
-        DefinitionKind::Class(ref c) => {
+        DefinitionKind::Class(Some(body_id)) => {
           let scope = Some(AstId::new(def.ast_id));
 
           let hir_ast = db.hir_ast_for_scope(file_id, scope);
-          let id = c
-            .vals
-            .get(name)
-            .map(|id| id.erased())
-            .or_else(|| c.defs.get(name).map(|id| id.erased()))?;
 
-          let stmt_id = hir_ast.stmt_map[&id].clone();
+          let scope_id = scopes.ast_to_scope[&body_id.erased()];
+          let scope_def = &scopes.scopes[scope_id];
 
-          match &hir_ast.stmts[stmt_id] {
-            Stmt::Binding(b) => db.type_of_expr(file_id, scope, b.expr),
+          dbg!(&scope_def);
+
+          let decls: Vec<_> =
+            scope_def.declarations.iter().filter(|(n, _)| n.as_str() == name).collect();
+
+          match decls[..] {
+            [] => None,
+            [(_, def)] => {
+              let stmt_id = hir_ast.stmt_map[&def.ast_id].clone();
+
+              match &hir_ast.stmts[stmt_id] {
+                Stmt::Binding(b) => db.type_of_expr(file_id, scope, b.expr),
+                _ => None,
+              }
+            }
             _ => None,
           }
         }

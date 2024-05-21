@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use ast::{AstId, ErasedAstId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
-  ast::{BlockExpr, FunDef, ValDef},
+  ast::{BlockExpr, ClassDef, ItemBody},
   TextRange, TextSize,
 };
 use scope::{FileScopes, ScopeId};
@@ -59,18 +59,12 @@ pub enum DefinitionKind {
   Var,
   Parameter,
   Def(Signature),
-  Class(Class),
+  Class(Option<AstId<ItemBody>>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Path {
   pub elems: Vec<Name>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Class {
-  pub vals: HashMap<String, AstId<ValDef>>,
-  pub defs: HashMap<String, AstId<FunDef>>,
 }
 
 #[salsa::query_group(HirDatabaseStorage)]
