@@ -60,7 +60,7 @@ pub enum Expr {
   Tuple(Vec<ExprId>),
 
   FieldAccess(ExprId, String),
-  Call(ExprId, Vec<ExprId>),
+  Call(ExprId, String, Vec<ExprId>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -121,6 +121,14 @@ impl Block {
 
   fn walk_expr(&mut self, expr: &scalarc_syntax::ast::Expr) -> Option<ExprId> {
     match expr {
+      scalarc_syntax::ast::Expr::IdentExpr(expr) => {
+        let ident = expr.id_token()?.text().to_string();
+
+        let expr = Expr::Name(UnresolvedPath { segments: vec![ident] });
+
+        Some(self.exprs.alloc(expr))
+      }
+
       scalarc_syntax::ast::Expr::LitExpr(expr) => {
         if let Some(int) = expr.int_lit_token() {
           let expr = Expr::Literal(Literal::Int(int.text().parse().unwrap()));
@@ -129,6 +137,16 @@ impl Block {
         } else {
           None
         }
+      }
+
+      scalarc_syntax::ast::Expr::InfixExpr(expr) => {
+        let lhs = self.walk_expr(&expr.lhs()?)?;
+        let name = expr.id_token()?.text().to_string();
+        let rhs = self.walk_expr(&expr.rhs()?)?;
+
+        let expr = Expr::Call(lhs, name, vec![rhs]);
+
+        Some(self.exprs.alloc(expr))
       }
 
       _ => None,
@@ -170,25 +188,57 @@ mod tests {
       expect![@r#"
         Block {
           stmts: Arena {
-            len: 1,
+            len: 3,
             data: [
               Expr(
                 Idx::<Expr>(0),
               ),
+              Expr(
+                Idx::<Expr>(3),
+              ),
+              Expr(
+                Idx::<Expr>(4),
+              ),
             ],
           },
           exprs: Arena {
-            len: 1,
+            len: 5,
             data: [
               Literal(
                 Int(
                   2,
                 ),
               ),
+              Literal(
+                Int(
+                  2,
+                ),
+              ),
+              Literal(
+                Int(
+                  3,
+                ),
+              ),
+              Call(
+                Idx::<Expr>(1),
+                "+",
+                [
+                  Idx::<Expr>(2),
+                ],
+              ),
+              Name(
+                UnresolvedPath {
+                  segments: [
+                    "foo",
+                  ],
+                },
+              ),
             ],
           },
           items: [
             Idx::<Stmt>(0),
+            Idx::<Stmt>(1),
+            Idx::<Stmt>(2),
           ],
         }"#
       ],
