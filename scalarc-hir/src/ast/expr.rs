@@ -3,8 +3,9 @@
 
 use std::sync::Arc;
 
-use super::{AstId, AstIdMap};
+use super::{AstId, AstIdMap, ErasedAstId};
 use crate::HirDatabase;
+use hashbrown::HashMap;
 use la_arena::{Arena, Idx};
 use scalarc_source::FileId;
 
@@ -15,6 +16,10 @@ pub type ExprId = Idx<Expr>;
 pub struct Block {
   pub stmts: Arena<Stmt>,
   pub exprs: Arena<Expr>,
+
+  // After parsing to a `Block`, we need a way to lookup an AST item under the cursor, and convert
+  // it to a statement. This map is used for that.
+  pub stmt_map: HashMap<ErasedAstId, StmtId>,
 
   pub items: Vec<StmtId>,
 }
@@ -94,13 +99,24 @@ pub fn hir_ast_for_scope(
   Arc::new(ast_for_block(&item_id_map, &item))
 }
 
+impl Block {
+  pub fn item_for_ast_id(&self, id: ErasedAstId) -> Option<&Stmt> {
+    Some(&self.stmts[self.stmt_map.get(&id).copied()?])
+  }
+}
+
 struct BlockBuilder<'a> {
   id_map: &'a AstIdMap,
   block:  &'a mut Block,
 }
 
 fn ast_for_block(id_map: &AstIdMap, ast: &scalarc_syntax::ast::BlockExpr) -> Block {
-  let mut block = Block { stmts: Arena::new(), exprs: Arena::new(), items: vec![] };
+  let mut block = Block {
+    stmts:    Arena::new(),
+    exprs:    Arena::new(),
+    stmt_map: HashMap::new(),
+    items:    vec![],
+  };
 
   BlockBuilder { id_map, block: &mut block }.walk_block(ast);
 
@@ -120,20 +136,25 @@ impl BlockBuilder<'_> {
     match item {
       scalarc_syntax::ast::Item::ExprItem(expr) => {
         let expr_id = self.walk_expr(&expr.expr()?)?;
-        Some(self.block.stmts.alloc(Stmt::Expr(expr_id)))
+        let stmt_id = self.block.stmts.alloc(Stmt::Expr(expr_id));
+
+        Some(stmt_id)
       }
 
       scalarc_syntax::ast::Item::ValDef(def) => {
         let name = def.id_token()?.text().to_string();
         let expr_id = self.walk_expr(&def.expr()?)?;
 
-        Some(self.block.stmts.alloc(Stmt::Binding(Binding {
+        let stmt_id = self.block.stmts.alloc(Stmt::Binding(Binding {
           implicit: false,
           kind: BindingKind::Val,
           name,
           ty: None,
           expr: expr_id,
-        })))
+        }));
+
+        self.block.stmt_map.insert(self.id_map.item_id(def).erased(), stmt_id);
+        Some(stmt_id)
       }
 
       _ => {

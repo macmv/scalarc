@@ -11,7 +11,7 @@ use crate::{
 };
 use scalarc_source::FileId;
 use scalarc_syntax::{
-  ast::{self, AstNode, SyntaxKind},
+  ast::{self, AstNode, SyntaxKind, ValDef},
   TextSize, T,
 };
 
@@ -96,6 +96,22 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
   match node.kind() {
     T![ident] => {
+      let item_id_map = db.item_id_map(file_id);
+
+      let parent = node.parent()?;
+      if let Some(val_def) = ast::ValDef::cast(parent) {
+        let val_id = item_id_map.item_id(&val_def);
+
+        if let Some(block) = ast::BlockExpr::cast(val_def.syntax().parent()?) {
+          let block_id = item_id_map.item_id(&block);
+
+          let hir_ast = db.hir_ast_for_scope(file_id, block_id);
+
+          let stmt = hir_ast.item_for_ast_id(val_id.erased());
+          dbg!(&stmt);
+        }
+      }
+
       let def = db.def_at_index(file_id, pos)?;
       let scopes = db.scopes_of(file_id);
 
