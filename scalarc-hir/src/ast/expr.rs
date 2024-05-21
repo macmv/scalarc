@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use super::AstId;
+use super::{AstId, AstIdMap};
 use crate::HirDatabase;
 use la_arena::{Arena, Idx};
 use scalarc_source::FileId;
@@ -54,6 +54,9 @@ pub enum BindingKind {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Expr {
+  // Nested blocks go through HirDatabase.
+  Block(AstId<scalarc_syntax::ast::BlockExpr>),
+
   Literal(Literal),
   Name(UnresolvedPath),
   Underscore,
@@ -88,22 +91,27 @@ pub fn hir_ast_for_scope(
 
   let item = item_id_map.get(&ast, scope);
 
-  Arc::new(ast_for_block(&item))
+  Arc::new(ast_for_block(&item_id_map, &item))
 }
 
-fn ast_for_block(ast: &scalarc_syntax::ast::BlockExpr) -> Block {
+struct BlockBuilder<'a> {
+  id_map: &'a AstIdMap,
+  block:  &'a mut Block,
+}
+
+fn ast_for_block(id_map: &AstIdMap, ast: &scalarc_syntax::ast::BlockExpr) -> Block {
   let mut block = Block { stmts: Arena::new(), exprs: Arena::new(), items: vec![] };
 
-  block.walk_block(ast);
+  BlockBuilder { id_map, block: &mut block }.walk_block(ast);
 
   block
 }
 
-impl Block {
+impl BlockBuilder<'_> {
   fn walk_block(&mut self, ast: &scalarc_syntax::ast::BlockExpr) {
     for item in ast.items() {
       if let Some(id) = self.walk_stmt(&item) {
-        self.items.push(id);
+        self.block.items.push(id);
       }
     }
   }
@@ -112,14 +120,14 @@ impl Block {
     match item {
       scalarc_syntax::ast::Item::ExprItem(expr) => {
         let expr_id = self.walk_expr(&expr.expr()?)?;
-        Some(self.stmts.alloc(Stmt::Expr(expr_id)))
+        Some(self.block.stmts.alloc(Stmt::Expr(expr_id)))
       }
 
       scalarc_syntax::ast::Item::ValDef(def) => {
         let name = def.id_token()?.text().to_string();
         let expr_id = self.walk_expr(&def.expr()?)?;
 
-        Some(self.stmts.alloc(Stmt::Binding(Binding {
+        Some(self.block.stmts.alloc(Stmt::Binding(Binding {
           implicit: false,
           kind: BindingKind::Val,
           name,
@@ -137,19 +145,26 @@ impl Block {
 
   fn walk_expr(&mut self, expr: &scalarc_syntax::ast::Expr) -> Option<ExprId> {
     match expr {
+      scalarc_syntax::ast::Expr::BlockExpr(block) => {
+        let id = self.id_map.item_id(block);
+        let expr = Expr::Block(id);
+
+        Some(self.block.exprs.alloc(expr))
+      }
+
       scalarc_syntax::ast::Expr::IdentExpr(expr) => {
         let ident = expr.id_token()?.text().to_string();
 
         let expr = Expr::Name(UnresolvedPath { segments: vec![ident] });
 
-        Some(self.exprs.alloc(expr))
+        Some(self.block.exprs.alloc(expr))
       }
 
       scalarc_syntax::ast::Expr::LitExpr(expr) => {
         if let Some(int) = expr.int_lit_token() {
           let expr = Expr::Literal(Literal::Int(int.text().parse().unwrap()));
 
-          Some(self.exprs.alloc(expr))
+          Some(self.block.exprs.alloc(expr))
         } else {
           None
         }
@@ -162,7 +177,7 @@ impl Block {
 
         let expr = Expr::Call(lhs, name, vec![rhs]);
 
-        Some(self.exprs.alloc(expr))
+        Some(self.block.exprs.alloc(expr))
       }
 
       _ => None,
@@ -208,7 +223,7 @@ mod tests {
       expect![@r#"
         Block {
           stmts: Arena {
-            len: 4,
+            len: 5,
             data: [
               Expr(
                 Idx::<Expr>(0),
@@ -225,13 +240,22 @@ mod tests {
                   expr: Idx::<Expr>(6),
                 },
               ),
+              Binding(
+                Binding {
+                  implicit: false,
+                  kind: Val,
+                  ty: None,
+                  name: "bar",
+                  expr: Idx::<Expr>(7),
+                },
+              ),
               Expr(
-                Idx::<Expr>(7),
+                Idx::<Expr>(8),
               ),
             ],
           },
           exprs: Arena {
-            len: 8,
+            len: 9,
             data: [
               Literal(
                 Int(
@@ -272,6 +296,12 @@ mod tests {
                   Idx::<Expr>(5),
                 ],
               ),
+              Block(
+                AstId {
+                  raw: Idx::<Scala>>(8),
+                  phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::BlockExpr>,
+                },
+              ),
               Name(
                 UnresolvedPath {
                   segments: [
@@ -286,6 +316,7 @@ mod tests {
             Idx::<Stmt>(1),
             Idx::<Stmt>(2),
             Idx::<Stmt>(3),
+            Idx::<Stmt>(4),
           ],
         }"#
       ],
