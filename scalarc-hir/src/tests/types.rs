@@ -53,7 +53,7 @@ fn type_of_new() {
   type_at(
     r#"
     object Foo {
-      def bar = 3
+      val bar = 3
     }
 
     val foo@@ = Foo
@@ -64,7 +64,7 @@ fn type_of_new() {
   type_at(
     r#"
     object Foo {
-      def bar = 3
+      val bar = 3
     }
 
     val foo@@ = Foo.bar

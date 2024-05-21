@@ -7,8 +7,9 @@ use std::fmt;
 use crate::{
   ast::{AstId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
   tree::{ItemId, Name},
-  HirDatabase, Path,
+  DefinitionKind, HirDatabase, Path,
 };
+use la_arena::{Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode, BlockExpr, SyntaxKind},
@@ -100,10 +101,34 @@ pub fn type_of_expr(
     Expr::FieldAccess(lhs, name) => {
       let lhs = db.type_of_expr(file_id, scope, *lhs)?;
 
-      // FIXME: Need to lookup the definition of the `lhs` type.
-      let _ = name;
+      // FIXME: Need global lookup here. This should basically be the same as
+      // goto-def.
+      let scopes = db.scopes_of(file_id);
 
-      Some(lhs)
+      let scope_map = &scopes.scopes[Idx::from_raw(RawIdx::from_u32(0))];
+      let (_, def) = scope_map
+        .declarations
+        .iter()
+        .find(|(name, _)| name.as_str() == lhs.path.elems[0].as_str())?;
+
+      // This is basically just "select field `name` off of `def`".
+      match def.kind {
+        DefinitionKind::Class(ref c) => {
+          let scope = Some(AstId::new(def.item_id));
+
+          let hir_ast = db.hir_ast_for_scope(file_id, scope);
+          let val_id = c.vals.iter().find(|(n, _)| n.as_str() == name)?.1;
+
+          let stmt_id = hir_ast.stmt_map[&val_id.erased()].clone();
+
+          match &hir_ast.stmts[stmt_id] {
+            Stmt::Binding(b) => db.type_of_expr(file_id, scope, b.expr),
+            _ => None,
+          }
+        }
+
+        _ => None,
+      }
     }
 
     _ => None,
