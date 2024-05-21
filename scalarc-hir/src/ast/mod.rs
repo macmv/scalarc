@@ -56,7 +56,7 @@ impl PartialEq for AstIdMap {
 }
 impl Eq for AstIdMap {}
 
-pub(crate) fn item_id_map(db: &dyn HirDatabase, file_id: FileId) -> Arc<AstIdMap> {
+pub(crate) fn ast_id_map(db: &dyn HirDatabase, file_id: FileId) -> Arc<AstIdMap> {
   let node = db.parse(file_id);
 
   Arc::new(AstIdMap::from_source(&node.syntax_node()))
@@ -101,13 +101,13 @@ impl AstIdMap {
     self.arena.iter().map(move |(id, ptr)| (ErasedAstId { raw: id }, ptr))
   }
 
-  pub fn item_id<N: AstItem>(&self, item: &N) -> AstId<N> {
-    let raw = self.erased_item_id(item.syntax()).raw;
+  pub fn ast_id<N: AstItem>(&self, item: &N) -> AstId<N> {
+    let raw = self.erased_ast_id(item.syntax()).raw;
     AstId { raw, phantom: PhantomData }
   }
 
-  pub fn erased_item_id(&self, node: &SyntaxNode) -> ErasedAstId {
-    let raw = self.erased_item_idx(node);
+  pub fn erased_ast_id(&self, node: &SyntaxNode) -> ErasedAstId {
+    let raw = self.erased_ast_idx(node);
     ErasedAstId { raw }
   }
 
@@ -125,7 +125,7 @@ impl AstIdMap {
     N::cast(ptr.to_node(ast.tree().syntax())).unwrap()
   }
 
-  fn erased_item_idx(&self, item: &SyntaxNode) -> Idx<SyntaxNodePtr> {
+  fn erased_ast_idx(&self, item: &SyntaxNode) -> Idx<SyntaxNodePtr> {
     let ptr = SyntaxNodePtr::new(item);
     let hash = hash_ptr(&ptr);
     match self.map.raw_entry().from_hash(hash, |&idx| self.arena[idx] == ptr) {

@@ -114,7 +114,7 @@ pub fn type_of_expr(
       // This is basically just "select field `name` off of `def`".
       match def.kind {
         DefinitionKind::Class(ref c) => {
-          let scope = Some(AstId::new(def.item_id));
+          let scope = Some(AstId::new(def.ast_id));
 
           let hir_ast = db.hir_ast_for_scope(file_id, scope);
           let id = c
@@ -175,16 +175,16 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
   match node.kind() {
     T![ident] => {
-      let item_id_map = db.item_id_map(file_id);
+      let ast_id_map = db.ast_id_map(file_id);
 
       let parent = node.parent()?;
       if let Some(val_def) = ast::ValDef::cast(parent) {
-        let val_id = item_id_map.item_id(&val_def);
+        let val_id = ast_id_map.ast_id(&val_def);
 
         let parent = val_def.syntax().parent()?;
 
         let scope = if let Some(block) = ast::BlockExpr::cast(parent) {
-          let block_id = item_id_map.item_id(&block);
+          let block_id = ast_id_map.ast_id(&block);
           Some(block_id)
         } else {
           // TODO: Other parents might exist. For now, we assume the parent is the source
@@ -244,9 +244,9 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 pub fn type_at_item(db: &dyn HirDatabase, file_id: FileId, item: ErasedAstId) -> Option<Type> {
   let ast = db.parse(file_id);
 
-  let item_id_map = db.item_id_map(file_id);
+  let ast_id_map = db.ast_id_map(file_id);
 
-  let ptr = item_id_map.get_erased(item);
+  let ptr = ast_id_map.get_erased(item);
 
   let item = ast::Item::cast(ptr.to_node(&ast.syntax_node()))?;
 

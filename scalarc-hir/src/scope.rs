@@ -21,7 +21,7 @@ pub struct Scope {
   pub parent: Option<ScopeId>,
 
   /// The erased item this scope is defined in.
-  pub item_id: ErasedAstId,
+  pub ast_id: ErasedAstId,
 
   /// All the names declared by the scope.
   pub declarations: Vec<(String, Definition)>,
@@ -40,13 +40,13 @@ impl Scope {
 /// closest to the cursor) show up first in the list.
 pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<Definition> {
   let file_scopes = db.scopes_of(file_id);
-  let item_id_map = db.item_id_map(file_id);
+  let ast_id_map = db.ast_id_map(file_id);
 
   let mut defs = vec![];
 
   // Find the last (ie, smallest) scope that contains the given span.
   let Some(innermost) = file_scopes.scopes.iter().rev().find(|(_, scope)| {
-    let item = item_id_map.get_erased(scope.item_id);
+    let item = ast_id_map.get_erased(scope.ast_id);
     item.text_range().contains_inclusive(pos)
   }) else {
     return vec![];
@@ -55,7 +55,7 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   // Now collect all the parents of that scope.
   let mut scope = innermost.1;
   defs.extend(scope.declarations.iter().rev().filter_map(|(_, def)| {
-    let item = item_id_map.get_erased(def.item_id);
+    let item = ast_id_map.get_erased(def.ast_id);
 
     if item.text_range().end() <= pos {
       Some(def.clone())
@@ -66,7 +66,7 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   while let Some(parent) = scope.parent {
     scope = &file_scopes.scopes[parent];
     defs.extend(scope.declarations.iter().rev().filter_map(|(_, def)| {
-      let item = item_id_map.get_erased(def.item_id);
+      let item = ast_id_map.get_erased(def.ast_id);
 
       if item.text_range().end() <= pos {
         Some(def.clone())
@@ -135,21 +135,21 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
 pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
   // Breadth-first search of all scopes in the given file.
   let ast = db.parse(file_id);
-  let item_id_map = db.item_id_map(file_id);
+  let ast_id_map = db.ast_id_map(file_id);
 
   let mut scopes: Arena<Scope> = Arena::new();
 
   let tree = ast.tree();
 
-  for (item_id, item) in item_id_map.iter() {
+  for (ast_id, item) in ast_id_map.iter() {
     let item = item.to_node(tree.syntax());
     let mut parent = None;
     let mut it = item.clone();
     while let Some(p) = it.parent() {
-      if item_id_map.contains_node(&p) {
-        let item_id = item_id_map.erased_item_id(&p);
+      if ast_id_map.contains_node(&p) {
+        let ast_id = ast_id_map.erased_ast_id(&p);
         // FIXME: Maybe use a map instead here?
-        if let Some((scope_id, _)) = scopes.iter().find(|(_, s)| s.item_id == item_id) {
+        if let Some((scope_id, _)) = scopes.iter().find(|(_, s)| s.ast_id == ast_id) {
           parent = Some(scope_id);
           break;
         }
@@ -158,7 +158,7 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
     }
 
     let scope_id = Idx::<Scope>::from_raw(RawIdx::from(scopes.len() as u32));
-    let mut scope = Scope { parent, item_id, declarations: vec![] };
+    let mut scope = Scope { parent, ast_id, declarations: vec![] };
 
     if let Some(it) = Item::cast(item.clone()) {
       match it {
@@ -208,7 +208,7 @@ fn def_of_node(
 ) -> Option<Definition> {
   match n.kind() {
     SyntaxKind::VAL_DEF => {
-      let item_id = db.item_id_map(file_id).erased_item_id(&n);
+      let ast_id = db.ast_id_map(file_id).erased_ast_id(&n);
 
       let v = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
       let id = v.id_token()?;
@@ -223,14 +223,14 @@ fn def_of_node(
       Some(Definition {
         name: id.text().into(),
         parent_scope: scope,
-        item_id,
+        ast_id,
         kind: DefinitionKind::Val(ty),
       })
     }
 
     SyntaxKind::CLASS_DEF => {
-      let item_id_map = db.item_id_map(file_id);
-      let item_id = item_id_map.erased_item_id(&n);
+      let ast_id_map = db.ast_id_map(file_id);
+      let ast_id = ast_id_map.erased_ast_id(&n);
 
       let c = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
@@ -242,7 +242,7 @@ fn def_of_node(
           match item {
             ast::Item::ValDef(v) => {
               if let Some(name) = v.id_token() {
-                let id = item_id_map.item_id(&v);
+                let id = ast_id_map.ast_id(&v);
 
                 cls.vals.insert(name.text().to_string(), id);
               }
@@ -251,7 +251,7 @@ fn def_of_node(
             ast::Item::FunDef(v) => {
               if let Some(sig) = v.fun_sig() {
                 if let Some(name) = sig.id_token() {
-                  let id = item_id_map.item_id(&v);
+                  let id = ast_id_map.ast_id(&v);
 
                   cls.defs.insert(name.text().to_string(), id);
                 }
@@ -266,13 +266,13 @@ fn def_of_node(
       Some(Definition {
         name: id.text().into(),
         parent_scope: scope,
-        item_id,
+        ast_id,
         kind: DefinitionKind::Class(cls),
       })
     }
 
     SyntaxKind::FUN_DEF => {
-      let item_id = db.item_id_map(file_id).erased_item_id(&n);
+      let ast_id = db.ast_id_map(file_id).erased_ast_id(&n);
 
       let f = scalarc_syntax::ast::FunDef::cast(n.clone()).unwrap();
 
@@ -306,7 +306,7 @@ fn def_of_node(
       Some(Definition {
         name: id.text().into(),
         parent_scope: scope,
-        item_id,
+        ast_id,
         kind: DefinitionKind::Def(hir_sig),
       })
     }
@@ -314,7 +314,7 @@ fn def_of_node(
     // TODO: This is `FUN_PARAM` for both functions and classes right now. It should be updated
     // to `CLASS_PARAM`, as those can define `val`s on the class.
     SyntaxKind::FUN_PARAM => {
-      let item_id = db.item_id_map(file_id).erased_item_id(&n);
+      let ast_id = db.ast_id_map(file_id).erased_ast_id(&n);
 
       let p = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
 
@@ -322,7 +322,7 @@ fn def_of_node(
       Some(Definition {
         name: id.text().into(),
         parent_scope: scope,
-        item_id,
+        ast_id,
         kind: DefinitionKind::Parameter,
       })
     }
@@ -333,7 +333,7 @@ fn def_of_node(
 
 pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<Reference> {
   let ast = db.parse(file_id);
-  let item_id_map = db.item_id_map(file_id);
+  let ast_id_map = db.ast_id_map(file_id);
   let tree = ast.tree();
 
   let file_scopes = db.scopes_of(file_id);
@@ -344,7 +344,7 @@ pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
 
   let mut references = vec![];
 
-  let item = item_id_map.get_erased(scope.item_id);
+  let item = ast_id_map.get_erased(scope.ast_id);
   let mut this_pass: Vec<_> = vec![item.to_node(tree.syntax())];
   let mut next_pass = vec![];
 

@@ -94,7 +94,7 @@ pub fn hir_ast_for_scope(
   scope: Option<AstId<scalarc_syntax::ast::BlockExpr>>,
 ) -> Arc<Block> {
   let ast = db.parse(file_id);
-  let item_id_map = db.item_id_map(file_id);
+  let item_id_map = db.ast_id_map(file_id);
 
   match scope {
     Some(scope) => {
@@ -195,7 +195,7 @@ impl BlockBuilder<'_> {
           expr: expr_id,
         }));
 
-        self.block.stmt_map.insert(self.id_map.item_id(def).erased(), stmt_id);
+        self.block.stmt_map.insert(self.id_map.ast_id(def).erased(), stmt_id);
         Some(stmt_id)
       }
 
@@ -211,7 +211,7 @@ impl BlockBuilder<'_> {
           expr: expr_id,
         }));
 
-        self.block.stmt_map.insert(self.id_map.item_id(def).erased(), stmt_id);
+        self.block.stmt_map.insert(self.id_map.ast_id(def).erased(), stmt_id);
         Some(stmt_id)
       }
 
@@ -225,7 +225,7 @@ impl BlockBuilder<'_> {
   fn walk_expr(&mut self, expr: &scalarc_syntax::ast::Expr) -> Option<ExprId> {
     match expr {
       scalarc_syntax::ast::Expr::BlockExpr(block) => {
-        let id = self.id_map.item_id(block);
+        let id = self.id_map.ast_id(block);
         let expr = Expr::Block(id);
 
         Some(self.block.exprs.alloc(expr))

@@ -44,7 +44,7 @@ pub struct FileRange {
 pub struct Definition {
   pub name:         Name,
   pub parent_scope: ScopeId,
-  pub item_id:      ErasedAstId,
+  pub ast_id:       ErasedAstId,
   pub kind:         DefinitionKind,
 }
 
@@ -75,8 +75,8 @@ pub struct Class {
 
 #[salsa::query_group(HirDatabaseStorage)]
 pub trait HirDatabase: SourceDatabase {
-  #[salsa::invoke(ast::item_id_map)]
-  fn item_id_map(&self, file: FileId) -> Arc<ast::AstIdMap>;
+  #[salsa::invoke(ast::ast_id_map)]
+  fn ast_id_map(&self, file: FileId) -> Arc<ast::AstIdMap>;
 
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
 

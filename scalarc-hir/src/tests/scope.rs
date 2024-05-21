@@ -85,8 +85,8 @@ impl fmt::Debug for DebugUtil<'_, '_, Arena<Scope>> {
 
 impl fmt::Debug for DebugUtil<'_, '_, Scope> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let item_id_map = self.db.item_id_map(FileId::temp_new());
-    let item = item_id_map.get_erased(self.item.item_id);
+    let ast_id_map = self.db.ast_id_map(FileId::temp_new());
+    let item = ast_id_map.get_erased(self.item.ast_id);
 
     f.debug_struct("Scope")
       .field("item", &item)
@@ -121,8 +121,8 @@ where
 
 impl fmt::Debug for DebugUtil<'_, '_, Definition> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let item_id_map = self.db.item_id_map(FileId::temp_new());
-    let item = item_id_map.get_erased(self.item.item_id);
+    let item_id_map = self.db.ast_id_map(FileId::temp_new());
+    let item = item_id_map.get_erased(self.item.ast_id);
 
     f.debug_struct("Definition")
       .field("name", &self.item.name.as_str())
