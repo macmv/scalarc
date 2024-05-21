@@ -34,7 +34,7 @@ impl fmt::Debug for TestDB {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result { f.debug_struct("TestDB").finish() }
 }
 
-fn new_db(content: &str) -> TestDB {
+pub fn new_db(content: &str) -> TestDB {
   let mut db = TestDB::default();
   let file = FileId::temp_new();
   db.set_file_text(file, content.into());

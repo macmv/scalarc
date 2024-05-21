@@ -82,14 +82,13 @@ pub fn hir_ast_for_scope(
   db: &dyn HirDatabase,
   file_id: FileId,
   scope: AstId<scalarc_syntax::ast::BlockExpr>,
-) -> Arc<()> {
+) -> Arc<Block> {
   let ast = db.parse(file_id);
   let item_id_map = db.item_id_map(file_id);
 
   let item = item_id_map.get(&ast, scope);
 
-  // Arc::new(ast_for_block(&item))
-  Arc::new(())
+  Arc::new(ast_for_block(&item))
 }
 
 fn ast_for_block(ast: &scalarc_syntax::ast::BlockExpr) -> Block {
@@ -134,5 +133,65 @@ impl Block {
 
       _ => None,
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use la_arena::RawIdx;
+  use scalarc_test::{expect, Expect};
+
+  use super::*;
+
+  fn check(src: &str, expect: Expect) {
+    let db = crate::tests::new_db(src);
+
+    let file_id = FileId::temp_new();
+
+    let ast = db.hir_ast_for_scope(
+      file_id,
+      AstId { raw: Idx::from_raw(RawIdx::from_u32(2)), phantom: std::marker::PhantomData },
+    );
+
+    expect.assert_eq(&format!("{ast:#?}").replace("    ", "  "));
+  }
+
+  #[test]
+  fn hir_ast() {
+    check(
+      r#"
+      {
+        2
+        2 + 3
+        val foo = 4 + 5
+        foo
+      }
+      "#,
+      expect![@r#"
+        Block {
+          stmts: Arena {
+            len: 1,
+            data: [
+              Expr(
+                Idx::<Expr>(0),
+              ),
+            ],
+          },
+          exprs: Arena {
+            len: 1,
+            data: [
+              Literal(
+                Int(
+                  2,
+                ),
+              ),
+            ],
+          },
+          items: [
+            Idx::<Stmt>(0),
+          ],
+        }"#
+      ],
+    );
   }
 }
