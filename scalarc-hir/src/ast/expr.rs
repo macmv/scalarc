@@ -8,6 +8,7 @@ use crate::HirDatabase;
 use hashbrown::HashMap;
 use la_arena::{Arena, Idx};
 use scalarc_source::FileId;
+use scalarc_syntax::ast::{self, AstNode};
 
 pub type StmtId = Idx<Stmt>;
 pub type ExprId = Idx<Expr>;
@@ -89,14 +90,23 @@ impl Eq for EqFloat {}
 pub fn hir_ast_for_scope(
   db: &dyn HirDatabase,
   file_id: FileId,
-  scope: AstId<scalarc_syntax::ast::BlockExpr>,
+  scope: Option<AstId<scalarc_syntax::ast::BlockExpr>>,
 ) -> Arc<Block> {
   let ast = db.parse(file_id);
   let item_id_map = db.item_id_map(file_id);
 
-  let item = item_id_map.get(&ast, scope);
+  match scope {
+    Some(scope) => {
+      let item = item_id_map.get(&ast, scope);
 
-  Arc::new(ast_for_block(&item_id_map, &item))
+      Arc::new(ast_for_block(&item_id_map, item.items()))
+    }
+    None => {
+      let item = ast::SourceFile::cast(ast.tree().syntax().clone()).unwrap();
+
+      Arc::new(ast_for_block(&item_id_map, item.items()))
+    }
+  }
 }
 
 impl Block {
@@ -110,7 +120,7 @@ struct BlockBuilder<'a> {
   block:  &'a mut Block,
 }
 
-fn ast_for_block(id_map: &AstIdMap, ast: &scalarc_syntax::ast::BlockExpr) -> Block {
+fn ast_for_block(id_map: &AstIdMap, items: impl Iterator<Item = ast::Item>) -> Block {
   let mut block = Block {
     stmts:    Arena::new(),
     exprs:    Arena::new(),
@@ -118,14 +128,14 @@ fn ast_for_block(id_map: &AstIdMap, ast: &scalarc_syntax::ast::BlockExpr) -> Blo
     items:    vec![],
   };
 
-  BlockBuilder { id_map, block: &mut block }.walk_block(ast);
+  BlockBuilder { id_map, block: &mut block }.walk_items(items);
 
   block
 }
 
 impl BlockBuilder<'_> {
-  fn walk_block(&mut self, ast: &scalarc_syntax::ast::BlockExpr) {
-    for item in ast.items() {
+  fn walk_items(&mut self, items: impl Iterator<Item = ast::Item>) {
+    for item in items {
       if let Some(id) = self.walk_stmt(&item) {
         self.block.items.push(id);
       }
@@ -220,7 +230,10 @@ mod tests {
 
     let ast = db.hir_ast_for_scope(
       file_id,
-      AstId { raw: Idx::from_raw(RawIdx::from_u32(2)), phantom: std::marker::PhantomData },
+      Some(AstId {
+        raw:     Idx::from_raw(RawIdx::from_u32(2)),
+        phantom: std::marker::PhantomData,
+      }),
     );
 
     expect.assert_eq(&format!("{ast:#?}").replace("    ", "  "));

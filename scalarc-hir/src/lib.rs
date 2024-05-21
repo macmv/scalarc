@@ -92,7 +92,11 @@ pub trait HirDatabase: SourceDatabase {
   fn type_at_item(&self, file: FileId, id: ErasedAstId) -> Option<Type>;
 
   #[salsa::invoke(ast::hir_ast_for_scope)]
-  fn hir_ast_for_scope(&self, file: FileId, scope: ast::AstId<BlockExpr>) -> Arc<ast::Block>;
+  fn hir_ast_for_scope(
+    &self,
+    file: FileId,
+    scope: Option<ast::AstId<BlockExpr>>,
+  ) -> Arc<ast::Block>;
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {

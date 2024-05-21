@@ -35,6 +35,15 @@ fn simple_type_at() {
 fn type_of_val_def() {
   type_at(
     r#"
+    val foo@@ = {
+      2 + 3
+    }
+    "#,
+    expect![@"no tye"],
+  );
+
+  type_at(
+    r#"
     {
       val foo@@ = {
         2 + 3

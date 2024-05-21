@@ -102,11 +102,17 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
       if let Some(val_def) = ast::ValDef::cast(parent) {
         let val_id = item_id_map.item_id(&val_def);
 
-        if let Some(block) = ast::BlockExpr::cast(val_def.syntax().parent()?) {
+        let parent = val_def.syntax().parent()?;
+
+        if let Some(block) = ast::BlockExpr::cast(parent) {
           let block_id = item_id_map.item_id(&block);
-
-          let hir_ast = db.hir_ast_for_scope(file_id, block_id);
-
+          let hir_ast = db.hir_ast_for_scope(file_id, Some(block_id));
+          let stmt = hir_ast.item_for_ast_id(val_id.erased());
+          dbg!(&stmt);
+        } else {
+          // TODO: Other parents might exist. For now, we assume the parent is the source
+          // root.
+          let hir_ast = db.hir_ast_for_scope(file_id, None);
           let stmt = hir_ast.item_for_ast_id(val_id.erased());
           dbg!(&stmt);
         }
@@ -117,7 +123,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
       let scope = &scopes.scopes[def.parent_scope];
 
-      let hir_ast = db.hir_ast_for_scope(file_id, AstId::new(def.item_id));
+      let hir_ast = db.hir_ast_for_scope(file_id, Some(AstId::new(def.item_id)));
       dbg!(&hir_ast);
 
       return db.type_at_item(file_id, scope.item_id);
