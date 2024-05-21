@@ -8,7 +8,7 @@ use crate::HirDatabase;
 use hashbrown::HashMap;
 use la_arena::{Arena, Idx};
 use scalarc_source::FileId;
-use scalarc_syntax::ast::{self, AstNode};
+use scalarc_syntax::ast::{self, AstNode, SyntaxKind};
 
 pub type StmtId = Idx<Stmt>;
 pub type ExprId = Idx<Expr>;
@@ -97,9 +97,27 @@ pub fn hir_ast_for_scope(
 
   match scope {
     Some(scope) => {
-      let item = item_id_map.get(&ast, scope);
+      let ptr = item_id_map.get_erased(scope.erased());
+      let node = ptr.to_node(ast.tree().syntax());
 
-      Arc::new(ast_for_block(&item_id_map, item.items()))
+      match node.kind() {
+        SyntaxKind::BLOCK_EXPR => {
+          let block = scalarc_syntax::ast::BlockExpr::cast(node).unwrap();
+          Arc::new(ast_for_block(&item_id_map, block.items()))
+        }
+
+        SyntaxKind::CLASS_DEF => {
+          let def = scalarc_syntax::ast::ClassDef::cast(node).unwrap();
+
+          if let Some(body) = def.body() {
+            Arc::new(ast_for_block(&item_id_map, body.items()))
+          } else {
+            Arc::new(Block::empty())
+          }
+        }
+
+        _ => Arc::new(Block::empty()),
+      }
     }
     None => {
       let item = ast::SourceFile::cast(ast.tree().syntax().clone()).unwrap();
@@ -110,6 +128,15 @@ pub fn hir_ast_for_scope(
 }
 
 impl Block {
+  pub fn empty() -> Self {
+    Block {
+      stmts:    Arena::new(),
+      exprs:    Arena::new(),
+      stmt_map: HashMap::new(),
+      items:    vec![],
+    }
+  }
+
   pub fn item_id_for_ast_id(&self, id: ErasedAstId) -> Option<StmtId> {
     self.stmt_map.get(&id).copied()
   }
