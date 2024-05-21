@@ -142,7 +142,7 @@ impl<'a> Highlighter<'a> {
                 DefinitionKind::Var => HighlightKind::Variable,
                 DefinitionKind::Parameter => HighlightKind::Parameter,
                 DefinitionKind::Def(_) => HighlightKind::Function,
-                DefinitionKind::Class => HighlightKind::Class,
+                DefinitionKind::Class(_) => HighlightKind::Class,
               },
             );
           }

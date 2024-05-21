@@ -31,7 +31,7 @@ pub fn handle_completion(
             DefinitionKind::Def(sig) => {
               (lsp_types::CompletionItemKind::FUNCTION, Some(sig.to_string()))
             }
-            DefinitionKind::Class => (lsp_types::CompletionItemKind::CLASS, None),
+            DefinitionKind::Class(_) => (lsp_types::CompletionItemKind::CLASS, None),
           };
 
           lsp_types::CompletionItem {
