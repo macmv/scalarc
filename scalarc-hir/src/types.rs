@@ -161,7 +161,6 @@ pub fn type_of_block(
   }
 }
 
-// FIXME: This should be removed. Its borked.
 pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<Type> {
   let ast = db.parse(file_id);
 
