@@ -84,6 +84,11 @@ pub fn type_of_expr(
   let expr = &hir_ast.exprs[expr];
 
   match expr {
+    // FIXME: Need name resolution.
+    Expr::Name(path) => Some(Type {
+      path: Path { elems: path.segments.iter().map(|s| Name::new(s.clone())).collect() },
+    }),
+
     Expr::Literal(lit) => match lit {
       Literal::Int(_) => Some(Type::int()),
       Literal::Float(_) => Some(Type::float()),
@@ -91,6 +96,15 @@ pub fn type_of_expr(
     },
 
     Expr::Block(block) => db.type_of_block(file_id, Some(*block)),
+
+    Expr::FieldAccess(lhs, name) => {
+      let lhs = db.type_of_expr(file_id, scope, *lhs)?;
+
+      // FIXME: Need to lookup the definition of the `lhs` type.
+      let _ = name;
+
+      Some(lhs)
+    }
 
     _ => None,
   }

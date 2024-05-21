@@ -214,7 +214,19 @@ impl BlockBuilder<'_> {
         Some(self.block.exprs.alloc(expr))
       }
 
-      _ => None,
+      scalarc_syntax::ast::Expr::FieldExpr(expr) => {
+        let lhs = self.walk_expr(&expr.expr()?)?;
+        let name = expr.id_token()?.text().to_string();
+
+        let expr = Expr::FieldAccess(lhs, name);
+
+        Some(self.block.exprs.alloc(expr))
+      }
+
+      _ => {
+        println!("Unhandled expr: {expr:#?}");
+        None
+      }
     }
   }
 }

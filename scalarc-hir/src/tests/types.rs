@@ -49,6 +49,31 @@ fn type_of_val_def() {
 }
 
 #[test]
+fn type_of_new() {
+  type_at(
+    r#"
+    object Foo {
+      def bar = 3
+    }
+
+    val foo@@ = Foo
+    "#,
+    expect![@"Foo"],
+  );
+
+  type_at(
+    r#"
+    object Foo {
+      def bar = 3
+    }
+
+    val foo@@ = Foo.bar
+    "#,
+    expect![@"scala.Int"],
+  );
+}
+
+#[test]
 fn type_of_val_ref() {
   type_at(
     r#"
