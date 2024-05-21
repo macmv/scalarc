@@ -115,7 +115,23 @@ impl Block {
         Some(self.stmts.alloc(Stmt::Expr(expr_id)))
       }
 
-      _ => None,
+      scalarc_syntax::ast::Item::ValDef(def) => {
+        let name = def.id_token()?.text().to_string();
+        let expr_id = self.walk_expr(&def.expr()?)?;
+
+        Some(self.stmts.alloc(Stmt::Binding(Binding {
+          implicit: false,
+          kind: BindingKind::Val,
+          name,
+          ty: None,
+          expr: expr_id,
+        })))
+      }
+
+      _ => {
+        println!("Unhandled item: {:#?}", item);
+        None
+      }
     }
   }
 
@@ -182,13 +198,17 @@ mod tests {
         2
         2 + 3
         val foo = 4 + 5
+        val bar = {
+          val x = 3
+          x
+        }
         foo
       }
       "#,
       expect![@r#"
         Block {
           stmts: Arena {
-            len: 3,
+            len: 4,
             data: [
               Expr(
                 Idx::<Expr>(0),
@@ -196,13 +216,22 @@ mod tests {
               Expr(
                 Idx::<Expr>(3),
               ),
+              Binding(
+                Binding {
+                  implicit: false,
+                  kind: Val,
+                  ty: None,
+                  name: "foo",
+                  expr: Idx::<Expr>(6),
+                },
+              ),
               Expr(
-                Idx::<Expr>(4),
+                Idx::<Expr>(7),
               ),
             ],
           },
           exprs: Arena {
-            len: 5,
+            len: 8,
             data: [
               Literal(
                 Int(
@@ -226,6 +255,23 @@ mod tests {
                   Idx::<Expr>(2),
                 ],
               ),
+              Literal(
+                Int(
+                  4,
+                ),
+              ),
+              Literal(
+                Int(
+                  5,
+                ),
+              ),
+              Call(
+                Idx::<Expr>(4),
+                "+",
+                [
+                  Idx::<Expr>(5),
+                ],
+              ),
               Name(
                 UnresolvedPath {
                   segments: [
@@ -239,6 +285,7 @@ mod tests {
             Idx::<Stmt>(0),
             Idx::<Stmt>(1),
             Idx::<Stmt>(2),
+            Idx::<Stmt>(3),
           ],
         }"#
       ],
