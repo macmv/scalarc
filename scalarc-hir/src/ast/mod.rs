@@ -42,6 +42,9 @@ pub struct ErasedAstId {
 
 impl<N: AstItem> AstId<N> {
   pub fn erased(&self) -> ErasedAstId { ErasedAstId { raw: self.raw } }
+
+  // TODO: Make this harder to do.
+  pub fn new(erased: ErasedAstId) -> Self { AstId { raw: erased.raw, phantom: PhantomData } }
 }
 
 impl PartialEq for AstIdMap {

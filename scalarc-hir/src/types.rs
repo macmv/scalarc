@@ -4,7 +4,11 @@
 
 use std::fmt;
 
-use crate::{ast::ErasedAstId, tree::Name, HirDatabase, Path};
+use crate::{
+  ast::{AstId, ErasedAstId},
+  tree::Name,
+  HirDatabase, Path,
+};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode, SyntaxKind},
@@ -88,12 +92,17 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     })
     .unwrap();
 
+  dbg!(&node.kind());
+
   match node.kind() {
     T![ident] => {
       let def = db.def_at_index(file_id, pos)?;
       let scopes = db.scopes_of(file_id);
 
       let scope = &scopes.scopes[def.parent_scope];
+
+      let hir_ast = db.hir_ast_for_scope(file_id, AstId::new(def.item_id));
+      dbg!(&hir_ast);
 
       return db.type_at_item(file_id, scope.item_id);
     }
