@@ -12,7 +12,11 @@ mod parse;
 #[cfg(test)]
 mod tests;
 
-use std::{marker::PhantomData, sync::Arc};
+use std::{
+  hash::{Hash, Hasher},
+  marker::PhantomData,
+  sync::Arc,
+};
 
 use node::{Scala, SyntaxNode};
 use rowan::GreenNode;
@@ -31,6 +35,21 @@ pub struct Parse<T> {
 }
 
 pub type SyntaxNodePtr = rowan::ast::SyntaxNodePtr<Scala>;
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct AstPtr<T> {
+  ptr:      SyntaxNodePtr,
+  _phantom: std::marker::PhantomData<fn() -> T>,
+}
+
+impl<T> Clone for AstPtr<T> {
+  fn clone(&self) -> Self { AstPtr { ptr: self.ptr, _phantom: PhantomData } }
+}
+impl<T> Copy for AstPtr<T> {}
+
+impl<T> Hash for AstPtr<T> {
+  fn hash<H: Hasher>(&self, state: &mut H) { self.ptr.hash(state) }
+}
 
 pub use rowan::{TextRange, TextSize, WalkEvent};
 

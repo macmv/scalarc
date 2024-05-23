@@ -17,6 +17,7 @@ use scalarc_syntax::{
 use crate::HirDatabase;
 
 mod expr;
+mod source_map;
 
 pub use expr::*;
 
