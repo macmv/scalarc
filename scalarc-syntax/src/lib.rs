@@ -51,6 +51,12 @@ impl<T> Hash for AstPtr<T> {
   fn hash<H: Hasher>(&self, state: &mut H) { self.ptr.hash(state) }
 }
 
+impl<T: AstNode> AstPtr<T> {
+  pub fn new(node: &T) -> Self {
+    AstPtr { ptr: SyntaxNodePtr::new(node.syntax()), _phantom: PhantomData }
+  }
+}
+
 pub use rowan::{TextRange, TextSize, WalkEvent};
 
 impl<T> Parse<T> {

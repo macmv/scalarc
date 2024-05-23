@@ -94,7 +94,16 @@ pub trait HirDatabase: SourceDatabase {
   #[salsa::invoke(types::type_at_item)]
   fn type_at_item(&self, file: FileId, id: ErasedAstId) -> Option<Type>;
 
-  #[salsa::invoke(ast::hir_ast_for_scope)]
+  // This query is unstable, because it contains syntax pointers in the returned
+  // source map result. Use `hir_ast_for_scope` for a stable result.
+  #[salsa::invoke(ast::hir_ast_with_source_for_scope)]
+  fn hir_ast_with_source_for_scope(
+    &self,
+    file: FileId,
+    scope: Option<ast::AstId<BlockExpr>>,
+  ) -> (Arc<ast::Block>, Arc<ast::BlockSourceMap>);
+
+  // This query is stable across reparses.
   fn hir_ast_for_scope(
     &self,
     file: FileId,
@@ -111,6 +120,14 @@ pub trait HirDatabase: SourceDatabase {
     scope: Option<ast::AstId<BlockExpr>>,
     expr: ast::ExprId,
   ) -> Option<Type>;
+}
+
+fn hir_ast_for_scope(
+  db: &dyn HirDatabase,
+  file: FileId,
+  scope: Option<ast::AstId<BlockExpr>>,
+) -> Arc<ast::Block> {
+  db.hir_ast_with_source_for_scope(file, scope).0
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {

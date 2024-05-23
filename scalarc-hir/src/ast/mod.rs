@@ -20,6 +20,7 @@ mod expr;
 mod source_map;
 
 pub use expr::*;
+pub use source_map::BlockSourceMap;
 
 #[derive(Default, Debug)]
 pub struct AstIdMap {

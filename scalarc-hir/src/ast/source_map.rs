@@ -1,16 +1,29 @@
 //! Maps HIR exprs in a Block back to source.
 
-use super::ExprId;
+use super::{ExprId, StmtId};
 use hashbrown::HashMap;
 use scalarc_syntax::{ast, AstPtr};
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct BlockSourceMap {
   // TODO: These could be a bit more efficient.
-  expr:      HashMap<AstPtr<ast::Expr>, ExprId>,
-  expr_back: HashMap<ExprId, AstPtr<ast::Expr>>,
+  pub(super) expr:      HashMap<AstPtr<ast::Expr>, ExprId>,
+  pub(super) expr_back: HashMap<ExprId, AstPtr<ast::Expr>>,
+
+  pub(super) stmt:      HashMap<AstPtr<ast::Item>, StmtId>,
+  pub(super) stmt_back: HashMap<StmtId, AstPtr<ast::Item>>,
 }
 
 impl BlockSourceMap {
+  pub fn empty() -> BlockSourceMap {
+    BlockSourceMap {
+      expr:      HashMap::new(),
+      expr_back: HashMap::new(),
+      stmt:      HashMap::new(),
+      stmt_back: HashMap::new(),
+    }
+  }
+
   pub fn expr(&self, expr: AstPtr<ast::Expr>) -> Option<ExprId> { self.expr.get(&expr).copied() }
 
   pub fn expr_syntax(&self, id: ExprId) -> Option<AstPtr<ast::Expr>> {

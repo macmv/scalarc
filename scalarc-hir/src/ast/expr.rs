@@ -3,12 +3,15 @@
 
 use std::sync::Arc;
 
-use super::{AstId, AstIdMap, ErasedAstId};
+use super::{AstId, AstIdMap, BlockSourceMap, ErasedAstId};
 use crate::HirDatabase;
 use hashbrown::HashMap;
 use la_arena::{Arena, Idx};
 use scalarc_source::FileId;
-use scalarc_syntax::ast::{self, AstNode, SyntaxKind};
+use scalarc_syntax::{
+  ast::{self, AstNode, SyntaxKind},
+  AstPtr,
+};
 
 pub type StmtId = Idx<Stmt>;
 pub type ExprId = Idx<Expr>;
@@ -88,15 +91,15 @@ pub struct EqFloat(f64);
 
 impl Eq for EqFloat {}
 
-pub fn hir_ast_for_scope(
+pub fn hir_ast_with_source_for_scope(
   db: &dyn HirDatabase,
   file_id: FileId,
   scope: Option<AstId<scalarc_syntax::ast::BlockExpr>>,
-) -> Arc<Block> {
+) -> (Arc<Block>, Arc<BlockSourceMap>) {
   let ast = db.parse(file_id);
   let item_id_map = db.ast_id_map(file_id);
 
-  match scope {
+  let (block, source_map) = match scope {
     Some(scope) => {
       let ptr = item_id_map.get_erased(scope.erased());
       let node = ptr.to_node(ast.tree().syntax());
@@ -104,28 +107,30 @@ pub fn hir_ast_for_scope(
       match node.kind() {
         SyntaxKind::BLOCK_EXPR => {
           let block = scalarc_syntax::ast::BlockExpr::cast(node).unwrap();
-          Arc::new(ast_for_block(&item_id_map, block.items()))
+          ast_for_block(&item_id_map, block.items())
         }
 
         SyntaxKind::CLASS_DEF => {
           let def = scalarc_syntax::ast::ClassDef::cast(node).unwrap();
 
           if let Some(body) = def.body() {
-            Arc::new(ast_for_block(&item_id_map, body.items()))
+            ast_for_block(&item_id_map, body.items())
           } else {
-            Arc::new(Block::empty())
+            (Block::empty(), BlockSourceMap::empty())
           }
         }
 
-        _ => Arc::new(Block::empty()),
+        _ => (Block::empty(), BlockSourceMap::empty()),
       }
     }
     None => {
       let item = ast::SourceFile::cast(ast.tree().syntax().clone()).unwrap();
 
-      Arc::new(ast_for_block(&item_id_map, item.items()))
+      ast_for_block(&item_id_map, item.items())
     }
-  }
+  };
+
+  (Arc::new(block), Arc::new(source_map))
 }
 
 impl Block {
@@ -147,24 +152,42 @@ impl Block {
 }
 
 struct BlockBuilder<'a> {
+  block:      &'a mut Block,
+  source_map: &'a mut BlockSourceMap,
+
   id_map: &'a AstIdMap,
-  block:  &'a mut Block,
 }
 
-fn ast_for_block(id_map: &AstIdMap, items: impl Iterator<Item = ast::Item>) -> Block {
-  let mut block = Block {
-    stmts:    Arena::new(),
-    exprs:    Arena::new(),
-    stmt_map: HashMap::new(),
-    items:    vec![],
-  };
+fn ast_for_block(
+  id_map: &AstIdMap,
+  items: impl Iterator<Item = ast::Item>,
+) -> (Block, BlockSourceMap) {
+  let mut block = Block::empty();
+  let mut source_map = BlockSourceMap::empty();
 
-  BlockBuilder { id_map, block: &mut block }.walk_items(items);
+  BlockBuilder { id_map, block: &mut block, source_map: &mut source_map }.walk_items(items);
 
-  block
+  (block, source_map)
 }
 
 impl BlockBuilder<'_> {
+  fn alloc_expr(&mut self, hir: Expr, ast: &ast::Expr) -> ExprId {
+    let id = self.block.exprs.alloc(hir);
+
+    self.source_map.expr.insert(AstPtr::new(ast), id);
+    self.source_map.expr_back.insert(id, AstPtr::new(ast));
+
+    id
+  }
+  fn alloc_stmt(&mut self, hir: Stmt, ast: &ast::Item) -> StmtId {
+    let id = self.block.stmts.alloc(hir);
+
+    self.source_map.stmt.insert(AstPtr::new(ast), id);
+    self.source_map.stmt_back.insert(id, AstPtr::new(ast));
+
+    id
+  }
+
   fn walk_items(&mut self, items: impl Iterator<Item = ast::Item>) {
     for item in items {
       if let Some(id) = self.walk_stmt(&item) {
@@ -177,7 +200,7 @@ impl BlockBuilder<'_> {
     match item {
       scalarc_syntax::ast::Item::ExprItem(expr) => {
         let expr_id = self.walk_expr(&expr.expr()?)?;
-        let stmt_id = self.block.stmts.alloc(Stmt::Expr(expr_id));
+        let stmt_id = self.alloc_stmt(Stmt::Expr(expr_id), item);
 
         Some(stmt_id)
       }
@@ -288,7 +311,7 @@ mod tests {
 
     let file_id = FileId::temp_new();
 
-    let ast = db.hir_ast_for_scope(
+    let (ast, _source_map) = db.hir_ast_with_source_for_scope(
       file_id,
       Some(AstId {
         raw:     Idx::from_raw(RawIdx::from_u32(2)),
