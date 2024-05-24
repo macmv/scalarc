@@ -21,6 +21,7 @@ use scalarc_syntax::{
 pub enum Type {
   Named(Path),
   Tuple(Vec<Type>),
+  Lambda(Vec<Type>, Box<Type>),
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -55,6 +56,17 @@ impl fmt::Display for Type {
           write!(f, "{}", ty)?;
         }
         write!(f, ")")
+      }
+      Type::Lambda(args, ret) => {
+        write!(f, "(")?;
+        for (i, ty) in args.iter().enumerate() {
+          if i != 0 {
+            write!(f, ", ")?;
+          }
+          write!(f, "{}", ty)?;
+        }
+        write!(f, ") => ")?;
+        write!(f, "{}", ret)
       }
     }
   }
