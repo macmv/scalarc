@@ -269,35 +269,31 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
         db.type_of_expr(file_id, scope, expr_id)
       } else {
-        None
-      }
+        let parent = node.parent()?;
+        if let Some(val_def) = ast::ValDef::cast(parent) {
+          let parent = val_def.syntax().parent()?;
 
-      /*
-      let parent = node.parent()?;
-      if let Some(val_def) = ast::ValDef::cast(parent) {
-        let parent = val_def.syntax().parent()?;
+          let scope = if let Some(block) = ast::BlockExpr::cast(parent) {
+            let block_id = ast_id_map.ast_id(&block);
+            Some(block_id)
+          } else {
+            // TODO: Other parents might exist. For now, we assume the parent is the source
+            // root.
+            None
+          };
 
-        let scope = if let Some(block) = ast::BlockExpr::cast(parent) {
-          let block_id = ast_id_map.ast_id(&block);
-          Some(block_id)
+          let (hir_ast, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
+          let stmt_id = source_map.stmt(AstPtr::new(&val_def.into()))?;
+          let stmt = &hir_ast.stmts[stmt_id];
+
+          match stmt {
+            crate::ast::Stmt::Binding(b) => db.type_of_expr(file_id, scope, b.expr),
+            _ => return None,
+          }
         } else {
-          // TODO: Other parents might exist. For now, we assume the parent is the source
-          // root.
           None
-        };
-
-        let (hir_ast, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
-        let stmt_id = source_map.stmt(AstPtr::new(&val_def.into()))?;
-        let stmt = &hir_ast.stmts[stmt_id];
-
-        match stmt {
-          crate::ast::Stmt::Binding(b) => db.type_of_expr(file_id, scope, b.expr),
-          _ => return None,
         }
-      } else {
-        None
       }
-      */
     }
 
     SyntaxKind::INT_LIT_KW => Some(Type::int()),

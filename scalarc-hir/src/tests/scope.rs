@@ -151,9 +151,7 @@ fn scopes_of_example() {
             "foo": Definition {
               name: "foo",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,
@@ -163,9 +161,7 @@ fn scopes_of_example() {
             "bar": Definition {
               name: "bar",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,
@@ -175,9 +171,7 @@ fn scopes_of_example() {
             "baz": Definition {
               name: "baz",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,
@@ -209,9 +203,7 @@ fn scopes_of_example() {
             "foo": Definition {
               name: "foo",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,
@@ -231,9 +223,7 @@ fn scopes_of_example() {
             "baz": Definition {
               name: "baz",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,
@@ -251,9 +241,7 @@ fn scopes_of_example() {
             "a": Definition {
               name: "a",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,
@@ -263,9 +251,7 @@ fn scopes_of_example() {
             "b": Definition {
               name: "b",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,
@@ -295,9 +281,7 @@ fn definitions_at() {
         Definition {
           name: "a",
           kind: Val(
-            Some(
-              Type(scala.Int),
-            ),
+            None,
           ),
           item: SyntaxNodePtr {
             kind: VAL_DEF,
@@ -307,9 +291,7 @@ fn definitions_at() {
         Definition {
           name: "foo",
           kind: Val(
-            Some(
-              Type(scala.Int),
-            ),
+            None,
           ),
           item: SyntaxNodePtr {
             kind: VAL_DEF,
@@ -350,9 +332,7 @@ fn definition_at() {
       Definition {
         name: "a",
         kind: Val(
-          Some(
-            Type(scala.Int),
-          ),
+          None,
         ),
         item: SyntaxNodePtr {
           kind: VAL_DEF,
@@ -713,9 +693,7 @@ fn nested_scopes() {
             "a": Definition {
               name: "a",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,
@@ -733,9 +711,7 @@ fn nested_scopes() {
             "b": Definition {
               name: "b",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,
@@ -753,9 +729,7 @@ fn nested_scopes() {
             "c": Definition {
               name: "c",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,
@@ -773,9 +747,7 @@ fn nested_scopes() {
             "d": Definition {
               name: "d",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,
@@ -793,9 +765,7 @@ fn nested_scopes() {
             "h": Definition {
               name: "h",
               kind: Val(
-                Some(
-                  Type(scala.Int),
-                ),
+                None,
               ),
               item: SyntaxNodePtr {
                 kind: VAL_DEF,

@@ -221,9 +221,7 @@ fn def_of_node(
 
       let ty = match v.ty() {
         Some(ty) => Some(Type { path: Path { elems: vec![Name(ty.syntax().text().into())] } }),
-        None => v.expr().and_then(|e| {
-          db.type_at(file_id, e.syntax().text_range().end()).map(|ty| Type { path: ty.path })
-        }),
+        None => None,
       };
 
       Some(Definition {
