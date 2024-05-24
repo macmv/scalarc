@@ -250,7 +250,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
       if let Some(expr) = ast::Expr::cast(node.parent()?) {
         let mut parent = node.parent();
         while let Some(p) = parent {
-          if ast::BlockExpr::can_cast(p.kind()) {
+          if ast::BlockExpr::can_cast(p.kind()) || ast::ClassDef::can_cast(p.kind()) {
             // Move the `p` value back to `parent`.
             parent = Some(p);
             break;
@@ -258,7 +258,8 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
           parent = p.parent();
         }
 
-        let scope = parent.map(|p| ast_id_map.ast_id(&ast::BlockExpr::cast(p).unwrap()));
+        // FIXME: This is some type casting nonsense.
+        let scope = parent.map(|p| AstId::new(ast_id_map.erased_ast_id(&p)));
 
         let (_, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
         let expr_id = source_map.expr(AstPtr::new(&expr))?;

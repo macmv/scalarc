@@ -85,6 +85,19 @@ fn type_of_val_ref() {
 }
 
 #[test]
+fn type_of_nested() {
+  type_at(
+    r#"
+    class Foo() {
+      val foo = 2
+      foo@@
+    }
+    "#,
+    expect![@"scala.Int"],
+  );
+}
+
+#[test]
 fn type_of_call() {
   type_at(
     r#"
