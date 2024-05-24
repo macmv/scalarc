@@ -95,6 +95,16 @@ fn type_of_nested() {
     "#,
     expect![@"scala.Int"],
   );
+
+  type_at(
+    r#"
+    class Foo() {
+      val foo = 2
+      val bar = foo@@
+    }
+    "#,
+    expect![@"scala.Int"],
+  );
 }
 
 #[test]

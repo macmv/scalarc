@@ -251,7 +251,13 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
         let mut parent = node.parent();
         while let Some(p) = parent {
           // FIXME: ITEM_BODY shouldn't really live in the ast hierarchy.
-          if p.kind() != SyntaxKind::ITEM_BODY && ast_id_map.contains_node(&p) {
+          //
+          // However, VAL_DEF should be in the AST hierarchy, but it doesn't count as a
+          // parent node for the HIR ast.
+          if p.kind() != SyntaxKind::ITEM_BODY
+            && p.kind() != SyntaxKind::VAL_DEF
+            && ast_id_map.contains_node(&p)
+          {
             // Move the `p` value back to `parent`.
             parent = Some(p);
             break;
