@@ -1,13 +1,45 @@
-use std::{error::Error, path::Path};
+use std::{error::Error, path::Path, sync::Arc};
 
 use line_index::LineIndex;
 use lsp_types::SemanticTokenType;
 use scalarc_analysis::highlight::{Highlight, HighlightKind};
 use scalarc_hir::{DefinitionKind, FileLocation};
 use scalarc_source::FileId;
-use scalarc_syntax::TextSize;
+use scalarc_syntax::{TextRange, TextSize};
 
 use crate::global::GlobalStateSnapshot;
+
+/// Converts file positions to LSP positions.
+struct LspConverter {
+  line_index: Arc<LineIndex>,
+}
+
+impl LspConverter {
+  pub fn from_pos(
+    snap: &GlobalStateSnapshot,
+    pos: lsp_types::TextDocumentPositionParams,
+  ) -> Result<(FileLocation, Self), Box<dyn Error>> {
+    let pos = file_position(&snap, pos)?;
+
+    Ok((pos, LspConverter::new(snap, pos.file)?))
+  }
+
+  pub fn new(snap: &GlobalStateSnapshot, file: FileId) -> Result<Self, Box<dyn Error>> {
+    Ok(Self { line_index: snap.analysis.line_index(file)? })
+  }
+
+  pub fn pos(&self, index: TextSize) -> lsp_types::Position {
+    let pos = self.line_index.line_col(index);
+    lsp_types::Position { line: pos.line, character: pos.col }
+  }
+
+  pub fn range(&self, range: TextRange) -> lsp_types::Range {
+    let start = self.pos(range.start());
+    let end = self.pos(range.end());
+
+    lsp_types::Range { start, end }
+  }
+}
 
 pub fn handle_completion(
   snap: GlobalStateSnapshot,
@@ -76,12 +108,11 @@ pub fn handle_goto_definition(
   snap: GlobalStateSnapshot,
   params: lsp_types::GotoDefinitionParams,
 ) -> Result<Option<lsp_types::GotoDefinitionResponse>, Box<dyn Error>> {
-  let pos = file_position(&snap, params.text_document_position_params)?;
+  let (pos, converter) = LspConverter::from_pos(&snap, params.text_document_position_params)?;
   let definition = snap.analysis.definition_for_name(pos)?;
 
   if let Some((_, pos)) = definition {
     let files = snap.files.read();
-    let line_index = snap.analysis.line_index(pos.file)?;
 
     Ok(Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_types::Location::new(
       lsp_types::Url::parse(&format!(
@@ -89,7 +120,7 @@ pub fn handle_goto_definition(
         files.workspace.join(files.id_to_path(pos.file)).display()
       ))
       .unwrap(),
-      range_to_lsp(&line_index, pos.range),
+      converter.range(pos.range),
     ))))
   } else {
     Ok(None)
@@ -100,8 +131,7 @@ pub fn handle_document_highlight(
   snap: GlobalStateSnapshot,
   params: lsp_types::DocumentHighlightParams,
 ) -> Result<Option<Vec<lsp_types::DocumentHighlight>>, Box<dyn Error>> {
-  let pos = file_position(&snap, params.text_document_position_params)?;
-  let line_index = snap.analysis.line_index(pos.file)?;
+  let (pos, converter) = LspConverter::from_pos(&snap, params.text_document_position_params)?;
   let definition = snap.analysis.definition_for_name(pos)?;
   let refs = snap.analysis.references_for_name(pos)?;
 
@@ -111,12 +141,12 @@ pub fn handle_document_highlight(
     }
 
     let def_highlight = lsp_types::DocumentHighlight {
-      range: range_to_lsp(&line_index, pos.range),
+      range: converter.range(pos.range),
       kind:  Some(lsp_types::DocumentHighlightKind::WRITE),
     };
 
     let refs_highlight = refs.into_iter().map(|r| lsp_types::DocumentHighlight {
-      range: range_to_lsp(&line_index, r.pos.range),
+      range: converter.range(r.pos.range),
       kind:  Some(lsp_types::DocumentHighlightKind::READ),
     });
 
@@ -130,13 +160,12 @@ pub fn handle_hover(
   snap: GlobalStateSnapshot,
   params: lsp_types::HoverParams,
 ) -> Result<Option<lsp_types::Hover>, Box<dyn Error>> {
-  let pos = file_position(&snap, params.text_document_position_params)?;
-  let line_index = snap.analysis.line_index(pos.file)?;
+  let (pos, converter) = LspConverter::from_pos(&snap, params.text_document_position_params)?;
   let def = snap.analysis.definition_for_name(pos)?;
   let ty = snap.analysis.type_at(pos)?;
 
   if let Some(ty) = ty {
-    let range = def.map(|(_, pos)| range_to_lsp(&line_index, pos.range));
+    let range = def.map(|(_, pos)| converter.range(pos.range));
 
     Ok(Some(lsp_types::Hover {
       range,
@@ -230,14 +259,4 @@ fn file_position(
   }
 
   Err("position not found".into())
-}
-
-fn range_to_lsp(line_index: &LineIndex, range: scalarc_syntax::TextRange) -> lsp_types::Range {
-  let start = line_index.line_col(range.start());
-  let end = line_index.line_col(range.end());
-
-  let start = lsp_types::Position { line: start.line, character: start.col };
-  let end = lsp_types::Position { line: end.line, character: end.col };
-
-  lsp_types::Range { start, end }
 }
