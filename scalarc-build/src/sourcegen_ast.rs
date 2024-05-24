@@ -518,6 +518,7 @@ fn to_lower_snake_case(s: &str) -> String {
   buf
 }
 
+#[allow(unused)]
 fn to_pascal_case(s: &str) -> String {
   let mut buf = String::with_capacity(s.len());
   let mut prev_is_underscore = true;
@@ -843,20 +844,6 @@ fn extract_struct_traits(_ast: &mut AstSrc) {
     }
   }
   */
-}
-
-fn extract_struct_trait(node: &mut AstNodeSrc, trait_name: &str, methods: &[&str]) {
-  let mut to_remove = Vec::new();
-  for (i, field) in node.fields.iter().enumerate() {
-    let method_name = field.method_name().to_string();
-    if methods.iter().any(|&it| it == method_name) {
-      to_remove.push(i);
-    }
-  }
-  if to_remove.len() == methods.len() {
-    node.traits.push(trait_name.to_string());
-    node.remove_field(to_remove);
-  }
 }
 
 fn extract_enum_traits(ast: &mut AstSrc) {

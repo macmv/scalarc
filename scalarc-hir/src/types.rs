@@ -314,7 +314,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
         if scalarc_syntax::ast::CallExpr::can_cast(parent.kind()) {
           let call = scalarc_syntax::ast::CallExpr::cast(parent)?;
           let func = call.expr()?;
-          let def = db.def_at_index(file_id, func.syntax().text_range().start())?;
+          let _def = db.def_at_index(file_id, func.syntax().text_range().start())?;
 
           None
         } else {

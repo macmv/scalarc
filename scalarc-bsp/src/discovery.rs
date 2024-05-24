@@ -3,6 +3,7 @@ use std::{fs, path::Path};
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
+#[allow(unused)]
 pub struct BspJsonConfig {
   pub name:        String,
   pub version:     String,

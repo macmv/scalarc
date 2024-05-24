@@ -45,6 +45,7 @@ pub struct GlobalState {
   response_receiver: Receiver<lsp_server::Message>,
 
   pool_sender: Sender<Box<dyn FnOnce() + Send>>,
+  #[allow(unused)]
   pool:        Vec<std::thread::JoinHandle<()>>,
 }
 

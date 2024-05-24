@@ -149,7 +149,7 @@ fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionM
 }
 
 // FIXME: Replace with the zero scope for this file.
-fn definitions_for_file(db: &dyn HirDatabase, file: FileId) -> DefinitionMap {
+fn definitions_for_file(_db: &dyn HirDatabase, _file: FileId) -> DefinitionMap {
   DefinitionMap { items: HashMap::new() }
 }
 

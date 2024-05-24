@@ -38,6 +38,8 @@ fn run() -> Result<(), Box<dyn Error>> {
       return Err(e.into());
     }
   };
+  // FIXME: Need to not have a single root.
+  #[allow(deprecated)]
   let lsp_types::InitializeParams { root_uri, .. } =
     serde_json::from_value::<lsp_types::InitializeParams>(initialize_params)?;
 
@@ -69,7 +71,7 @@ fn run() -> Result<(), Box<dyn Error>> {
   let bsp_client = match scalarc_bsp::connect(&root_file) {
     Ok(c) => {
       let res = c.send_initialize(root_uri.clone())?;
-      let res: scalarc_bsp::types::InitializeBuildResult = serde_json::from_value(res).unwrap();
+      let _res: scalarc_bsp::types::InitializeBuildResult = serde_json::from_value(res).unwrap();
 
       // info!("got initialize response: {:#?}", res);
 

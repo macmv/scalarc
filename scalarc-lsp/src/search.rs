@@ -1,36 +1,12 @@
 //! Converts files and a BSP workspace into FileIds and SourceRootIds.
 
-use std::{
-  collections::HashMap,
-  io,
-  path::{Path, PathBuf},
-};
+use std::{collections::HashMap, io, path::Path};
 
 use la_arena::Arena;
 use scalarc_bsp::types as bsp_types;
-use scalarc_source::{FileId, SourceRoot, SourceRootId};
+use scalarc_source::{FileId, SourceRoot};
 
 use crate::files::Files;
-
-// TODO: This structure is wrong, the same path can correspond to multiple
-// source roots. Need to figure out what the actual model is here.
-pub struct FileToSourceMap {
-  directories: HashMap<PathBuf, SourceRootId>,
-}
-
-impl FileToSourceMap {
-  fn new() -> Self { FileToSourceMap { directories: Default::default() } }
-
-  fn insert(&mut self, file: PathBuf, source: SourceRootId) {
-    if let Some(existing) = self.directories.get(&file) {
-      panic!(
-        "file {:?} already has source root {:?}, but we tried to insert {:?}",
-        file, existing, source
-      );
-    }
-    self.directories.insert(file, source);
-  }
-}
 
 pub fn workspace_from_sources(
   bsp_targets: bsp_types::WorkspaceBuildTargetsResult,
