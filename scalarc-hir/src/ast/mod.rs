@@ -188,12 +188,11 @@ macro_rules! register_ast_item {
 }
 register_ast_item! {
   impl AstItem for
-  Item,
-    ClassDef,
-    ObjectDef,
-    FunDef,
-      FunParam,
-    ValDef,
+  ClassDef,
+  ObjectDef,
+  FunDef,
+    FunParam,
+  ValDef,
   ItemBody, BlockExpr
 }
 

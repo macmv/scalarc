@@ -120,9 +120,17 @@ pub fn hir_ast_with_source_for_scope(
           }
         }
 
+        SyntaxKind::SOURCE_FILE => {
+          let item = ast::SourceFile::cast(ast.tree().syntax().clone()).unwrap();
+
+          ast_for_block(&item_id_map, item.items())
+        }
+
         _ => (Block::empty(), BlockSourceMap::empty()),
       }
     }
+
+    // FIXME: Remove this optional.
     None => {
       let item = ast::SourceFile::cast(ast.tree().syntax().clone()).unwrap();
 
@@ -307,7 +315,7 @@ mod tests {
     let (ast, _source_map) = db.hir_ast_with_source_for_scope(
       file_id,
       Some(AstId {
-        raw:     Idx::from_raw(RawIdx::from_u32(2)),
+        raw:     Idx::from_raw(RawIdx::from_u32(1)),
         phantom: std::marker::PhantomData,
       }),
     );
@@ -408,7 +416,7 @@ mod tests {
               ),
               Block(
                 AstId {
-                  raw: Idx::<Scala>>(8),
+                  raw: Idx::<Scala>>(4),
                   phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::BlockExpr>,
                 },
               ),
@@ -423,10 +431,10 @@ mod tests {
           },
           stmt_map: {
             ErasedAstId {
-              raw: Idx::<Scala>>(6),
+              raw: Idx::<Scala>>(3),
             }: Idx::<Stmt>(3),
             ErasedAstId {
-              raw: Idx::<Scala>>(5),
+              raw: Idx::<Scala>>(2),
             }: Idx::<Stmt>(2),
           },
           items: [

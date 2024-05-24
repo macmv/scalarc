@@ -250,7 +250,8 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
       if let Some(expr) = ast::Expr::cast(node.parent()?) {
         let mut parent = node.parent();
         while let Some(p) = parent {
-          if ast::BlockExpr::can_cast(p.kind()) || ast::ClassDef::can_cast(p.kind()) {
+          // FIXME: ITEM_BODY shouldn't really live in the ast hierarchy.
+          if p.kind() != SyntaxKind::ITEM_BODY && ast_id_map.contains_node(&p) {
             // Move the `p` value back to `parent`.
             parent = Some(p);
             break;
