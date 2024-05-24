@@ -65,7 +65,7 @@ pub enum BindingKind {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Expr {
   // Nested blocks go through HirDatabase.
-  Block(AstId<scalarc_syntax::ast::BlockExpr>),
+  Block(BlockId),
 
   Literal(Literal),
   Name(UnresolvedPath),
@@ -91,10 +91,37 @@ pub struct EqFloat(f64);
 
 impl Eq for EqFloat {}
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum BlockId {
+  Block(AstId<ast::BlockExpr>),
+  Class(AstId<ast::ClassDef>),
+  Source(AstId<ast::SourceFile>),
+}
+
+impl From<AstId<ast::BlockExpr>> for BlockId {
+  fn from(id: AstId<ast::BlockExpr>) -> Self { BlockId::Block(id) }
+}
+impl From<AstId<ast::ClassDef>> for BlockId {
+  fn from(id: AstId<ast::ClassDef>) -> Self { BlockId::Class(id) }
+}
+impl From<AstId<ast::SourceFile>> for BlockId {
+  fn from(id: AstId<ast::SourceFile>) -> Self { BlockId::Source(id) }
+}
+
+impl BlockId {
+  pub fn erased(&self) -> ErasedAstId {
+    match self {
+      BlockId::Block(id) => id.erased(),
+      BlockId::Class(id) => id.erased(),
+      BlockId::Source(id) => id.erased(),
+    }
+  }
+}
+
 pub fn hir_ast_with_source_for_scope(
   db: &dyn HirDatabase,
   file_id: FileId,
-  scope: AstId<scalarc_syntax::ast::BlockExpr>,
+  scope: BlockId,
 ) -> (Arc<Block>, Arc<BlockSourceMap>) {
   let ast = db.parse(file_id);
   let item_id_map = db.ast_id_map(file_id);
@@ -251,7 +278,7 @@ impl BlockBuilder<'_> {
   fn walk_expr(&mut self, expr: &scalarc_syntax::ast::Expr) -> Option<ExprId> {
     match expr {
       scalarc_syntax::ast::Expr::BlockExpr(block) => {
-        let id = self.id_map.ast_id(block);
+        let id = self.id_map.ast_id(block).into();
 
         Some(self.alloc_expr(Expr::Block(id), expr))
       }
@@ -303,7 +330,10 @@ mod tests {
 
     let (ast, _source_map) = db.hir_ast_with_source_for_scope(
       file_id,
-      AstId { raw: Idx::from_raw(RawIdx::from_u32(1)), phantom: std::marker::PhantomData },
+      BlockId::Source(AstId {
+        raw:     Idx::from_raw(RawIdx::from_u32(1)),
+        phantom: std::marker::PhantomData,
+      }),
     );
 
     expect.assert_eq(&format!("{ast:#?}").replace("    ", "  "));
@@ -401,10 +431,12 @@ mod tests {
                 ],
               ),
               Block(
-                AstId {
-                  raw: Idx::<Scala>>(4),
-                  phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::BlockExpr>,
-                },
+                Block(
+                  AstId {
+                    raw: Idx::<Scala>>(4),
+                    phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::BlockExpr>,
+                  },
+                ),
               ),
               Name(
                 UnresolvedPath {

@@ -1,11 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
-use ast::{AstId, ErasedAstId};
+use ast::{AstId, BlockId, ErasedAstId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
-use scalarc_syntax::{
-  ast::{BlockExpr, ItemBody},
-  TextRange, TextSize,
-};
+use scalarc_syntax::{ast::ItemBody, TextRange, TextSize};
 use scope::{FileScopes, ScopeId};
 use tree::Name;
 
@@ -101,32 +98,23 @@ pub trait HirDatabase: SourceDatabase {
   fn hir_ast_with_source_for_scope(
     &self,
     file: FileId,
-    scope: ast::AstId<BlockExpr>,
+    scope: BlockId,
   ) -> (Arc<ast::Block>, Arc<ast::BlockSourceMap>);
 
   // This query is stable across reparses.
-  fn hir_ast_for_scope(&self, file: FileId, scope: ast::AstId<BlockExpr>) -> Arc<ast::Block>;
+  fn hir_ast_for_scope(&self, file: FileId, scope: BlockId) -> Arc<ast::Block>;
 
   #[salsa::invoke(types::type_of_block)]
-  fn type_of_block(&self, file_id: FileId, scope: ast::AstId<BlockExpr>) -> Option<Type>;
+  fn type_of_block(&self, file_id: FileId, scope: BlockId) -> Option<Type>;
 
   #[salsa::invoke(types::type_of_expr)]
-  fn type_of_expr(
-    &self,
-    file_id: FileId,
-    scope: ast::AstId<BlockExpr>,
-    expr: ast::ExprId,
-  ) -> Option<Type>;
+  fn type_of_expr(&self, file_id: FileId, scope: BlockId, expr: ast::ExprId) -> Option<Type>;
 
   #[salsa::invoke(types::infer)]
-  fn infer(&self, file_id: FileId, scope: ast::AstId<BlockExpr>) -> Arc<Inference>;
+  fn infer(&self, file_id: FileId, scope: BlockId) -> Arc<Inference>;
 }
 
-fn hir_ast_for_scope(
-  db: &dyn HirDatabase,
-  file: FileId,
-  scope: ast::AstId<BlockExpr>,
-) -> Arc<ast::Block> {
+fn hir_ast_for_scope(db: &dyn HirDatabase, file: FileId, scope: BlockId) -> Arc<ast::Block> {
   db.hir_ast_with_source_for_scope(file, scope).0
 }
 

@@ -5,14 +5,14 @@
 use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
-  ast::{AstId, Block, ErasedAstId, Expr, ExprId, Literal, Stmt},
+  ast::{AstId, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
   tree::Name,
   DefinitionKind, HirDatabase, Path,
 };
 use la_arena::{Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
-  ast::{self, AstNode, BlockExpr, SyntaxKind},
+  ast::{self, AstNode, SyntaxKind},
   AstPtr, TextSize, T,
 };
 
@@ -136,7 +136,7 @@ impl<'a> Infer<'a> {
         // This is basically just "select field `name` off of `def`".
         match def.kind {
           DefinitionKind::Class(Some(body_id)) => {
-            let scope = AstId::new(def.ast_id);
+            let scope = BlockId::Class(AstId::new(def.ast_id));
 
             let hir_ast = self.db.hir_ast_for_scope(self.file_id, scope);
 
@@ -175,7 +175,7 @@ impl<'a> Infer<'a> {
   }
 }
 
-pub fn infer(db: &dyn HirDatabase, file_id: FileId, scope: AstId<BlockExpr>) -> Arc<Inference> {
+pub fn infer(db: &dyn HirDatabase, file_id: FileId, scope: BlockId) -> Arc<Inference> {
   let hir_ast = db.hir_ast_for_scope(file_id, scope);
 
   let mut infer = Infer::new(db, file_id, &hir_ast);
@@ -201,18 +201,14 @@ pub fn infer(db: &dyn HirDatabase, file_id: FileId, scope: AstId<BlockExpr>) -> 
 pub fn type_of_expr(
   db: &dyn HirDatabase,
   file_id: FileId,
-  scope: AstId<BlockExpr>,
+  scope: BlockId,
   expr: ExprId,
 ) -> Option<Type> {
   let inference = db.infer(file_id, scope);
   inference.types.get(&expr).cloned()
 }
 
-pub fn type_of_block(
-  db: &dyn HirDatabase,
-  file_id: FileId,
-  scope: AstId<BlockExpr>,
-) -> Option<Type> {
+pub fn type_of_block(db: &dyn HirDatabase, file_id: FileId, scope: BlockId) -> Option<Type> {
   let hir_ast = db.hir_ast_for_scope(file_id, scope);
 
   match hir_ast.stmts[*hir_ast.items.last()?] {
@@ -260,8 +256,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
           parent = parent.parent()?;
         }
 
-        // FIXME: This is some type casting nonsense.
-        let scope = AstId::new(ast_id_map.erased_ast_id(&parent));
+        let scope = BlockId::Source(AstId::new(ast_id_map.erased_ast_id(&parent)));
 
         let (_, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
         let expr_id = source_map.expr(AstPtr::new(&expr))?;
@@ -274,10 +269,9 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
           // FIXME: Generalize looking up the scope of a syntax node.
           let scope = if let Some(block) = ast::BlockExpr::cast(parent) {
-            ast_id_map.ast_id(&block)
+            ast_id_map.ast_id(&block).into()
           } else {
-            // FIXME: This is some type casting nonsense.
-            AstId::new(ast_id_map.root().erased())
+            ast_id_map.root().into()
           };
 
           let (hir_ast, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
