@@ -143,8 +143,6 @@ impl<'a> Infer<'a> {
             let scope_id = scopes.ast_to_scope[&body_id.erased()];
             let scope_def = &scopes.scopes[scope_id];
 
-            dbg!(&scope_def);
-
             let decls: Vec<_> =
               scope_def.declarations.iter().filter(|(n, _)| n.as_str() == name).collect();
 
@@ -245,8 +243,6 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     })
     .unwrap();
 
-  dbg!(&node.kind());
-
   match node.kind() {
     T![ident] => {
       let ast_id_map = db.ast_id_map(file_id);
@@ -320,8 +316,6 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
           let func = call.expr()?;
           let def = db.def_at_index(file_id, func.syntax().text_range().start())?;
 
-          dbg!(&def);
-
           None
         } else {
           None
@@ -341,8 +335,6 @@ pub fn type_at_item(db: &dyn HirDatabase, file_id: FileId, item: ErasedAstId) ->
   let ptr = ast_id_map.get_erased(item);
 
   let item = ast::Item::cast(ptr.to_node(&ast.syntax_node()))?;
-
-  dbg!(&item);
 
   match item {
     scalarc_syntax::ast::Item::ValDef(_) => db.type_at(file_id, item.syntax().text_range().end()),

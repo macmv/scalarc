@@ -245,7 +245,7 @@ impl BlockBuilder<'_> {
       }
 
       _ => {
-        println!("Unhandled item: {:#?}", item);
+        warn!("Unhandled item: {:#?}", item);
         None
       }
     }
@@ -289,7 +289,7 @@ impl BlockBuilder<'_> {
       }
 
       _ => {
-        println!("Unhandled expr: {expr:#?}");
+        warn!("Unhandled expr: {expr:#?}");
         None
       }
     }

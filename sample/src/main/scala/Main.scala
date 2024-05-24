@@ -19,3 +19,7 @@ class Bar(a: String) {
 
   new Foo()
 }
+
+val foo = 3
+
+foo
