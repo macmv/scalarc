@@ -25,8 +25,12 @@ impl BlockSourceMap {
   }
 
   pub fn expr(&self, expr: AstPtr<ast::Expr>) -> Option<ExprId> { self.expr.get(&expr).copied() }
-
   pub fn expr_syntax(&self, id: ExprId) -> Option<AstPtr<ast::Expr>> {
     self.expr_back.get(&id).copied()
+  }
+
+  pub fn stmt(&self, stmt: AstPtr<ast::Item>) -> Option<StmtId> { self.stmt.get(&stmt).copied() }
+  pub fn stmt_syntax(&self, id: StmtId) -> Option<AstPtr<ast::Item>> {
+    self.stmt_back.get(&id).copied()
   }
 }

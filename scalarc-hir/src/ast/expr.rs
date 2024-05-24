@@ -210,13 +210,16 @@ impl BlockBuilder<'_> {
         let name = sig.id_token()?.text().to_string();
         let expr_id = self.walk_expr(&def.expr()?)?;
 
-        let stmt_id = self.block.stmts.alloc(Stmt::Binding(Binding {
-          implicit: false,
-          kind: BindingKind::Def,
-          name,
-          ty: None,
-          expr: expr_id,
-        }));
+        let stmt_id = self.alloc_stmt(
+          Stmt::Binding(Binding {
+            implicit: false,
+            kind: BindingKind::Def,
+            name,
+            ty: None,
+            expr: expr_id,
+          }),
+          item,
+        );
 
         self.block.stmt_map.insert(self.id_map.ast_id(def).erased(), stmt_id);
         Some(stmt_id)
@@ -226,13 +229,16 @@ impl BlockBuilder<'_> {
         let name = def.id_token()?.text().to_string();
         let expr_id = self.walk_expr(&def.expr()?)?;
 
-        let stmt_id = self.block.stmts.alloc(Stmt::Binding(Binding {
-          implicit: false,
-          kind: BindingKind::Val,
-          name,
-          ty: None,
-          expr: expr_id,
-        }));
+        let stmt_id = self.alloc_stmt(
+          Stmt::Binding(Binding {
+            implicit: false,
+            kind: BindingKind::Val,
+            name,
+            ty: None,
+            expr: expr_id,
+          }),
+          item,
+        );
 
         self.block.stmt_map.insert(self.id_map.ast_id(def).erased(), stmt_id);
         Some(stmt_id)
@@ -249,46 +255,37 @@ impl BlockBuilder<'_> {
     match expr {
       scalarc_syntax::ast::Expr::BlockExpr(block) => {
         let id = self.id_map.ast_id(block);
-        let expr = Expr::Block(id);
 
-        Some(self.block.exprs.alloc(expr))
+        Some(self.alloc_expr(Expr::Block(id), expr))
       }
 
-      scalarc_syntax::ast::Expr::IdentExpr(expr) => {
-        let ident = expr.id_token()?.text().to_string();
+      scalarc_syntax::ast::Expr::IdentExpr(ident) => {
+        let ident = ident.id_token()?.text().to_string();
 
-        let expr = Expr::Name(UnresolvedPath { segments: vec![ident] });
-
-        Some(self.block.exprs.alloc(expr))
+        Some(self.alloc_expr(Expr::Name(UnresolvedPath { segments: vec![ident] }), expr))
       }
 
-      scalarc_syntax::ast::Expr::LitExpr(expr) => {
-        if let Some(int) = expr.int_lit_token() {
-          let expr = Expr::Literal(Literal::Int(int.text().parse().unwrap()));
-
-          Some(self.block.exprs.alloc(expr))
+      scalarc_syntax::ast::Expr::LitExpr(lit) => {
+        if let Some(int) = lit.int_lit_token() {
+          Some(self.alloc_expr(Expr::Literal(Literal::Int(int.text().parse().unwrap())), expr))
         } else {
           None
         }
       }
 
-      scalarc_syntax::ast::Expr::InfixExpr(expr) => {
-        let lhs = self.walk_expr(&expr.lhs()?)?;
-        let name = expr.id_token()?.text().to_string();
-        let rhs = self.walk_expr(&expr.rhs()?)?;
+      scalarc_syntax::ast::Expr::InfixExpr(infix) => {
+        let lhs = self.walk_expr(&infix.lhs()?)?;
+        let name = infix.id_token()?.text().to_string();
+        let rhs = self.walk_expr(&infix.rhs()?)?;
 
-        let expr = Expr::Call(lhs, name, vec![rhs]);
-
-        Some(self.block.exprs.alloc(expr))
+        Some(self.alloc_expr(Expr::Call(lhs, name, vec![rhs]), expr))
       }
 
-      scalarc_syntax::ast::Expr::FieldExpr(expr) => {
-        let lhs = self.walk_expr(&expr.expr()?)?;
-        let name = expr.id_token()?.text().to_string();
+      scalarc_syntax::ast::Expr::FieldExpr(field) => {
+        let lhs = self.walk_expr(&field.expr()?)?;
+        let name = field.id_token()?.text().to_string();
 
-        let expr = Expr::FieldAccess(lhs, name);
-
-        Some(self.block.exprs.alloc(expr))
+        Some(self.alloc_expr(Expr::FieldAccess(lhs, name), expr))
       }
 
       _ => {

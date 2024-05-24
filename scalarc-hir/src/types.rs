@@ -13,7 +13,7 @@ use la_arena::{Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode, BlockExpr, SyntaxKind},
-  TextSize, T,
+  AstPtr, TextSize, T,
 };
 
 #[derive(Clone, PartialEq, Eq)]
@@ -187,8 +187,6 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
       let parent = node.parent()?;
       if let Some(val_def) = ast::ValDef::cast(parent) {
-        let val_id = ast_id_map.ast_id(&val_def);
-
         let parent = val_def.syntax().parent()?;
 
         let scope = if let Some(block) = ast::BlockExpr::cast(parent) {
@@ -200,8 +198,9 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
           None
         };
 
-        let hir_ast = db.hir_ast_for_scope(file_id, scope);
-        let stmt = hir_ast.item_for_ast_id(val_id.erased())?;
+        let (hir_ast, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
+        let stmt_id = source_map.stmt(AstPtr::new(&val_def.into()))?;
+        let stmt = &hir_ast.stmts[stmt_id];
 
         match stmt {
           crate::ast::Stmt::Binding(b) => db.type_of_expr(file_id, scope, b.expr),
