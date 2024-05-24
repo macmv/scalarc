@@ -18,8 +18,8 @@ use scalarc_syntax::{
 };
 
 #[derive(Clone, PartialEq, Eq)]
-pub struct Type {
-  pub path: Path,
+pub enum Type {
+  Named(Path),
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -43,7 +43,15 @@ impl fmt::Debug for Signature {
 
 impl fmt::Display for Type {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    for (i, elem) in self.path.elems.iter().enumerate() {
+    match self {
+      Type::Named(path) => write!(f, "{}", path),
+    }
+  }
+}
+
+impl fmt::Display for Path {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    for (i, elem) in self.elems.iter().enumerate() {
       if i != 0 {
         write!(f, ".")?;
       }
@@ -107,9 +115,9 @@ impl<'a> Infer<'a> {
         if let Some(local) = self.locals.get(&path.segments[0]) {
           Some(local.clone())
         } else {
-          Some(Type {
-            path: Path { elems: path.segments.iter().map(|s| Name::new(s.clone())).collect() },
-          })
+          Some(Type::Named(Path {
+            elems: path.segments.iter().map(|s| Name::new(s.clone())).collect(),
+          }))
         }
       }
 
@@ -129,10 +137,9 @@ impl<'a> Infer<'a> {
         let scopes = self.db.scopes_of(self.file_id);
 
         let scope_map = &scopes.scopes[Idx::from_raw(RawIdx::from_u32(0))];
-        let (_, def) = scope_map
-          .declarations
-          .iter()
-          .find(|(name, _)| name.as_str() == lhs.path.elems[0].as_str())?;
+        let (_, def) = scope_map.declarations.iter().find(
+          |(name, _)| matches!(lhs, Type::Named(ref path) if path.elems[0].as_str() == name.as_str()),
+        )?;
 
         // This is basically just "select field `name` off of `def`".
         match def.kind {
@@ -172,9 +179,9 @@ impl<'a> Infer<'a> {
           types.push(self.type_expr(item)?);
         }
 
-        Some(Type {
-          path: Path { elems: vec!["scala".into(), format!("Tuple{}", types.len()).into()] },
-        })
+        Some(Type::Named(Path {
+          elems: vec!["scala".into(), format!("Tuple{}", types.len()).into()],
+        }))
       }
 
       _ => None,
@@ -342,6 +349,6 @@ pub fn type_at_item(db: &dyn HirDatabase, file_id: FileId, item: ErasedAstId) ->
 }
 
 impl Type {
-  pub fn int() -> Self { Type { path: Path { elems: vec!["scala".into(), "Int".into()] } } }
-  pub fn float() -> Self { Type { path: Path { elems: vec!["scala".into(), "Float".into()] } } }
+  pub fn int() -> Self { Type::Named(Path { elems: vec!["scala".into(), "Int".into()] }) }
+  pub fn float() -> Self { Type::Named(Path { elems: vec!["scala".into(), "Float".into()] }) }
 }

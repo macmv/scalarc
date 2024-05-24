@@ -219,8 +219,7 @@ fn def_of_node(
       let v = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
       let id = v.id_token()?;
 
-      let ty =
-        v.ty().map(|ty| Type { path: Path { elems: vec![Name(ty.syntax().text().into())] } });
+      let ty = v.ty().map(|ty| Type::Named(Path { elems: vec![Name(ty.syntax().text().into())] }));
 
       Some(Definition {
         name: id.text().into(),
@@ -263,7 +262,7 @@ fn def_of_node(
                 if let (Some(id), Some(ty)) = (p.id_token(), p.ty()) {
                   Some((
                     id.text().into(),
-                    Type { path: Path { elems: vec![Name(ty.syntax().text().into())] } },
+                    Type::Named(Path { elems: vec![Name(ty.syntax().text().into())] }),
                   ))
                 } else {
                   None
