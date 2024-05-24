@@ -1,7 +1,7 @@
 //! Maps AST nodes to stable IDs, that can be used across reparses.
 
 use std::{
-  hash::{BuildHasher, BuildHasherDefault, DefaultHasher, Hash, Hasher},
+  hash::{BuildHasher, BuildHasherDefault, DefaultHasher, Hash},
   marker::PhantomData,
   sync::Arc,
 };
@@ -198,7 +198,5 @@ register_ast_item! {
 }
 
 fn hash_ptr(ptr: &SyntaxNodePtr) -> u64 {
-  let mut hasher = BuildHasherDefault::<DefaultHasher>::default().build_hasher();
-  ptr.hash(&mut hasher);
-  hasher.finish()
+  BuildHasherDefault::<DefaultHasher>::default().hash_one(ptr)
 }

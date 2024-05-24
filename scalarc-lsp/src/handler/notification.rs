@@ -39,7 +39,7 @@ pub fn handle_save_text_document(
   params: lsp_types::DidSaveTextDocumentParams,
 ) -> Result<(), Box<dyn Error>> {
   if let Some(path) = global.workspace_path(&params.text_document.uri) {
-    let abs_path = global.workspace.join(&path);
+    let abs_path = global.workspace.join(path);
 
     if let Some(ref client) = global.bsp_client {
       let workspace = global.analysis_host.workspace();

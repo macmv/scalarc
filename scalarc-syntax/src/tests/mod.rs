@@ -55,7 +55,7 @@ fn block_expr() {
   let ast::Item::ExprItem(expr) = file.items().next().unwrap() else { panic!() };
   let ast::Expr::BlockExpr(block) = expr.expr().unwrap() else { panic!() };
 
-  let ast::Item::ExprItem(plus) = block.items().nth(0).unwrap() else { panic!() };
+  let ast::Item::ExprItem(plus) = block.items().next().unwrap() else { panic!() };
   let ast::Expr::InfixExpr(infix) = plus.expr().unwrap() else { panic!() };
 
   let ast::Expr::LitExpr(lit) = infix.lhs().unwrap() else { panic!() };

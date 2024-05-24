@@ -17,7 +17,7 @@ fn op_bp(ident: &str) -> (u8, u8) {
     _ => 1,
   };
 
-  if ident.ends_with(":") {
+  if ident.ends_with(':') {
     // Right-associative
     (precedence, precedence)
   } else {
@@ -521,13 +521,11 @@ pub fn character_lit(p: &mut Parser) {
   match p.current() {
     SINGLE_QUOTE => {
       p.eat(SINGLE_QUOTE);
-      return;
     }
 
     _ => {
       p.error("expected a single character");
       p.bump();
-      return;
     }
   }
 }

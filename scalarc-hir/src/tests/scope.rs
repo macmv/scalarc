@@ -41,8 +41,8 @@ fn refs_to(src: &str, expected: Expect) {
 
   let mut actual_src = src.to_string();
   for r in actual.iter().rev() {
-    actual_src.insert_str(r.pos.range.end().into(), "@");
-    actual_src.insert_str(r.pos.range.start().into(), "@");
+    actual_src.insert(r.pos.range.end().into(), '@');
+    actual_src.insert(r.pos.range.start().into(), '@');
   }
 
   let actual_src = actual_src
@@ -97,7 +97,7 @@ impl fmt::Debug for DebugUtil<'_, '_, Scope> {
 
 impl fmt::Debug for DebugUtil<'_, '_, Vec<(String, Definition)>> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    f.debug_map().entries(self.item.iter().map(|&(ref k, ref v)| (k, self.child(v)))).finish()
+    f.debug_map().entries(self.item.iter().map(|(k, v)| (k, self.child(v)))).finish()
   }
 }
 

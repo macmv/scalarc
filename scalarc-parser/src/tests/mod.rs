@@ -12,7 +12,7 @@ pub fn check(text: &str, expected_tree: Expect) {
 }
 
 fn check_inner(entry_point: EntryPoint, text: &str, expected_tree: Expect) {
-  let actual_tree = lex(entry_point, &text);
+  let actual_tree = lex(entry_point, text);
 
   expected_tree.assert_eq(&actual_tree);
 }
@@ -23,6 +23,6 @@ pub fn lex(entry_point: EntryPoint, text: &str) -> String {
 
 pub fn lex_events(entry_point: EntryPoint, text: &str) -> Vec<Event> {
   let mut events = entry_point.parse(&mut Lexer::new(text));
-  let processed = crate::process_events(&mut events);
-  processed
+
+  crate::process_events(&mut events)
 }

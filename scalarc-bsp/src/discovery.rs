@@ -17,7 +17,7 @@ pub fn find_bsp_servers(dir: &Path) -> Vec<BspJsonConfig> {
 
   let mut configs = vec![];
 
-  let Ok(dir) = fs::read_dir(&bsp_dir) else { return vec![] };
+  let Ok(dir) = fs::read_dir(bsp_dir) else { return vec![] };
   for file in dir {
     let Ok(file) = file else { return vec![] };
     let path = file.path();

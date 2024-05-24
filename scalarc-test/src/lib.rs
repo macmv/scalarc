@@ -516,7 +516,7 @@ impl Patchwork {
       **pos += insert;
     }
 
-    self.text.replace_range(range, &patch);
+    self.text.replace_range(range, patch);
   }
 }
 

@@ -9,7 +9,7 @@ fn main() {
     }
   };
 
-  let src = std::fs::read_to_string(&name).unwrap();
+  let src = std::fs::read_to_string(name).unwrap();
 
   let mut events = EntryPoint::SourceFile.parse(&mut Lexer::new(&src));
   let processed = scalarc_parser::process_events(&mut events);

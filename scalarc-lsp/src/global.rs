@@ -194,8 +194,9 @@ impl GlobalState {
     let changes = files.take_changes();
 
     for &file_id in &changes {
-      if !self.file_to_source_root.contains_key(&file_id) {
-        self.file_to_source_root.insert(file_id, None);
+      if let std::collections::hash_map::Entry::Vacant(e) = self.file_to_source_root.entry(file_id)
+      {
+        e.insert(None);
         self.analysis_host.add_file(file_id);
       }
 
@@ -514,13 +515,13 @@ impl BspResponseDispatcher<'_> {
 
         // TODO: Dispatch this to a thread pool.
         let id = self.res.id.clone();
-        let response = f(self.global, result).unwrap();
+        f(self.global, result).unwrap();
         self
           .global
           .sender
           .send(lsp_server::Message::Response(lsp_server::Response {
             id,
-            result: Some(serde_json::to_value(response).unwrap()),
+            result: Some(serde_json::to_value(()).unwrap()),
             error: None,
           }))
           .unwrap();

@@ -33,6 +33,10 @@ pub struct Analysis {
 
 pub type Cancellable<T> = Result<T, Cancelled>;
 
+impl Default for AnalysisHost {
+  fn default() -> Self { Self::new() }
+}
+
 impl AnalysisHost {
   pub fn new() -> Self {
     let mut db = RootDatabase::default();
@@ -83,7 +87,7 @@ impl Analysis {
   pub fn diagnostics(&self, file: FileId) -> Cancellable<Vec<Diagnostic>> {
     self.with_db(|db| {
       let ast = db.parse(file);
-      ast.errors().iter().map(|err| Diagnostic::from_syntax_error(err)).collect()
+      ast.errors().iter().map(Diagnostic::from_syntax_error).collect()
     })
   }
 

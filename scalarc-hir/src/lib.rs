@@ -153,6 +153,10 @@ fn definitions_for_file(_db: &dyn HirDatabase, _file: FileId) -> DefinitionMap {
   DefinitionMap { items: HashMap::new() }
 }
 
+impl Default for Path {
+  fn default() -> Self { Self::new() }
+}
+
 impl Path {
   pub fn new() -> Self { Path { elems: vec![] } }
 }

@@ -31,7 +31,7 @@ pub fn handle_diagnostics(
   if let Some(path) = global.workspace_path(&params.text_document.uri) {
     let file_id = global.files.read().path_to_id(&path);
 
-    let diagnostics = global.diagnostics.entry(file_id).or_insert_with(Vec::new);
+    let diagnostics = global.diagnostics.entry(file_id).or_default();
 
     let original_diagnostics = diagnostics.clone();
 

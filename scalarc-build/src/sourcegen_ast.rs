@@ -119,18 +119,16 @@ fn generate_nodes(grammar: &AstSrc) -> String {
               }
             }
           }
-        } else {
-          if field.is_many() {
-            quote! {
-              pub fn #method_name(&self) -> AstChildren<#ty> {
-                support::children(&self.syntax)
-              }
+        } else if field.is_many() {
+          quote! {
+            pub fn #method_name(&self) -> AstChildren<#ty> {
+              support::children(&self.syntax)
             }
-          } else {
-            quote! {
-              pub fn #method_name(&self) -> Option<#ty> {
-                support::child(&self.syntax)
-              }
+          }
+        } else {
+          quote! {
+            pub fn #method_name(&self) -> Option<#ty> {
+              support::child(&self.syntax)
             }
           }
         }
@@ -362,7 +360,7 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, ast: &AstSrc) -> String {
     } else if name == "ident" {
       continue;
     } else if name != "_" && name.chars().all(|c| c.is_ascii_lowercase() || c == '_') {
-      let ident = Ident::new(&name, Span::call_site());
+      let ident = Ident::new(name, Span::call_site());
       keyword_idents.push(ident);
 
       let enum_name = format!("{}_KW", to_upper_snake_case(name));
@@ -393,7 +391,7 @@ fn generate_syntax_kinds(kinds: KindsSrc<'_>, ast: &AstSrc) -> String {
   // TODO: Need to line these up with the actual grammar
   let mut tokens: Vec<Ident> = vec![];
   for tok in &["WHITESPACE", "COMMENT", "IDENT"] {
-    let ident = Ident::new(&tok, Span::call_site());
+    let ident = Ident::new(tok, Span::call_site());
     tokens.push(ident);
   }
 

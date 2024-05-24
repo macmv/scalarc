@@ -79,7 +79,7 @@ fn collect_tests(s: &str, location: &Path) -> Vec<Test> {
       continue;
     }
 
-    let ok = match line.split(" ").nth(2).unwrap_or("") {
+    let ok = match line.split(' ').nth(2).unwrap_or("") {
       "ok" => true,
       "err" => false,
       other => {

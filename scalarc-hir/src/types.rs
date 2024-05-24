@@ -149,7 +149,7 @@ impl<'a> Infer<'a> {
             match decls[..] {
               [] => None,
               [(_, def)] => {
-                let stmt_id = hir_ast.stmt_map[&def.ast_id].clone();
+                let stmt_id = hir_ast.stmt_map[&def.ast_id];
 
                 match &hir_ast.stmts[stmt_id] {
                   Stmt::Binding(b) => self.db.type_of_expr(self.file_id, scope, b.expr),
@@ -284,7 +284,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
           match stmt {
             crate::ast::Stmt::Binding(b) => db.type_of_expr(file_id, scope, b.expr),
-            _ => return None,
+            _ => None,
           }
         } else {
           None
