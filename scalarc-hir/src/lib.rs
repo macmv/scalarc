@@ -21,6 +21,7 @@ pub mod scope;
 pub mod tree;
 pub mod types;
 
+use types::Inference;
 pub use types::{Params, Signature, Type};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -120,6 +121,9 @@ pub trait HirDatabase: SourceDatabase {
     scope: Option<ast::AstId<BlockExpr>>,
     expr: ast::ExprId,
   ) -> Option<Type>;
+
+  #[salsa::invoke(types::infer)]
+  fn infer(&self, file_id: FileId, scope: Option<ast::AstId<BlockExpr>>) -> Arc<Inference>;
 }
 
 fn hir_ast_for_scope(

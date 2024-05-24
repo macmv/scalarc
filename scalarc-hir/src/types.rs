@@ -2,14 +2,13 @@
 //!
 //! This should probably be its own crate. Ah well.
 
-use std::fmt;
+use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
-  ast::{AstId, AstItem, ErasedAstId, Expr, ExprId, Literal, Stmt},
+  ast::{AstId, Block, ErasedAstId, Expr, ExprId, Literal, Stmt},
   tree::Name,
   DefinitionKind, HirDatabase, Path,
 };
-use hashbrown::HashMap;
 use la_arena::{Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
@@ -75,101 +74,144 @@ impl fmt::Display for Signature {
   }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct Inference {
+  types: HashMap<ExprId, Type>,
+}
+
+struct Infer<'a> {
+  db:      &'a dyn HirDatabase,
+  file_id: FileId,
+  hir_ast: &'a Block,
+
+  locals: HashMap<String, Type>,
+  result: Inference,
+}
+
+impl<'a> Infer<'a> {
+  pub fn new(db: &'a dyn HirDatabase, file_id: FileId, hir_ast: &'a Block) -> Self {
+    Infer {
+      db,
+      file_id,
+      hir_ast,
+      locals: HashMap::new(),
+      result: Inference { types: HashMap::new() },
+    }
+  }
+
+  pub fn type_expr(&mut self, expr: ExprId) -> Option<Type> {
+    let res = match self.hir_ast.exprs[expr] {
+      // FIXME: Need name resolution.
+      Expr::Name(ref path) => {
+        if let Some(local) = self.locals.get(&path.segments[0]) {
+          Some(local.clone())
+        } else {
+          Some(Type {
+            path: Path { elems: path.segments.iter().map(|s| Name::new(s.clone())).collect() },
+          })
+        }
+      }
+
+      Expr::Literal(ref lit) => match lit {
+        Literal::Int(_) => Some(Type::int()),
+        Literal::Float(_) => Some(Type::float()),
+        _ => None,
+      },
+
+      Expr::Block(block) => self.db.type_of_block(self.file_id, Some(block)),
+
+      Expr::FieldAccess(lhs, ref name) => {
+        let lhs = self.type_expr(lhs)?;
+
+        // FIXME: Need global lookup here. This should basically be the same as
+        // goto-def.
+        let scopes = self.db.scopes_of(self.file_id);
+
+        let scope_map = &scopes.scopes[Idx::from_raw(RawIdx::from_u32(0))];
+        let (_, def) = scope_map
+          .declarations
+          .iter()
+          .find(|(name, _)| name.as_str() == lhs.path.elems[0].as_str())?;
+
+        // This is basically just "select field `name` off of `def`".
+        match def.kind {
+          DefinitionKind::Class(Some(body_id)) => {
+            let scope = Some(AstId::new(def.ast_id));
+
+            let hir_ast = self.db.hir_ast_for_scope(self.file_id, scope);
+
+            let scope_id = scopes.ast_to_scope[&body_id.erased()];
+            let scope_def = &scopes.scopes[scope_id];
+
+            dbg!(&scope_def);
+
+            let decls: Vec<_> =
+              scope_def.declarations.iter().filter(|(n, _)| n.as_str() == name).collect();
+
+            match decls[..] {
+              [] => None,
+              [(_, def)] => {
+                let stmt_id = hir_ast.stmt_map[&def.ast_id].clone();
+
+                match &hir_ast.stmts[stmt_id] {
+                  Stmt::Binding(b) => self.db.type_of_expr(self.file_id, scope, b.expr),
+                  _ => None,
+                }
+              }
+              _ => None,
+            }
+          }
+
+          _ => None,
+        }
+      }
+
+      _ => None,
+    };
+
+    if let Some(ty) = res.clone() {
+      self.result.types.insert(expr, ty.clone());
+    }
+
+    res
+  }
+}
+
+pub fn infer(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  scope: Option<AstId<BlockExpr>>,
+) -> Arc<Inference> {
+  let hir_ast = db.hir_ast_for_scope(file_id, scope);
+
+  let mut infer = Infer::new(db, file_id, &hir_ast);
+
+  for &stmt in hir_ast.items.iter() {
+    match &hir_ast.stmts[stmt] {
+      Stmt::Binding(b) => {
+        let ty = infer.type_expr(b.expr);
+
+        if let Some(ty) = ty {
+          infer.locals.insert(b.name.clone(), ty);
+        }
+      }
+      Stmt::Expr(e) => {
+        infer.type_expr(*e);
+      }
+    }
+  }
+
+  Arc::new(infer.result)
+}
+
 pub fn type_of_expr(
   db: &dyn HirDatabase,
   file_id: FileId,
   scope: Option<AstId<BlockExpr>>,
   expr: ExprId,
 ) -> Option<Type> {
-  let hir_ast = db.hir_ast_for_scope(file_id, scope);
-
-  // FIXME: Need real local variables, but this'll do for now.
-  let mut locals = HashMap::new();
-  for &stmt in hir_ast.items.iter() {
-    match &hir_ast.stmts[stmt] {
-      Stmt::Binding(b) => {
-        // Can't typecheck ourselves!
-        if b.expr == expr {
-          continue;
-        }
-
-        let ty = db.type_of_expr(file_id, scope, b.expr)?;
-        locals.insert(b.name.clone(), ty);
-      }
-      _ => {}
-    }
-  }
-
-  let expr = &hir_ast.exprs[expr];
-
-  match expr {
-    // FIXME: Need name resolution.
-    Expr::Name(path) => {
-      if let Some(local) = locals.get(&path.segments[0]) {
-        Some(local.clone())
-      } else {
-        Some(Type {
-          path: Path { elems: path.segments.iter().map(|s| Name::new(s.clone())).collect() },
-        })
-      }
-    }
-
-    Expr::Literal(lit) => match lit {
-      Literal::Int(_) => Some(Type::int()),
-      Literal::Float(_) => Some(Type::float()),
-      _ => None,
-    },
-
-    Expr::Block(block) => db.type_of_block(file_id, Some(*block)),
-
-    Expr::FieldAccess(lhs, name) => {
-      let lhs = db.type_of_expr(file_id, scope, *lhs)?;
-
-      // FIXME: Need global lookup here. This should basically be the same as
-      // goto-def.
-      let scopes = db.scopes_of(file_id);
-
-      let scope_map = &scopes.scopes[Idx::from_raw(RawIdx::from_u32(0))];
-      let (_, def) = scope_map
-        .declarations
-        .iter()
-        .find(|(name, _)| name.as_str() == lhs.path.elems[0].as_str())?;
-
-      // This is basically just "select field `name` off of `def`".
-      match def.kind {
-        DefinitionKind::Class(Some(body_id)) => {
-          let scope = Some(AstId::new(def.ast_id));
-
-          let hir_ast = db.hir_ast_for_scope(file_id, scope);
-
-          let scope_id = scopes.ast_to_scope[&body_id.erased()];
-          let scope_def = &scopes.scopes[scope_id];
-
-          dbg!(&scope_def);
-
-          let decls: Vec<_> =
-            scope_def.declarations.iter().filter(|(n, _)| n.as_str() == name).collect();
-
-          match decls[..] {
-            [] => None,
-            [(_, def)] => {
-              let stmt_id = hir_ast.stmt_map[&def.ast_id].clone();
-
-              match &hir_ast.stmts[stmt_id] {
-                Stmt::Binding(b) => db.type_of_expr(file_id, scope, b.expr),
-                _ => None,
-              }
-            }
-            _ => None,
-          }
-        }
-
-        _ => None,
-      }
-    }
-
-    _ => None,
-  }
+  let inference = db.infer(file_id, scope);
+  inference.types.get(&expr).cloned()
 }
 
 pub fn type_of_block(
