@@ -57,6 +57,19 @@ impl<T: AstNode> AstPtr<T> {
   }
 }
 
+#[macro_export]
+macro_rules! match_ast {
+  (match $node:ident { $($tt:tt)* }) => { $crate::match_ast!(match ($node) { $($tt)* }) };
+
+  (match ($node:expr) {
+    $( $( $path:ident )::+ ($it:pat) => $res:expr, )*
+    _ => $catch_all:expr $(,)?
+  }) => {{
+    $( if let Some($it) = $($path::)+cast($node.clone()) { $res } else )*
+    { $catch_all }
+  }};
+}
+
 pub use rowan::{TextRange, TextSize, WalkEvent};
 
 impl<T> Parse<T> {
