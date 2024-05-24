@@ -215,14 +215,14 @@ impl BlockBuilder<'_> {
 
   fn walk_stmt(&mut self, item: &scalarc_syntax::ast::Item) -> Option<StmtId> {
     match item {
-      scalarc_syntax::ast::Item::ExprItem(expr) => {
+      ast::Item::ExprItem(expr) => {
         let expr_id = self.walk_expr(&expr.expr()?)?;
         let stmt_id = self.alloc_stmt(Stmt::Expr(expr_id), item);
 
         Some(stmt_id)
       }
 
-      scalarc_syntax::ast::Item::FunDef(def) => {
+      ast::Item::FunDef(def) => {
         let sig = def.fun_sig()?;
         let name = sig.id_token()?.text().to_string();
         let expr_id = self.walk_expr(&def.expr()?)?;
@@ -242,7 +242,7 @@ impl BlockBuilder<'_> {
         Some(stmt_id)
       }
 
-      scalarc_syntax::ast::Item::ValDef(def) => {
+      ast::Item::ValDef(def) => {
         let name = def.id_token()?.text().to_string();
         let expr_id = self.walk_expr(&def.expr()?)?;
 
@@ -270,23 +270,23 @@ impl BlockBuilder<'_> {
 
   fn walk_expr(&mut self, expr: &scalarc_syntax::ast::Expr) -> Option<ExprId> {
     match expr {
-      scalarc_syntax::ast::Expr::BlockExpr(block) => {
+      ast::Expr::BlockExpr(block) => {
         let id = self.id_map.ast_id(block).into();
 
         Some(self.alloc_expr(Expr::Block(id), expr))
       }
 
-      scalarc_syntax::ast::Expr::IdentExpr(ident) => {
+      ast::Expr::IdentExpr(ident) => {
         let ident = ident.id_token()?.text().to_string();
 
         Some(self.alloc_expr(Expr::Name(UnresolvedPath { segments: vec![ident] }), expr))
       }
 
-      scalarc_syntax::ast::Expr::LitExpr(lit) => lit
+      ast::Expr::LitExpr(lit) => lit
         .int_lit_token()
         .map(|int| self.alloc_expr(Expr::Literal(Literal::Int(int.text().parse().unwrap())), expr)),
 
-      scalarc_syntax::ast::Expr::InfixExpr(infix) => {
+      ast::Expr::InfixExpr(infix) => {
         let lhs = self.walk_expr(&infix.lhs()?)?;
         let name = infix.id_token()?.text().to_string();
         let rhs = self.walk_expr(&infix.rhs()?)?;
@@ -294,11 +294,31 @@ impl BlockBuilder<'_> {
         Some(self.alloc_expr(Expr::Call(lhs, name, vec![rhs]), expr))
       }
 
-      scalarc_syntax::ast::Expr::FieldExpr(field) => {
+      ast::Expr::FieldExpr(field) => {
         let lhs = self.walk_expr(&field.expr()?)?;
         let name = field.id_token()?.text().to_string();
 
         Some(self.alloc_expr(Expr::FieldAccess(lhs, name), expr))
+      }
+
+      ast::Expr::TupleExpr(tup) => {
+        let mut items = vec![];
+
+        for expr in tup.exprs() {
+          items.push(self.walk_expr(&expr)?);
+        }
+
+        if items.len() == 1 {
+          let id = items[0];
+
+          // This makes looking up the tuple easier. Since its the same expression, we
+          // don't actually give it a unique expr ID though.
+          self.source_map.expr.insert(AstPtr::new(expr), id);
+
+          Some(id)
+        } else {
+          Some(self.alloc_expr(Expr::Tuple(items), expr))
+        }
       }
 
       _ => {

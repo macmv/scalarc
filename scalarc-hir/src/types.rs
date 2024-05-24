@@ -285,15 +285,15 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
     SyntaxKind::OPEN_PAREN | SyntaxKind::CLOSE_PAREN => {
       let parent = node.parent()?;
+      let ast_id_map = db.ast_id_map(file_id);
+      let scope = block_for_node(&ast_id_map, parent.clone())?;
+      let (_, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
 
       if scalarc_syntax::ast::TupleExpr::can_cast(parent.kind()) {
         let tup = scalarc_syntax::ast::TupleExpr::cast(parent)?;
-        if tup.exprs().count() == 1 {
-          db.type_at(file_id, tup.exprs().next()?.syntax().text_range().end())
-        } else {
-          // TODO: Tuple type
-          None
-        }
+
+        let expr_id = source_map.expr(AstPtr::new(&tup.into()))?;
+        db.type_of_expr(file_id, scope, expr_id)
       } else {
         // Parens are the grandchildren of calls, so grab the second parent for this
         // check.
@@ -301,10 +301,9 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
         if scalarc_syntax::ast::CallExpr::can_cast(parent.kind()) {
           let call = scalarc_syntax::ast::CallExpr::cast(parent)?;
-          let func = call.expr()?;
-          let _def = db.def_at_index(file_id, func.syntax().text_range().start())?;
 
-          None
+          let expr_id = source_map.expr(AstPtr::new(&call.into()))?;
+          db.type_of_expr(file_id, scope, expr_id)
         } else {
           None
         }
