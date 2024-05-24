@@ -80,7 +80,7 @@ fn type_of_val_ref() {
     val foo = 2
     foo@@
     "#,
-    expect![@"no type"],
+    expect![@"scala.Int"],
   );
 }
 

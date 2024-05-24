@@ -5,10 +5,11 @@
 use std::fmt;
 
 use crate::{
-  ast::{AstId, ErasedAstId, Expr, ExprId, Literal, Stmt},
+  ast::{AstId, AstItem, ErasedAstId, Expr, ExprId, Literal, Stmt},
   tree::Name,
   DefinitionKind, HirDatabase, Path,
 };
+use hashbrown::HashMap;
 use la_arena::{Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
@@ -82,13 +83,36 @@ pub fn type_of_expr(
 ) -> Option<Type> {
   let hir_ast = db.hir_ast_for_scope(file_id, scope);
 
+  // FIXME: Need real local variables, but this'll do for now.
+  let mut locals = HashMap::new();
+  for &stmt in hir_ast.items.iter() {
+    match &hir_ast.stmts[stmt] {
+      Stmt::Binding(b) => {
+        // Can't typecheck ourselves!
+        if b.expr == expr {
+          continue;
+        }
+
+        let ty = db.type_of_expr(file_id, scope, b.expr)?;
+        locals.insert(b.name.clone(), ty);
+      }
+      _ => {}
+    }
+  }
+
   let expr = &hir_ast.exprs[expr];
 
   match expr {
     // FIXME: Need name resolution.
-    Expr::Name(path) => Some(Type {
-      path: Path { elems: path.segments.iter().map(|s| Name::new(s.clone())).collect() },
-    }),
+    Expr::Name(path) => {
+      if let Some(local) = locals.get(&path.segments[0]) {
+        Some(local.clone())
+      } else {
+        Some(Type {
+          path: Path { elems: path.segments.iter().map(|s| Name::new(s.clone())).collect() },
+        })
+      }
+    }
 
     Expr::Literal(lit) => match lit {
       Literal::Int(_) => Some(Type::int()),
@@ -185,6 +209,28 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     T![ident] => {
       let ast_id_map = db.ast_id_map(file_id);
 
+      if let Some(expr) = ast::Expr::cast(node.parent()?) {
+        let mut parent = node.parent();
+        while let Some(p) = parent {
+          if ast::BlockExpr::can_cast(p.kind()) {
+            // Move the `p` value back to `parent`.
+            parent = Some(p);
+            break;
+          }
+          parent = p.parent();
+        }
+
+        let scope = parent.map(|p| ast_id_map.ast_id(&ast::BlockExpr::cast(p).unwrap()));
+
+        let (_, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
+        let expr_id = source_map.expr(AstPtr::new(&expr))?;
+
+        db.type_of_expr(file_id, scope, expr_id)
+      } else {
+        None
+      }
+
+      /*
       let parent = node.parent()?;
       if let Some(val_def) = ast::ValDef::cast(parent) {
         let parent = val_def.syntax().parent()?;
@@ -209,6 +255,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
       } else {
         None
       }
+      */
     }
 
     SyntaxKind::INT_LIT_KW => Some(Type::int()),
