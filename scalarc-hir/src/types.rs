@@ -5,7 +5,7 @@
 use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
-  ast::{AstId, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
+  ast::{AstId, AstIdMap, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
   tree::Name,
   DefinitionKind, HirDatabase, Path,
 };
@@ -13,6 +13,7 @@ use la_arena::{Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode, SyntaxKind},
+  node::SyntaxNode,
   AstPtr, TextSize, T,
 };
 
@@ -235,22 +236,25 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     })
     .unwrap();
 
+  fn block_for_node(ast_id_map: &AstIdMap, mut node: SyntaxNode) -> Option<BlockId> {
+    Some(loop {
+      scalarc_syntax::match_ast! {
+        match node {
+          ast::BlockExpr(it) => break BlockId::Block(ast_id_map.ast_id(&it)),
+          ast::ClassDef(it) => break BlockId::Class(ast_id_map.ast_id(&it)),
+          ast::SourceFile(it) => break BlockId::Source(ast_id_map.ast_id(&it)),
+          _ => node = node.parent()?,
+        }
+      }
+    })
+  }
+
   match node.kind() {
     T![ident] => {
       let ast_id_map = db.ast_id_map(file_id);
 
       if let Some(expr) = ast::Expr::cast(node.parent()?) {
-        let mut parent = node.parent()?;
-        let scope = loop {
-          scalarc_syntax::match_ast! {
-            match parent {
-              ast::BlockExpr(it) => break BlockId::Block(ast_id_map.ast_id(&it)),
-              ast::ClassDef(it) => break BlockId::Class(ast_id_map.ast_id(&it)),
-              ast::SourceFile(it) => break BlockId::Source(ast_id_map.ast_id(&it)),
-              _ => parent = parent.parent()?,
-            }
-          }
-        };
+        let scope = block_for_node(&ast_id_map, node.parent()?)?;
 
         let (_, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
         let expr_id = source_map.expr(AstPtr::new(&expr))?;
@@ -260,13 +264,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
         let parent = node.parent()?;
         if let Some(val_def) = ast::ValDef::cast(parent) {
           let parent = val_def.syntax().parent()?;
-
-          // FIXME: Generalize looking up the scope of a syntax node.
-          let scope = if let Some(block) = ast::BlockExpr::cast(parent) {
-            ast_id_map.ast_id(&block).into()
-          } else {
-            ast_id_map.root().into()
-          };
+          let scope = block_for_node(&ast_id_map, parent)?;
 
           let (hir_ast, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
           let stmt_id = source_map.stmt(AstPtr::new(&val_def.into()))?;
