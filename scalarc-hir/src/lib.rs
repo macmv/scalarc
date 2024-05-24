@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use ast::{AstId, ErasedAstId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
-  ast::{BlockExpr, ClassDef, ItemBody},
+  ast::{BlockExpr, ItemBody},
   TextRange, TextSize,
 };
 use scope::{FileScopes, ScopeId};

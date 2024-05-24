@@ -17,7 +17,7 @@ use diagnostic::Diagnostic;
 
 use database::{LineIndexDatabase, RootDatabase};
 use highlight::Highlight;
-use line_index::{LineIndex, TextRange};
+use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
 use scalarc_hir::{Definition, FileLocation, FileRange, HirDatabase, Reference, Type};
 use scalarc_source::{FileId, SourceDatabase, Workspace};

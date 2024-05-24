@@ -1,7 +1,6 @@
-use la_arena::{Arena, RawIdx};
+use la_arena::Arena;
 use scalarc_source::{FileId, SourceDatabase, SourceRoot, TargetData};
 use std::{
-  collections::HashMap,
   fmt,
   path::PathBuf,
   sync::{Arc, Mutex},
