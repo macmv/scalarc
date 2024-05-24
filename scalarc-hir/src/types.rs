@@ -118,7 +118,7 @@ impl<'a> Infer<'a> {
         _ => None,
       },
 
-      Expr::Block(block) => self.db.type_of_block(self.file_id, Some(block)),
+      Expr::Block(block) => self.db.type_of_block(self.file_id, block),
 
       Expr::FieldAccess(lhs, ref name) => {
         let lhs = self.type_expr(lhs)?;
@@ -136,7 +136,7 @@ impl<'a> Infer<'a> {
         // This is basically just "select field `name` off of `def`".
         match def.kind {
           DefinitionKind::Class(Some(body_id)) => {
-            let scope = Some(AstId::new(def.ast_id));
+            let scope = AstId::new(def.ast_id);
 
             let hir_ast = self.db.hir_ast_for_scope(self.file_id, scope);
 
@@ -175,11 +175,7 @@ impl<'a> Infer<'a> {
   }
 }
 
-pub fn infer(
-  db: &dyn HirDatabase,
-  file_id: FileId,
-  scope: Option<AstId<BlockExpr>>,
-) -> Arc<Inference> {
+pub fn infer(db: &dyn HirDatabase, file_id: FileId, scope: AstId<BlockExpr>) -> Arc<Inference> {
   let hir_ast = db.hir_ast_for_scope(file_id, scope);
 
   let mut infer = Infer::new(db, file_id, &hir_ast);
@@ -205,7 +201,7 @@ pub fn infer(
 pub fn type_of_expr(
   db: &dyn HirDatabase,
   file_id: FileId,
-  scope: Option<AstId<BlockExpr>>,
+  scope: AstId<BlockExpr>,
   expr: ExprId,
 ) -> Option<Type> {
   let inference = db.infer(file_id, scope);
@@ -215,7 +211,7 @@ pub fn type_of_expr(
 pub fn type_of_block(
   db: &dyn HirDatabase,
   file_id: FileId,
-  scope: Option<AstId<BlockExpr>>,
+  scope: AstId<BlockExpr>,
 ) -> Option<Type> {
   let hir_ast = db.hir_ast_for_scope(file_id, scope);
 
@@ -248,25 +244,24 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
       let ast_id_map = db.ast_id_map(file_id);
 
       if let Some(expr) = ast::Expr::cast(node.parent()?) {
-        let mut parent = node.parent();
-        while let Some(p) = parent {
+        let mut parent = node.parent()?;
+        loop {
           // FIXME: ITEM_BODY shouldn't really live in the ast hierarchy.
           //
           // However, VAL_DEF should be in the AST hierarchy, but it doesn't count as a
           // parent node for the HIR ast.
-          if p.kind() != SyntaxKind::ITEM_BODY
-            && p.kind() != SyntaxKind::VAL_DEF
-            && ast_id_map.contains_node(&p)
+          if parent.kind() != SyntaxKind::ITEM_BODY
+            && parent.kind() != SyntaxKind::VAL_DEF
+            && ast_id_map.contains_node(&parent)
           {
             // Move the `p` value back to `parent`.
-            parent = Some(p);
             break;
           }
-          parent = p.parent();
+          parent = parent.parent()?;
         }
 
         // FIXME: This is some type casting nonsense.
-        let scope = parent.map(|p| AstId::new(ast_id_map.erased_ast_id(&p)));
+        let scope = AstId::new(ast_id_map.erased_ast_id(&parent));
 
         let (_, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
         let expr_id = source_map.expr(AstPtr::new(&expr))?;
@@ -277,13 +272,12 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
         if let Some(val_def) = ast::ValDef::cast(parent) {
           let parent = val_def.syntax().parent()?;
 
+          // FIXME: Generalize looking up the scope of a syntax node.
           let scope = if let Some(block) = ast::BlockExpr::cast(parent) {
-            let block_id = ast_id_map.ast_id(&block);
-            Some(block_id)
+            ast_id_map.ast_id(&block)
           } else {
-            // TODO: Other parents might exist. For now, we assume the parent is the source
-            // root.
-            None
+            // FIXME: This is some type casting nonsense.
+            AstId::new(ast_id_map.root().erased())
           };
 
           let (hir_ast, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);

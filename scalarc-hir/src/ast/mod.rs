@@ -6,7 +6,7 @@ use std::{
   sync::Arc,
 };
 
-use la_arena::{Arena, Idx};
+use la_arena::{Arena, Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode, SyntaxKind},
@@ -97,6 +97,10 @@ impl AstIdMap {
     }
     res.arena.shrink_to_fit();
     res
+  }
+
+  pub fn root(&self) -> AstId<SourceFile> {
+    AstId::new(ErasedAstId { raw: Idx::from_raw(RawIdx::from_u32(0)) })
   }
 
   pub fn iter(&self) -> impl Iterator<Item = (ErasedAstId, &SyntaxNodePtr)> {
@@ -193,7 +197,7 @@ register_ast_item! {
   FunDef,
     FunParam,
   ValDef,
-  ItemBody, BlockExpr
+  SourceFile, ItemBody, BlockExpr
 }
 
 fn hash_ptr(ptr: &SyntaxNodePtr) -> u64 {

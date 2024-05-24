@@ -94,48 +94,37 @@ impl Eq for EqFloat {}
 pub fn hir_ast_with_source_for_scope(
   db: &dyn HirDatabase,
   file_id: FileId,
-  scope: Option<AstId<scalarc_syntax::ast::BlockExpr>>,
+  scope: AstId<scalarc_syntax::ast::BlockExpr>,
 ) -> (Arc<Block>, Arc<BlockSourceMap>) {
   let ast = db.parse(file_id);
   let item_id_map = db.ast_id_map(file_id);
 
-  let (block, source_map) = match scope {
-    Some(scope) => {
-      let ptr = item_id_map.get_erased(scope.erased());
-      let node = ptr.to_node(ast.tree().syntax());
+  let ptr = item_id_map.get_erased(scope.erased());
+  let node = ptr.to_node(ast.tree().syntax());
 
-      match node.kind() {
-        SyntaxKind::BLOCK_EXPR => {
-          let block = scalarc_syntax::ast::BlockExpr::cast(node).unwrap();
-          ast_for_block(&item_id_map, block.items())
-        }
+  let (block, source_map) = match node.kind() {
+    SyntaxKind::BLOCK_EXPR => {
+      let block = scalarc_syntax::ast::BlockExpr::cast(node).unwrap();
+      ast_for_block(&item_id_map, block.items())
+    }
 
-        SyntaxKind::CLASS_DEF => {
-          let def = scalarc_syntax::ast::ClassDef::cast(node).unwrap();
+    SyntaxKind::CLASS_DEF => {
+      let def = scalarc_syntax::ast::ClassDef::cast(node).unwrap();
 
-          if let Some(body) = def.body() {
-            ast_for_block(&item_id_map, body.items())
-          } else {
-            (Block::empty(), BlockSourceMap::empty())
-          }
-        }
-
-        SyntaxKind::SOURCE_FILE => {
-          let item = ast::SourceFile::cast(ast.tree().syntax().clone()).unwrap();
-
-          ast_for_block(&item_id_map, item.items())
-        }
-
-        _ => (Block::empty(), BlockSourceMap::empty()),
+      if let Some(body) = def.body() {
+        ast_for_block(&item_id_map, body.items())
+      } else {
+        (Block::empty(), BlockSourceMap::empty())
       }
     }
 
-    // FIXME: Remove this optional.
-    None => {
+    SyntaxKind::SOURCE_FILE => {
       let item = ast::SourceFile::cast(ast.tree().syntax().clone()).unwrap();
 
       ast_for_block(&item_id_map, item.items())
     }
+
+    _ => (Block::empty(), BlockSourceMap::empty()),
   };
 
   (Arc::new(block), Arc::new(source_map))
@@ -314,10 +303,7 @@ mod tests {
 
     let (ast, _source_map) = db.hir_ast_with_source_for_scope(
       file_id,
-      Some(AstId {
-        raw:     Idx::from_raw(RawIdx::from_u32(1)),
-        phantom: std::marker::PhantomData,
-      }),
+      AstId { raw: Idx::from_raw(RawIdx::from_u32(1)), phantom: std::marker::PhantomData },
     );
 
     expect.assert_eq(&format!("{ast:#?}").replace("    ", "  "));

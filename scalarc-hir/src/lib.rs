@@ -101,35 +101,31 @@ pub trait HirDatabase: SourceDatabase {
   fn hir_ast_with_source_for_scope(
     &self,
     file: FileId,
-    scope: Option<ast::AstId<BlockExpr>>,
+    scope: ast::AstId<BlockExpr>,
   ) -> (Arc<ast::Block>, Arc<ast::BlockSourceMap>);
 
   // This query is stable across reparses.
-  fn hir_ast_for_scope(
-    &self,
-    file: FileId,
-    scope: Option<ast::AstId<BlockExpr>>,
-  ) -> Arc<ast::Block>;
+  fn hir_ast_for_scope(&self, file: FileId, scope: ast::AstId<BlockExpr>) -> Arc<ast::Block>;
 
   #[salsa::invoke(types::type_of_block)]
-  fn type_of_block(&self, file_id: FileId, scope: Option<ast::AstId<BlockExpr>>) -> Option<Type>;
+  fn type_of_block(&self, file_id: FileId, scope: ast::AstId<BlockExpr>) -> Option<Type>;
 
   #[salsa::invoke(types::type_of_expr)]
   fn type_of_expr(
     &self,
     file_id: FileId,
-    scope: Option<ast::AstId<BlockExpr>>,
+    scope: ast::AstId<BlockExpr>,
     expr: ast::ExprId,
   ) -> Option<Type>;
 
   #[salsa::invoke(types::infer)]
-  fn infer(&self, file_id: FileId, scope: Option<ast::AstId<BlockExpr>>) -> Arc<Inference>;
+  fn infer(&self, file_id: FileId, scope: ast::AstId<BlockExpr>) -> Arc<Inference>;
 }
 
 fn hir_ast_for_scope(
   db: &dyn HirDatabase,
   file: FileId,
-  scope: Option<ast::AstId<BlockExpr>>,
+  scope: ast::AstId<BlockExpr>,
 ) -> Arc<ast::Block> {
   db.hir_ast_with_source_for_scope(file, scope).0
 }
