@@ -20,6 +20,7 @@ use scalarc_syntax::{
 #[derive(Clone, PartialEq, Eq)]
 pub enum Type {
   Named(Path),
+  Tuple(Vec<Type>),
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -45,6 +46,16 @@ impl fmt::Display for Type {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
       Type::Named(path) => write!(f, "{}", path),
+      Type::Tuple(types) => {
+        write!(f, "(")?;
+        for (i, ty) in types.iter().enumerate() {
+          if i != 0 {
+            write!(f, ", ")?;
+          }
+          write!(f, "{}", ty)?;
+        }
+        write!(f, ")")
+      }
     }
   }
 }
@@ -179,9 +190,7 @@ impl<'a> Infer<'a> {
           types.push(self.type_expr(item)?);
         }
 
-        Some(Type::Named(Path {
-          elems: vec!["scala".into(), format!("Tuple{}", types.len()).into()],
-        }))
+        Some(Type::Tuple(types))
       }
 
       _ => None,

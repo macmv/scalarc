@@ -32,7 +32,7 @@ fn simple_type_at() {
 }
 
 #[test]
-fn tuples() { type_at("(2, 3)@@", expect![@"scala.Tuple2"]); }
+fn tuples() { type_at("(2, 3)@@", expect![@"(scala.Int, scala.Int)"]); }
 
 #[test]
 fn type_of_val_def() {
