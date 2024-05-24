@@ -1,5 +1,6 @@
 use std::{error::Error, path::Path};
 
+use line_index::LineIndex;
 use lsp_types::SemanticTokenType;
 use scalarc_analysis::highlight::{Highlight, HighlightKind};
 use scalarc_hir::{DefinitionKind, FileLocation};
@@ -80,13 +81,7 @@ pub fn handle_goto_definition(
 
   if let Some((_, pos)) = definition {
     let files = snap.files.read();
-
     let line_index = snap.analysis.line_index(pos.file)?;
-    let start = line_index.line_col(pos.range.start());
-    let end = line_index.line_col(pos.range.end());
-
-    let start = lsp_types::Position { line: start.line, character: start.col };
-    let end = lsp_types::Position { line: end.line, character: end.col };
 
     Ok(Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_types::Location::new(
       lsp_types::Url::parse(&format!(
@@ -94,7 +89,7 @@ pub fn handle_goto_definition(
         files.workspace.join(files.id_to_path(pos.file)).display()
       ))
       .unwrap(),
-      lsp_types::Range { start, end },
+      range_to_lsp(&line_index, pos.range),
     ))))
   } else {
     Ok(None)
@@ -115,28 +110,14 @@ pub fn handle_document_highlight(
       return Ok(None);
     }
 
-    let start = line_index.line_col(pos.range.start());
-    let end = line_index.line_col(pos.range.end());
-
-    let start = lsp_types::Position { line: start.line, character: start.col };
-    let end = lsp_types::Position { line: end.line, character: end.col };
-
     let def_highlight = lsp_types::DocumentHighlight {
-      range: lsp_types::Range { start, end },
+      range: range_to_lsp(&line_index, pos.range),
       kind:  Some(lsp_types::DocumentHighlightKind::WRITE),
     };
 
-    let refs_highlight = refs.into_iter().map(|r| {
-      let start = line_index.line_col(r.pos.range.start());
-      let end = line_index.line_col(r.pos.range.end());
-
-      let start = lsp_types::Position { line: start.line, character: start.col };
-      let end = lsp_types::Position { line: end.line, character: end.col };
-
-      lsp_types::DocumentHighlight {
-        range: lsp_types::Range { start, end },
-        kind:  Some(lsp_types::DocumentHighlightKind::READ),
-      }
+    let refs_highlight = refs.into_iter().map(|r| lsp_types::DocumentHighlight {
+      range: range_to_lsp(&line_index, r.pos.range),
+      kind:  Some(lsp_types::DocumentHighlightKind::READ),
     });
 
     Ok(Some([def_highlight].into_iter().chain(refs_highlight).collect()))
@@ -155,15 +136,7 @@ pub fn handle_hover(
   let ty = snap.analysis.type_at(pos)?;
 
   if let Some(ty) = ty {
-    let range = def.map(|(_, pos)| {
-      let start = line_index.line_col(pos.range.start());
-      let end = line_index.line_col(pos.range.end());
-
-      let start = lsp_types::Position { line: start.line, character: start.col };
-      let end = lsp_types::Position { line: end.line, character: end.col };
-
-      lsp_types::Range { start, end }
-    });
+    let range = def.map(|(_, pos)| range_to_lsp(&line_index, pos.range));
 
     Ok(Some(lsp_types::Hover {
       range,
@@ -257,4 +230,14 @@ fn file_position(
   }
 
   Err("position not found".into())
+}
+
+fn range_to_lsp(line_index: &LineIndex, range: scalarc_syntax::TextRange) -> lsp_types::Range {
+  let start = line_index.line_col(range.start());
+  let end = line_index.line_col(range.end());
+
+  let start = lsp_types::Position { line: start.line, character: start.col };
+  let end = lsp_types::Position { line: end.line, character: end.col };
+
+  lsp_types::Range { start, end }
 }

@@ -22,3 +22,4 @@ scalarc-source.workspace = true
 scalarc-syntax.workspace = true
 scalarc-bsp.workspace = true
 la-arena = "0.3.1"
+line-index = "0.1.1"

@@ -480,6 +480,7 @@ version = "0.1.0"
 dependencies = [
  "crossbeam-channel",
  "la-arena",
+ "line-index",
  "log",
  "lsp-server",
  "lsp-types",
