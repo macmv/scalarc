@@ -165,6 +165,18 @@ impl<'a> Infer<'a> {
         }
       }
 
+      Expr::Tuple(ref items) => {
+        let mut types = Vec::with_capacity(items.len());
+
+        for &item in items {
+          types.push(self.type_expr(item)?);
+        }
+
+        Some(Type {
+          path: Path { elems: vec!["scala".into(), format!("Tuple{}", types.len()).into()] },
+        })
+      }
+
       _ => None,
     };
 
