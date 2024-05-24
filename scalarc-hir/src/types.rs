@@ -241,22 +241,16 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
       if let Some(expr) = ast::Expr::cast(node.parent()?) {
         let mut parent = node.parent()?;
-        loop {
-          // FIXME: ITEM_BODY shouldn't really live in the ast hierarchy.
-          //
-          // However, VAL_DEF should be in the AST hierarchy, but it doesn't count as a
-          // parent node for the HIR ast.
-          if parent.kind() != SyntaxKind::ITEM_BODY
-            && parent.kind() != SyntaxKind::VAL_DEF
-            && ast_id_map.contains_node(&parent)
-          {
-            // Move the `p` value back to `parent`.
-            break;
+        let scope = loop {
+          scalarc_syntax::match_ast! {
+            match parent {
+              ast::BlockExpr(it) => break BlockId::Block(ast_id_map.ast_id(&it)),
+              ast::ClassDef(it) => break BlockId::Class(ast_id_map.ast_id(&it)),
+              ast::SourceFile(it) => break BlockId::Source(ast_id_map.ast_id(&it)),
+              _ => parent = parent.parent()?,
+            }
           }
-          parent = parent.parent()?;
-        }
-
-        let scope = BlockId::Source(AstId::new(ast_id_map.erased_ast_id(&parent)));
+        };
 
         let (_, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
         let expr_id = source_map.expr(AstPtr::new(&expr))?;

@@ -8,10 +8,7 @@ use crate::HirDatabase;
 use hashbrown::HashMap;
 use la_arena::{Arena, Idx};
 use scalarc_source::FileId;
-use scalarc_syntax::{
-  ast::{self, AstNode, SyntaxKind},
-  AstPtr,
-};
+use scalarc_syntax::{ast, AstPtr};
 
 pub type StmtId = Idx<Stmt>;
 pub type ExprId = Idx<Expr>;
@@ -126,17 +123,15 @@ pub fn hir_ast_with_source_for_scope(
   let ast = db.parse(file_id);
   let item_id_map = db.ast_id_map(file_id);
 
-  let ptr = item_id_map.get_erased(scope.erased());
-  let node = ptr.to_node(ast.tree().syntax());
+  let (block, source_map) = match scope {
+    BlockId::Block(block) => {
+      let block = item_id_map.get(&ast, block);
 
-  let (block, source_map) = match node.kind() {
-    SyntaxKind::BLOCK_EXPR => {
-      let block = scalarc_syntax::ast::BlockExpr::cast(node).unwrap();
       ast_for_block(&item_id_map, block.items())
     }
 
-    SyntaxKind::CLASS_DEF => {
-      let def = scalarc_syntax::ast::ClassDef::cast(node).unwrap();
+    BlockId::Class(class) => {
+      let def = item_id_map.get(&ast, class);
 
       if let Some(body) = def.body() {
         ast_for_block(&item_id_map, body.items())
@@ -145,13 +140,11 @@ pub fn hir_ast_with_source_for_scope(
       }
     }
 
-    SyntaxKind::SOURCE_FILE => {
-      let item = ast::SourceFile::cast(ast.tree().syntax().clone()).unwrap();
+    BlockId::Source(source) => {
+      let item = item_id_map.get(&ast, source);
 
       ast_for_block(&item_id_map, item.items())
     }
-
-    _ => (Block::empty(), BlockSourceMap::empty()),
   };
 
   (Arc::new(block), Arc::new(source_map))
@@ -330,7 +323,7 @@ mod tests {
 
     let (ast, _source_map) = db.hir_ast_with_source_for_scope(
       file_id,
-      BlockId::Source(AstId {
+      BlockId::Block(AstId {
         raw:     Idx::from_raw(RawIdx::from_u32(1)),
         phantom: std::marker::PhantomData,
       }),
