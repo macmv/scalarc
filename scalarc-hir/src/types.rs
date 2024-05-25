@@ -5,7 +5,7 @@
 use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
-  hir::{AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
+  hir::{AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
   DefinitionKind, HirDatabase, InFile, InFileExt, Name, Path,
 };
 use la_arena::{Idx, RawIdx};
@@ -133,7 +133,8 @@ impl fmt::Display for Signature {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Inference {
-  types: HashMap<ExprId, Type>,
+  exprs: HashMap<ExprId, Type>,
+  stmts: HashMap<StmtId, Type>,
 }
 
 struct Infer<'a> {
@@ -152,7 +153,7 @@ impl<'a> Infer<'a> {
       file_id,
       hir_ast,
       locals: HashMap::new(),
-      result: Inference { types: HashMap::new() },
+      result: Inference { exprs: HashMap::new(), stmts: HashMap::new() },
     }
   }
 
@@ -196,6 +197,7 @@ impl<'a> Infer<'a> {
             let block = BlockId::Class(AstId::new(def.ast_id)).in_file(self.file_id);
 
             let hir_ast = self.db.hir_ast_for_scope(block);
+            let inferred = self.db.infer(block);
 
             let scope_id = scopes.ast_to_scope[&body_id.erased()];
             let scope_def = &scopes.scopes[scope_id];
@@ -208,29 +210,7 @@ impl<'a> Infer<'a> {
               [(_, def)] => {
                 let stmt_id = hir_ast.stmt_map[&def.ast_id];
 
-                match &hir_ast.stmts[stmt_id] {
-                  Stmt::Binding(b) => {
-                    let body_ty = self.db.type_of_expr(block, b.expr)?;
-
-                    Some(match b.kind {
-                      BindingKind::Val => body_ty,
-                      BindingKind::Var => body_ty,
-                      BindingKind::Def(ref sig) => {
-                        let mut ty = body_ty;
-
-                        for params in sig.params.iter().rev() {
-                          ty = Type::Lambda(
-                            params.params.iter().map(|(_, ty)| ty.clone()).collect(),
-                            Box::new(ty),
-                          );
-                        }
-
-                        ty
-                      }
-                    })
-                  }
-                  _ => None,
-                }
+                inferred.stmts.get(&stmt_id).cloned()
               }
               _ => None,
             }
@@ -254,7 +234,7 @@ impl<'a> Infer<'a> {
     };
 
     if let Some(ty) = res.clone() {
-      self.result.types.insert(expr, ty.clone());
+      self.result.exprs.insert(expr, ty.clone());
     }
 
     res
@@ -287,6 +267,7 @@ pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
             }
           };
 
+          infer.result.stmts.insert(stmt, ty.clone());
           infer.locals.insert(b.name.clone(), ty);
         }
       }
@@ -301,7 +282,7 @@ pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
 
 pub fn type_of_expr(db: &dyn HirDatabase, block: InFile<BlockId>, expr: ExprId) -> Option<Type> {
   let inference = db.infer(block);
-  inference.types.get(&expr).cloned()
+  inference.exprs.get(&expr).cloned()
 }
 
 pub fn type_of_block(db: &dyn HirDatabase, block: InFile<BlockId>) -> Option<Type> {
