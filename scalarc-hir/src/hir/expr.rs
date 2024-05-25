@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use super::{AstId, AstIdMap, BlockSourceMap, ErasedAstId};
-use crate::{HirDatabase, InFile};
+use crate::{HirDatabase, InFile, InFileExt};
 use hashbrown::HashMap;
 use la_arena::{Arena, Idx};
 use scalarc_syntax::{
@@ -117,13 +117,13 @@ impl BlockId {
   }
 }
 
-pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> BlockId {
+pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> InFile<BlockId> {
   let ast = db.parse(ptr.file_id);
 
   let ast_id_map = db.ast_id_map(ptr.file_id);
   let mut node = ptr.id.to_node(&ast.syntax_node());
 
-  loop {
+  let id = loop {
     scalarc_syntax::match_ast! {
       match node {
         ast::BlockExpr(it) => break BlockId::Block(ast_id_map.ast_id(&it)),
@@ -132,7 +132,9 @@ pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> Block
         _ => node = node.parent().unwrap(),
       }
     }
-  }
+  };
+
+  id.in_file(ptr.file_id)
 }
 
 pub fn hir_ast_with_source_for_scope(

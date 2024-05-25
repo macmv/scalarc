@@ -275,22 +275,22 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
       if let Some(expr) = ast::Expr::cast(node.parent()?) {
         let block = db.block_for_node(SyntaxNodePtr::new(&node.parent()?).in_file(file_id));
 
-        let (_, source_map) = db.hir_ast_with_source_for_scope(block.in_file(file_id));
+        let (_, source_map) = db.hir_ast_with_source_for_scope(block);
         let expr_id = source_map.expr(AstPtr::new(&expr))?;
 
-        db.type_of_expr(block.in_file(file_id), expr_id)
+        db.type_of_expr(block, expr_id)
       } else {
         let parent = node.parent()?;
         if let Some(val_def) = ast::ValDef::cast(parent) {
           let parent = val_def.syntax().parent()?;
           let block = db.block_for_node(SyntaxNodePtr::new(&parent).in_file(file_id));
 
-          let (hir_ast, source_map) = db.hir_ast_with_source_for_scope(block.in_file(file_id));
+          let (hir_ast, source_map) = db.hir_ast_with_source_for_scope(block);
           let stmt_id = source_map.stmt(AstPtr::new(&val_def.into()))?;
           let stmt = &hir_ast.stmts[stmt_id];
 
           match stmt {
-            crate::hir::Stmt::Binding(b) => db.type_of_expr(block.in_file(file_id), b.expr),
+            crate::hir::Stmt::Binding(b) => db.type_of_expr(block, b.expr),
             _ => None,
           }
         } else {
@@ -305,13 +305,13 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     SyntaxKind::OPEN_PAREN | SyntaxKind::CLOSE_PAREN => {
       let parent = node.parent()?;
       let block = db.block_for_node(SyntaxNodePtr::new(&parent).in_file(file_id));
-      let (_, source_map) = db.hir_ast_with_source_for_scope(block.in_file(file_id));
+      let (_, source_map) = db.hir_ast_with_source_for_scope(block);
 
       if scalarc_syntax::ast::TupleExpr::can_cast(parent.kind()) {
         let tup = scalarc_syntax::ast::TupleExpr::cast(parent)?;
 
         let expr_id = source_map.expr(AstPtr::new(&tup.into()))?;
-        db.type_of_expr(block.in_file(file_id), expr_id)
+        db.type_of_expr(block, expr_id)
       } else {
         // Parens are the grandchildren of calls, so grab the second parent for this
         // check.
@@ -321,7 +321,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
           let call = scalarc_syntax::ast::CallExpr::cast(parent)?;
 
           let expr_id = source_map.expr(AstPtr::new(&call.into()))?;
-          db.type_of_expr(block.in_file(file_id), expr_id)
+          db.type_of_expr(block, expr_id)
         } else {
           None
         }

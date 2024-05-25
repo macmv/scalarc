@@ -116,8 +116,10 @@ pub trait HirDatabase: SourceDatabase {
   // This query is stable across reparses.
   fn hir_ast_for_scope(&self, block: InFile<BlockId>) -> Arc<hir::Block>;
 
+  // Returns the BlockId of any node in a file. This returns an `InFile` for ease
+  // of use, the `file_id` will always be the same as the given file_id.
   #[salsa::invoke(hir::block_for_node)]
-  fn block_for_node(&self, block: InFile<SyntaxNodePtr>) -> BlockId;
+  fn block_for_node(&self, block: InFile<SyntaxNodePtr>) -> InFile<BlockId>;
 
   #[salsa::invoke(types::type_of_block)]
   fn type_of_block(&self, block: InFile<BlockId>) -> Option<Type>;
