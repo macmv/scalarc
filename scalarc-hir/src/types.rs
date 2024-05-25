@@ -5,15 +5,14 @@
 use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
-  hir::{AstId, AstIdMap, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
+  hir::{AstId, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
   DefinitionKind, HirDatabase, InFile, Name, Path,
 };
 use la_arena::{Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode, SyntaxKind},
-  node::SyntaxNode,
-  AstPtr, TextSize, T,
+  AstPtr, SyntaxNodePtr, TextSize, T,
 };
 
 #[derive(Clone, PartialEq, Eq)]
@@ -271,25 +270,10 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     })
     .unwrap();
 
-  fn block_for_node(ast_id_map: &AstIdMap, mut node: SyntaxNode) -> Option<BlockId> {
-    Some(loop {
-      scalarc_syntax::match_ast! {
-        match node {
-          ast::BlockExpr(it) => break BlockId::Block(ast_id_map.ast_id(&it)),
-          ast::ClassDef(it) => break BlockId::Class(ast_id_map.ast_id(&it)),
-          ast::SourceFile(it) => break BlockId::Source(ast_id_map.ast_id(&it)),
-          _ => node = node.parent()?,
-        }
-      }
-    })
-  }
-
   match node.kind() {
     T![ident] => {
-      let ast_id_map = db.ast_id_map(file_id);
-
       if let Some(expr) = ast::Expr::cast(node.parent()?) {
-        let block = block_for_node(&ast_id_map, node.parent()?)?;
+        let block = db.block_for_node(InFile { file_id, id: SyntaxNodePtr::new(&node.parent()?) });
 
         let (_, source_map) = db.hir_ast_with_source_for_scope(InFile { file_id, id: block });
         let expr_id = source_map.expr(AstPtr::new(&expr))?;
@@ -299,7 +283,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
         let parent = node.parent()?;
         if let Some(val_def) = ast::ValDef::cast(parent) {
           let parent = val_def.syntax().parent()?;
-          let block = block_for_node(&ast_id_map, parent)?;
+          let block = db.block_for_node(InFile { file_id, id: SyntaxNodePtr::new(&parent) });
 
           let (hir_ast, source_map) =
             db.hir_ast_with_source_for_scope(InFile { file_id, id: block });
@@ -321,8 +305,10 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
     SyntaxKind::OPEN_PAREN | SyntaxKind::CLOSE_PAREN => {
       let parent = node.parent()?;
-      let ast_id_map = db.ast_id_map(file_id);
-      let block = InFile { file_id, id: block_for_node(&ast_id_map, parent.clone())? };
+      let block = InFile {
+        file_id,
+        id: db.block_for_node(InFile { file_id, id: SyntaxNodePtr::new(&parent) }),
+      };
       let (_, source_map) = db.hir_ast_with_source_for_scope(block);
 
       if scalarc_syntax::ast::TupleExpr::can_cast(parent.kind()) {

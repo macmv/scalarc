@@ -7,7 +7,10 @@ use super::{AstId, AstIdMap, BlockSourceMap, ErasedAstId};
 use crate::{HirDatabase, InFile};
 use hashbrown::HashMap;
 use la_arena::{Arena, Idx};
-use scalarc_syntax::{ast, AstPtr};
+use scalarc_syntax::{
+  ast::{self, AstNode},
+  AstPtr, SyntaxNodePtr,
+};
 
 pub type StmtId = Idx<Stmt>;
 pub type ExprId = Idx<Expr>;
@@ -110,6 +113,24 @@ impl BlockId {
       BlockId::Block(id) => id.erased(),
       BlockId::Class(id) => id.erased(),
       BlockId::Source(id) => id.erased(),
+    }
+  }
+}
+
+pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> BlockId {
+  let ast = db.parse(ptr.file_id);
+
+  let ast_id_map = db.ast_id_map(ptr.file_id);
+  let mut node = ptr.id.to_node(&ast.syntax_node());
+
+  loop {
+    scalarc_syntax::match_ast! {
+      match node {
+        ast::BlockExpr(it) => break BlockId::Block(ast_id_map.ast_id(&it)),
+        ast::ClassDef(it) => break BlockId::Class(ast_id_map.ast_id(&it)),
+        ast::SourceFile(it) => break BlockId::Source(ast_id_map.ast_id(&it)),
+        _ => node = node.parent().unwrap(),
+      }
     }
   }
 }
