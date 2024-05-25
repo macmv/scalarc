@@ -6,7 +6,7 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
   hir::{AstId, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
-  DefinitionKind, HirDatabase, InFile, Name, Path,
+  DefinitionKind, HirDatabase, InFile, InFileExt, Name, Path,
 };
 use la_arena::{Idx, RawIdx};
 use scalarc_source::FileId;
@@ -148,7 +148,7 @@ impl<'a> Infer<'a> {
         _ => None,
       },
 
-      Expr::Block(block) => self.db.type_of_block(InFile { file_id: self.file_id, id: block }),
+      Expr::Block(block) => self.db.type_of_block(block.in_file(self.file_id)),
 
       Expr::FieldAccess(lhs, ref name) => {
         let lhs = self.type_expr(lhs)?;
@@ -165,8 +165,8 @@ impl<'a> Infer<'a> {
         // This is basically just "select field `name` off of `def`".
         match def.kind {
           DefinitionKind::Class(Some(body_id)) => {
-            let block =
-              InFile { file_id: self.file_id, id: BlockId::Class(AstId::new(def.ast_id)) };
+            // FIXME: This should use a different file_id.
+            let block = BlockId::Class(AstId::new(def.ast_id)).in_file(self.file_id);
 
             let hir_ast = self.db.hir_ast_for_scope(block);
 
@@ -273,25 +273,24 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
   match node.kind() {
     T![ident] => {
       if let Some(expr) = ast::Expr::cast(node.parent()?) {
-        let block = db.block_for_node(InFile { file_id, id: SyntaxNodePtr::new(&node.parent()?) });
+        let block = db.block_for_node(SyntaxNodePtr::new(&node.parent()?).in_file(file_id));
 
-        let (_, source_map) = db.hir_ast_with_source_for_scope(InFile { file_id, id: block });
+        let (_, source_map) = db.hir_ast_with_source_for_scope(block.in_file(file_id));
         let expr_id = source_map.expr(AstPtr::new(&expr))?;
 
-        db.type_of_expr(InFile { file_id, id: block }, expr_id)
+        db.type_of_expr(block.in_file(file_id), expr_id)
       } else {
         let parent = node.parent()?;
         if let Some(val_def) = ast::ValDef::cast(parent) {
           let parent = val_def.syntax().parent()?;
-          let block = db.block_for_node(InFile { file_id, id: SyntaxNodePtr::new(&parent) });
+          let block = db.block_for_node(SyntaxNodePtr::new(&parent).in_file(file_id));
 
-          let (hir_ast, source_map) =
-            db.hir_ast_with_source_for_scope(InFile { file_id, id: block });
+          let (hir_ast, source_map) = db.hir_ast_with_source_for_scope(block.in_file(file_id));
           let stmt_id = source_map.stmt(AstPtr::new(&val_def.into()))?;
           let stmt = &hir_ast.stmts[stmt_id];
 
           match stmt {
-            crate::hir::Stmt::Binding(b) => db.type_of_expr(InFile { file_id, id: block }, b.expr),
+            crate::hir::Stmt::Binding(b) => db.type_of_expr(block.in_file(file_id), b.expr),
             _ => None,
           }
         } else {
@@ -305,17 +304,14 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
 
     SyntaxKind::OPEN_PAREN | SyntaxKind::CLOSE_PAREN => {
       let parent = node.parent()?;
-      let block = InFile {
-        file_id,
-        id: db.block_for_node(InFile { file_id, id: SyntaxNodePtr::new(&parent) }),
-      };
-      let (_, source_map) = db.hir_ast_with_source_for_scope(block);
+      let block = db.block_for_node(SyntaxNodePtr::new(&parent).in_file(file_id));
+      let (_, source_map) = db.hir_ast_with_source_for_scope(block.in_file(file_id));
 
       if scalarc_syntax::ast::TupleExpr::can_cast(parent.kind()) {
         let tup = scalarc_syntax::ast::TupleExpr::cast(parent)?;
 
         let expr_id = source_map.expr(AstPtr::new(&tup.into()))?;
-        db.type_of_expr(block, expr_id)
+        db.type_of_expr(block.in_file(file_id), expr_id)
       } else {
         // Parens are the grandchildren of calls, so grab the second parent for this
         // check.
@@ -325,7 +321,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
           let call = scalarc_syntax::ast::CallExpr::cast(parent)?;
 
           let expr_id = source_map.expr(AstPtr::new(&call.into()))?;
-          db.type_of_expr(block, expr_id)
+          db.type_of_expr(block.in_file(file_id), expr_id)
         } else {
           None
         }

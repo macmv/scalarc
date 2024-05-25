@@ -26,6 +26,17 @@ pub struct InFile<T> {
   pub id:      T,
 }
 
+pub trait InFileExt
+where
+  Self: Sized,
+{
+  fn in_file(self, file_id: FileId) -> InFile<Self>;
+}
+
+impl<T> InFileExt for T {
+  fn in_file(self, file_id: FileId) -> InFile<Self> { InFile { file_id, id: self } }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefinitionMap {
   pub items: HashMap<Path, Definition>,
