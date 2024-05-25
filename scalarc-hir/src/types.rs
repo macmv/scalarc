@@ -269,9 +269,24 @@ pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
   for &stmt in hir_ast.items.iter() {
     match &hir_ast.stmts[stmt] {
       Stmt::Binding(b) => {
-        let ty = infer.type_expr(b.expr);
+        if let Some(body_ty) = infer.type_expr(b.expr) {
+          let ty = match b.kind {
+            BindingKind::Val => body_ty,
+            BindingKind::Var => body_ty,
+            BindingKind::Def(ref sig) => {
+              let mut ty = body_ty;
 
-        if let Some(ty) = ty {
+              for params in sig.params.iter().rev() {
+                ty = Type::Lambda(
+                  params.params.iter().map(|(_, ty)| ty.clone()).collect(),
+                  Box::new(ty),
+                );
+              }
+
+              ty
+            }
+          };
+
           infer.locals.insert(b.name.clone(), ty);
         }
       }
