@@ -20,6 +20,12 @@ pub use name::Name;
 use types::Inference;
 pub use types::{Params, Signature, Type};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct InFile<T> {
+  pub file_id: FileId,
+  pub id:      T,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefinitionMap {
   pub items: HashMap<Path, Definition>,
@@ -93,25 +99,24 @@ pub trait HirDatabase: SourceDatabase {
   #[salsa::invoke(ast::hir_ast_with_source_for_scope)]
   fn hir_ast_with_source_for_scope(
     &self,
-    file: FileId,
-    scope: BlockId,
+    block: InFile<BlockId>,
   ) -> (Arc<ast::Block>, Arc<ast::BlockSourceMap>);
 
   // This query is stable across reparses.
-  fn hir_ast_for_scope(&self, file: FileId, scope: BlockId) -> Arc<ast::Block>;
+  fn hir_ast_for_scope(&self, block: InFile<BlockId>) -> Arc<ast::Block>;
 
   #[salsa::invoke(types::type_of_block)]
-  fn type_of_block(&self, file_id: FileId, scope: BlockId) -> Option<Type>;
+  fn type_of_block(&self, block: InFile<BlockId>) -> Option<Type>;
 
   #[salsa::invoke(types::type_of_expr)]
-  fn type_of_expr(&self, file_id: FileId, scope: BlockId, expr: ast::ExprId) -> Option<Type>;
+  fn type_of_expr(&self, block: InFile<BlockId>, expr: ast::ExprId) -> Option<Type>;
 
   #[salsa::invoke(types::infer)]
-  fn infer(&self, file_id: FileId, scope: BlockId) -> Arc<Inference>;
+  fn infer(&self, block: InFile<BlockId>) -> Arc<Inference>;
 }
 
-fn hir_ast_for_scope(db: &dyn HirDatabase, file: FileId, scope: BlockId) -> Arc<ast::Block> {
-  db.hir_ast_with_source_for_scope(file, scope).0
+fn hir_ast_for_scope(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<ast::Block> {
+  db.hir_ast_with_source_for_scope(block).0
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {

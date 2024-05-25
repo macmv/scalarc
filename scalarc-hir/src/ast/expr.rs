@@ -4,10 +4,9 @@
 use std::sync::Arc;
 
 use super::{AstId, AstIdMap, BlockSourceMap, ErasedAstId};
-use crate::HirDatabase;
+use crate::{HirDatabase, InFile};
 use hashbrown::HashMap;
 use la_arena::{Arena, Idx};
-use scalarc_source::FileId;
 use scalarc_syntax::{ast, AstPtr};
 
 pub type StmtId = Idx<Stmt>;
@@ -117,13 +116,12 @@ impl BlockId {
 
 pub fn hir_ast_with_source_for_scope(
   db: &dyn HirDatabase,
-  file_id: FileId,
-  scope: BlockId,
+  block: InFile<BlockId>,
 ) -> (Arc<Block>, Arc<BlockSourceMap>) {
-  let ast = db.parse(file_id);
-  let item_id_map = db.ast_id_map(file_id);
+  let ast = db.parse(block.file_id);
+  let item_id_map = db.ast_id_map(block.file_id);
 
-  let (block, source_map) = match scope {
+  let (block, source_map) = match block.id {
     BlockId::Block(block) => {
       let block = item_id_map.get(&ast, block);
 
@@ -332,6 +330,7 @@ impl BlockBuilder<'_> {
 #[cfg(test)]
 mod tests {
   use la_arena::RawIdx;
+  use scalarc_source::FileId;
   use scalarc_test::{expect, Expect};
 
   use super::*;
@@ -341,13 +340,13 @@ mod tests {
 
     let file_id = FileId::temp_new();
 
-    let (ast, _source_map) = db.hir_ast_with_source_for_scope(
+    let (ast, _source_map) = db.hir_ast_with_source_for_scope(InFile {
       file_id,
-      BlockId::Block(AstId {
+      id: BlockId::Block(AstId {
         raw:     Idx::from_raw(RawIdx::from_u32(1)),
         phantom: std::marker::PhantomData,
       }),
-    );
+    });
 
     expect.assert_eq(&format!("{ast:#?}").replace("    ", "  "));
   }

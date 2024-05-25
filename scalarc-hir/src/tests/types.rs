@@ -1,4 +1,5 @@
 use scalarc_source::FileId;
+
 use scalarc_syntax::TextSize;
 use scalarc_test::{expect, Expect};
 

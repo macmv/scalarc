@@ -6,7 +6,7 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
   ast::{AstId, AstIdMap, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
-  DefinitionKind, HirDatabase, Name, Path,
+  DefinitionKind, HirDatabase, InFile, Name, Path,
 };
 use la_arena::{Idx, RawIdx};
 use scalarc_source::FileId;
@@ -149,7 +149,7 @@ impl<'a> Infer<'a> {
         _ => None,
       },
 
-      Expr::Block(block) => self.db.type_of_block(self.file_id, block),
+      Expr::Block(block) => self.db.type_of_block(InFile { file_id: self.file_id, id: block }),
 
       Expr::FieldAccess(lhs, ref name) => {
         let lhs = self.type_expr(lhs)?;
@@ -166,9 +166,10 @@ impl<'a> Infer<'a> {
         // This is basically just "select field `name` off of `def`".
         match def.kind {
           DefinitionKind::Class(Some(body_id)) => {
-            let scope = BlockId::Class(AstId::new(def.ast_id));
+            let block =
+              InFile { file_id: self.file_id, id: BlockId::Class(AstId::new(def.ast_id)) };
 
-            let hir_ast = self.db.hir_ast_for_scope(self.file_id, scope);
+            let hir_ast = self.db.hir_ast_for_scope(block);
 
             let scope_id = scopes.ast_to_scope[&body_id.erased()];
             let scope_def = &scopes.scopes[scope_id];
@@ -182,7 +183,7 @@ impl<'a> Infer<'a> {
                 let stmt_id = hir_ast.stmt_map[&def.ast_id];
 
                 match &hir_ast.stmts[stmt_id] {
-                  Stmt::Binding(b) => self.db.type_of_expr(self.file_id, scope, b.expr),
+                  Stmt::Binding(b) => self.db.type_of_expr(block, b.expr),
                   _ => None,
                 }
               }
@@ -215,10 +216,10 @@ impl<'a> Infer<'a> {
   }
 }
 
-pub fn infer(db: &dyn HirDatabase, file_id: FileId, scope: BlockId) -> Arc<Inference> {
-  let hir_ast = db.hir_ast_for_scope(file_id, scope);
+pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
+  let hir_ast = db.hir_ast_for_scope(block);
 
-  let mut infer = Infer::new(db, file_id, &hir_ast);
+  let mut infer = Infer::new(db, block.file_id, &hir_ast);
 
   for &stmt in hir_ast.items.iter() {
     match &hir_ast.stmts[stmt] {
@@ -238,21 +239,16 @@ pub fn infer(db: &dyn HirDatabase, file_id: FileId, scope: BlockId) -> Arc<Infer
   Arc::new(infer.result)
 }
 
-pub fn type_of_expr(
-  db: &dyn HirDatabase,
-  file_id: FileId,
-  scope: BlockId,
-  expr: ExprId,
-) -> Option<Type> {
-  let inference = db.infer(file_id, scope);
+pub fn type_of_expr(db: &dyn HirDatabase, block: InFile<BlockId>, expr: ExprId) -> Option<Type> {
+  let inference = db.infer(block);
   inference.types.get(&expr).cloned()
 }
 
-pub fn type_of_block(db: &dyn HirDatabase, file_id: FileId, scope: BlockId) -> Option<Type> {
-  let hir_ast = db.hir_ast_for_scope(file_id, scope);
+pub fn type_of_block(db: &dyn HirDatabase, block: InFile<BlockId>) -> Option<Type> {
+  let hir_ast = db.hir_ast_for_scope(block);
 
   match hir_ast.stmts[*hir_ast.items.last()?] {
-    Stmt::Expr(e) => db.type_of_expr(file_id, scope, e),
+    Stmt::Expr(e) => db.type_of_expr(block, e),
     _ => None,
   }
 }
@@ -293,24 +289,25 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
       let ast_id_map = db.ast_id_map(file_id);
 
       if let Some(expr) = ast::Expr::cast(node.parent()?) {
-        let scope = block_for_node(&ast_id_map, node.parent()?)?;
+        let block = block_for_node(&ast_id_map, node.parent()?)?;
 
-        let (_, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
+        let (_, source_map) = db.hir_ast_with_source_for_scope(InFile { file_id, id: block });
         let expr_id = source_map.expr(AstPtr::new(&expr))?;
 
-        db.type_of_expr(file_id, scope, expr_id)
+        db.type_of_expr(InFile { file_id, id: block }, expr_id)
       } else {
         let parent = node.parent()?;
         if let Some(val_def) = ast::ValDef::cast(parent) {
           let parent = val_def.syntax().parent()?;
-          let scope = block_for_node(&ast_id_map, parent)?;
+          let block = block_for_node(&ast_id_map, parent)?;
 
-          let (hir_ast, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
+          let (hir_ast, source_map) =
+            db.hir_ast_with_source_for_scope(InFile { file_id, id: block });
           let stmt_id = source_map.stmt(AstPtr::new(&val_def.into()))?;
           let stmt = &hir_ast.stmts[stmt_id];
 
           match stmt {
-            crate::ast::Stmt::Binding(b) => db.type_of_expr(file_id, scope, b.expr),
+            crate::ast::Stmt::Binding(b) => db.type_of_expr(InFile { file_id, id: block }, b.expr),
             _ => None,
           }
         } else {
@@ -325,14 +322,14 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     SyntaxKind::OPEN_PAREN | SyntaxKind::CLOSE_PAREN => {
       let parent = node.parent()?;
       let ast_id_map = db.ast_id_map(file_id);
-      let scope = block_for_node(&ast_id_map, parent.clone())?;
-      let (_, source_map) = db.hir_ast_with_source_for_scope(file_id, scope);
+      let block = InFile { file_id, id: block_for_node(&ast_id_map, parent.clone())? };
+      let (_, source_map) = db.hir_ast_with_source_for_scope(block);
 
       if scalarc_syntax::ast::TupleExpr::can_cast(parent.kind()) {
         let tup = scalarc_syntax::ast::TupleExpr::cast(parent)?;
 
         let expr_id = source_map.expr(AstPtr::new(&tup.into()))?;
-        db.type_of_expr(file_id, scope, expr_id)
+        db.type_of_expr(block, expr_id)
       } else {
         // Parens are the grandchildren of calls, so grab the second parent for this
         // check.
@@ -342,7 +339,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
           let call = scalarc_syntax::ast::CallExpr::cast(parent)?;
 
           let expr_id = source_map.expr(AstPtr::new(&call.into()))?;
-          db.type_of_expr(file_id, scope, expr_id)
+          db.type_of_expr(block, expr_id)
         } else {
           None
         }
