@@ -115,9 +115,33 @@ fn type_of_nested() {
 fn type_of_call() {
   type_at(
     r#"
-    def foo(a: scala.Int): scala.Float = 3.0
-    foo(2)@@
+    object Foo {
+      def bar = 3
+    }
+
+    val foo@@ = Foo.bar
     "#,
-    expect![@"no type"],
+    expect![@"scala.Int"],
+  );
+
+  type_at(
+    r#"
+    object Foo {
+      def bar(a: Int, b: String) = 3
+    }
+
+    val foo@@ = Foo.bar
+    "#,
+    expect![@"(Int, String) => scala.Int"],
+  );
+  type_at(
+    r#"
+    object Foo {
+      def bar(a: Int)(b: String) = 3
+    }
+
+    val foo@@ = Foo.bar
+    "#,
+    expect![@"(Int) => (String) => scala.Int"],
   );
 }

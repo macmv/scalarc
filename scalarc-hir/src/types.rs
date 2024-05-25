@@ -5,7 +5,7 @@
 use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
-  hir::{AstId, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
+  hir::{AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
   DefinitionKind, HirDatabase, InFile, InFileExt, Name, Path,
 };
 use la_arena::{Idx, RawIdx};
@@ -32,6 +32,33 @@ pub struct Signature {
 pub struct Params {
   pub implicit: bool,
   pub params:   Vec<(Name, Type)>,
+}
+
+impl Signature {
+  pub fn from_ast(sig: &ast::FunSig) -> Self {
+    Signature {
+      params: sig
+        .fun_paramss()
+        .map(|p| Params {
+          implicit: false,
+          params:   p
+            .fun_params()
+            .filter_map(|p| {
+              if let (Some(id), Some(ty)) = (p.id_token(), p.ty()) {
+                Some((
+                  id.text().into(),
+                  Type::Named(Path { elems: vec![Name(ty.syntax().text().into())] }),
+                ))
+              } else {
+                None
+              }
+            })
+            .collect(),
+        })
+        .collect(),
+      ret:    None,
+    }
+  }
 }
 
 impl fmt::Debug for Type {
@@ -182,7 +209,26 @@ impl<'a> Infer<'a> {
                 let stmt_id = hir_ast.stmt_map[&def.ast_id];
 
                 match &hir_ast.stmts[stmt_id] {
-                  Stmt::Binding(b) => self.db.type_of_expr(block, b.expr),
+                  Stmt::Binding(b) => {
+                    let body_ty = self.db.type_of_expr(block, b.expr)?;
+
+                    Some(match b.kind {
+                      BindingKind::Val => body_ty,
+                      BindingKind::Var => body_ty,
+                      BindingKind::Def(ref sig) => {
+                        let mut ty = body_ty;
+
+                        for params in sig.params.iter().rev() {
+                          ty = Type::Lambda(
+                            params.params.iter().map(|(_, ty)| ty.clone()).collect(),
+                            Box::new(ty),
+                          );
+                        }
+
+                        ty
+                      }
+                    })
+                  }
                   _ => None,
                 }
               }

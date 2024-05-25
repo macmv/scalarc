@@ -252,29 +252,7 @@ fn def_of_node(
       let f = scalarc_syntax::ast::FunDef::cast(n.clone()).unwrap();
 
       let sig = f.fun_sig()?;
-
-      let hir_sig = Signature {
-        params: sig
-          .fun_paramss()
-          .map(|p| Params {
-            implicit: false,
-            params:   p
-              .fun_params()
-              .filter_map(|p| {
-                if let (Some(id), Some(ty)) = (p.id_token(), p.ty()) {
-                  Some((
-                    id.text().into(),
-                    Type::Named(Path { elems: vec![Name(ty.syntax().text().into())] }),
-                  ))
-                } else {
-                  None
-                }
-              })
-              .collect(),
-          })
-          .collect(),
-        ret:    None,
-      };
+      let hir_sig = Signature::from_ast(&sig);
 
       let id = sig.id_token()?;
 

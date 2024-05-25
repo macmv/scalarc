@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use super::{AstId, AstIdMap, BlockSourceMap, ErasedAstId};
-use crate::{HirDatabase, InFile, InFileExt};
+use crate::{HirDatabase, InFile, InFileExt, Signature};
 use hashbrown::HashMap;
 use la_arena::{Arena, Idx};
 use scalarc_syntax::{
@@ -58,7 +58,7 @@ pub struct Binding {
 pub enum BindingKind {
   Val,
   Var,
-  Def,
+  Def(Signature),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -246,12 +246,13 @@ impl BlockBuilder<'_> {
       ast::Item::FunDef(def) => {
         let sig = def.fun_sig()?;
         let name = sig.id_token()?.text().to_string();
+        let sig = Signature::from_ast(&sig);
         let expr_id = self.walk_expr(&def.expr()?)?;
 
         let stmt_id = self.alloc_stmt(
           Stmt::Binding(Binding {
             implicit: false,
-            kind: BindingKind::Def,
+            kind: BindingKind::Def(sig),
             name,
             ty: None,
             expr: expr_id,
