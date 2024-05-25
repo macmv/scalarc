@@ -5,7 +5,7 @@
 use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
-  ast::{AstId, AstIdMap, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
+  hir::{AstId, AstIdMap, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
   DefinitionKind, HirDatabase, InFile, Name, Path,
 };
 use la_arena::{Idx, RawIdx};
@@ -307,7 +307,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
           let stmt = &hir_ast.stmts[stmt_id];
 
           match stmt {
-            crate::ast::Stmt::Binding(b) => db.type_of_expr(InFile { file_id, id: block }, b.expr),
+            crate::hir::Stmt::Binding(b) => db.type_of_expr(InFile { file_id, id: block }, b.expr),
             _ => None,
           }
         } else {

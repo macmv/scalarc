@@ -9,7 +9,7 @@ use scalarc_syntax::{
 };
 
 use crate::{
-  ast::ErasedAstId, Definition, DefinitionKind, FileRange, HirDatabase, Name, Params, Path,
+  hir::ErasedAstId, Definition, DefinitionKind, FileRange, HirDatabase, Name, Params, Path,
   Reference, Signature, Type,
 };
 

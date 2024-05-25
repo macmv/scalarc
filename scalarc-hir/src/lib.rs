@@ -1,4 +1,4 @@
-use ast::{AstId, BlockId, ErasedAstId};
+use hir::{AstId, BlockId, ErasedAstId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{ast::ItemBody, TextRange, TextSize};
 use scope::{FileScopes, ScopeId};
@@ -10,7 +10,7 @@ mod tests;
 #[macro_use]
 extern crate log;
 
-mod ast;
+mod hir;
 pub mod scope;
 pub mod types;
 
@@ -72,8 +72,8 @@ pub struct Path {
 
 #[salsa::query_group(HirDatabaseStorage)]
 pub trait HirDatabase: SourceDatabase {
-  #[salsa::invoke(ast::ast_id_map)]
-  fn ast_id_map(&self, file: FileId) -> Arc<ast::AstIdMap>;
+  #[salsa::invoke(hir::ast_id_map)]
+  fn ast_id_map(&self, file: FileId) -> Arc<hir::AstIdMap>;
 
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
 
@@ -96,26 +96,26 @@ pub trait HirDatabase: SourceDatabase {
 
   // This query is unstable, because it contains syntax pointers in the returned
   // source map result. Use `hir_ast_for_scope` for a stable result.
-  #[salsa::invoke(ast::hir_ast_with_source_for_scope)]
+  #[salsa::invoke(hir::hir_ast_with_source_for_scope)]
   fn hir_ast_with_source_for_scope(
     &self,
     block: InFile<BlockId>,
-  ) -> (Arc<ast::Block>, Arc<ast::BlockSourceMap>);
+  ) -> (Arc<hir::Block>, Arc<hir::BlockSourceMap>);
 
   // This query is stable across reparses.
-  fn hir_ast_for_scope(&self, block: InFile<BlockId>) -> Arc<ast::Block>;
+  fn hir_ast_for_scope(&self, block: InFile<BlockId>) -> Arc<hir::Block>;
 
   #[salsa::invoke(types::type_of_block)]
   fn type_of_block(&self, block: InFile<BlockId>) -> Option<Type>;
 
   #[salsa::invoke(types::type_of_expr)]
-  fn type_of_expr(&self, block: InFile<BlockId>, expr: ast::ExprId) -> Option<Type>;
+  fn type_of_expr(&self, block: InFile<BlockId>, expr: hir::ExprId) -> Option<Type>;
 
   #[salsa::invoke(types::infer)]
   fn infer(&self, block: InFile<BlockId>) -> Arc<Inference>;
 }
 
-fn hir_ast_for_scope(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<ast::Block> {
+fn hir_ast_for_scope(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<hir::Block> {
   db.hir_ast_with_source_for_scope(block).0
 }
 
