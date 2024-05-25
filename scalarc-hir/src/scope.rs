@@ -9,7 +9,7 @@ use scalarc_syntax::{
 };
 
 use crate::{
-  ast::ErasedAstId, tree::Name, Definition, DefinitionKind, FileRange, HirDatabase, Params, Path,
+  ast::ErasedAstId, Definition, DefinitionKind, FileRange, HirDatabase, Name, Params, Path,
   Reference, Signature, Type,
 };
 
@@ -109,13 +109,15 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
         return Some(def.clone());
       }
 
+      // FIXME: Need global name lookup.
+      //
+      /*
       let hir = db.hir_ast(file_id);
-      let path = match hir.imports.get(&name) {
+      match hir.imports.get(&name) {
         Some(path) => path.clone(),
-
-        // TODO: Use the local package name here. That should be in the HIR ast.
-        None => Path { elems: vec![name] },
       };
+      */
+      let path = Path { elems: vec![name] };
 
       let source_root = db.file_source_root(file_id)?;
       let target = db.source_root_target(source_root);

@@ -6,8 +6,7 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
   ast::{AstId, AstIdMap, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt},
-  tree::Name,
-  DefinitionKind, HirDatabase, Path,
+  DefinitionKind, HirDatabase, Name, Path,
 };
 use la_arena::{Idx, RawIdx};
 use scalarc_source::FileId;

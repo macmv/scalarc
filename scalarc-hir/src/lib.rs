@@ -1,10 +1,8 @@
-use std::{collections::HashMap, sync::Arc};
-
 use ast::{AstId, BlockId, ErasedAstId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{ast::ItemBody, TextRange, TextSize};
 use scope::{FileScopes, ScopeId};
-use tree::Name;
+use std::{collections::HashMap, sync::Arc};
 
 #[cfg(test)]
 mod tests;
@@ -12,11 +10,12 @@ mod tests;
 #[macro_use]
 extern crate log;
 
-pub mod analysis;
 mod ast;
 pub mod scope;
-pub mod tree;
 pub mod types;
+
+mod name;
+pub use name::Name;
 
 use types::Inference;
 pub use types::{Params, Signature, Type};
@@ -73,9 +72,6 @@ pub trait HirDatabase: SourceDatabase {
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
 
   fn definitions_for_file(&self, file: FileId) -> DefinitionMap;
-
-  #[salsa::invoke(tree::ast_for_file)]
-  fn hir_ast(&self, file: FileId) -> tree::Ast;
 
   #[salsa::invoke(scope::scopes_of)]
   fn scopes_of(&self, file: FileId) -> FileScopes;
