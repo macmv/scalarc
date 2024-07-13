@@ -296,23 +296,33 @@ impl<'a> Infer<'a> {
 pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
   let hir_ast = db.hir_ast_for_scope(block);
 
+  let file_id = block.file_id;
   let mut infer = Infer::new(db, block.file_id, &hir_ast);
 
   for &stmt in hir_ast.items.iter() {
     match &hir_ast.stmts[stmt] {
       Stmt::Binding(b) => match b.kind {
         BindingKind::Def(ref sig) => {
-          infer.result.stmts.insert(
-            stmt,
+          let inferred = match b.expr {
+            // Only infer the block if the function signature is incomplete.
+            Some(expr) if sig.ret.is_none() => infer.type_expr(expr).unwrap_or(Type::Unknown),
+            _ => Type::Unknown,
+          };
+
+          // Functions without any parameters are special, as they don't require
+          // parenthesis to be called. So, their type is just the return type.
+          let return_type = sig.ret.clone().unwrap_or(inferred);
+          let result = if sig.params.is_empty() {
+            return_type
+          } else {
             Type::Lambda(
-              match sig.params.get(0) {
-                Some(params) => params.params.iter().map(|(_, ty)| ty.clone()).collect(),
-                None => vec![],
-              },
-              Box::new(sig.ret.clone().unwrap_or(Type::Unknown)),
-            ),
-          );
-          infer.locals.insert(b.name.clone(), Type::Unknown);
+              sig.params[0].params.iter().map(|(_, ty)| ty.clone()).collect(),
+              Box::new(return_type),
+            )
+          };
+
+          infer.result.stmts.insert(stmt, result.clone());
+          infer.locals.insert(b.name.clone(), result);
         }
         _ => {
           if let Some(expr) = b.expr {
@@ -320,18 +330,7 @@ pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
               let ty = match b.kind {
                 BindingKind::Val => body_ty,
                 BindingKind::Var => body_ty,
-                BindingKind::Def(ref sig) => {
-                  let mut ty = body_ty;
-
-                  for params in sig.params.iter().rev() {
-                    ty = Type::Lambda(
-                      params.params.iter().map(|(_, ty)| ty.clone()).collect(),
-                      Box::new(ty),
-                    );
-                  }
-
-                  ty
-                }
+                BindingKind::Def(_) => unreachable!(),
               };
 
               infer.result.stmts.insert(stmt, ty.clone());

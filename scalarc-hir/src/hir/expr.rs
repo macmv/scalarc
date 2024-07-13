@@ -420,7 +420,9 @@ mod tests {
                   kind: Val,
                   ty: None,
                   name: "foo",
-                  expr: Idx::<Expr>(6),
+                  expr: Some(
+                    Idx::<Expr>(6),
+                  ),
                 },
               ),
               Binding(
@@ -429,7 +431,9 @@ mod tests {
                   kind: Val,
                   ty: None,
                   name: "bar",
-                  expr: Idx::<Expr>(7),
+                  expr: Some(
+                    Idx::<Expr>(7),
+                  ),
                 },
               ),
               Expr(

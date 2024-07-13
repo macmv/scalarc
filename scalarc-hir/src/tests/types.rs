@@ -132,7 +132,7 @@ fn type_of_call() {
 
     val foo@@ = Foo.bar
     "#,
-    expect![@"(Int, String) => scala.Int"],
+    expect![@"(scala.Int, scala.String) => scala.Int"],
   );
   type_at(
     r#"
@@ -142,7 +142,7 @@ fn type_of_call() {
 
     val foo@@ = Foo.bar
     "#,
-    expect![@"(Int) => (String) => scala.Int"],
+    expect![@"(scala.Int) => scala.Int"],
   );
 
   type_at(

@@ -353,7 +353,7 @@ fn def_sigs() {
       Definition {
         name: "foo",
         kind: Def(
-          Signature((a: Int)),
+          Signature((a: scala.Int) => scala.String),
         ),
         item: SyntaxNodePtr {
           kind: FUN_DEF,
@@ -533,7 +533,7 @@ fn fun_scopes() {
             "foo": Definition {
               name: "foo",
               kind: Def(
-                Signature((a: Int)),
+                Signature((a: scala.Int)),
               ),
               item: SyntaxNodePtr {
                 kind: FUN_DEF,
@@ -594,7 +594,7 @@ fn fun_def() {
         Definition {
           name: "foo",
           kind: Def(
-            Signature((a: Int)),
+            Signature((a: scala.Int)),
           ),
           item: SyntaxNodePtr {
             kind: FUN_DEF,
@@ -638,7 +638,7 @@ fn fun_def() {
         Definition {
           name: "foo",
           kind: Def(
-            Signature((a: Int)),
+            Signature((a: scala.Int)),
           ),
           item: SyntaxNodePtr {
             kind: FUN_DEF,
