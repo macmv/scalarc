@@ -461,6 +461,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "scalarc-coursier"
+version = "0.1.0"
+
+[[package]]
 name = "scalarc-hir"
 version = "0.1.0"
 dependencies = [
