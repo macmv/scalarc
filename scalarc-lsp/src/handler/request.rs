@@ -164,16 +164,15 @@ pub fn handle_hover(
   let def = snap.analysis.definition_for_name(pos)?;
   let ty = snap.analysis.type_at(pos)?;
 
-  if let Some(ty) = ty {
-    let range = def.map(|(_, pos)| converter.range(pos.range));
+  let range = def.map(|(_, pos)| converter.range(pos.range));
 
-    Ok(Some(lsp_types::Hover {
-      range,
-      contents: lsp_types::HoverContents::Scalar(lsp_types::MarkedString::String(ty.to_string())),
-    }))
-  } else {
-    Ok(None)
-  }
+  Ok(Some(lsp_types::Hover {
+    range,
+    contents: lsp_types::HoverContents::Scalar(lsp_types::MarkedString::String(match ty {
+      Some(ty) => ty.to_string(),
+      None => "unknown type".to_string(),
+    })),
+  }))
 }
 
 pub fn semantic_tokens_legend() -> lsp_types::SemanticTokensLegend {
