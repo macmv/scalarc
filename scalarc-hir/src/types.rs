@@ -402,7 +402,10 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
           let stmt = &hir_ast.stmts[stmt_id];
 
           match stmt {
-            crate::hir::Stmt::Binding(b) => db.type_of_expr(block, b.expr),
+            crate::hir::Stmt::Binding(b) => match b.expr {
+              Some(expr) => db.type_of_expr(block, expr),
+              None => None,
+            },
             _ => None,
           }
         } else {

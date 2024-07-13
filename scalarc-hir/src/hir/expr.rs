@@ -51,7 +51,7 @@ pub struct Binding {
   pub kind:     BindingKind,
   pub ty:       Option<Type>,
   pub name:     String,
-  pub expr:     ExprId,
+  pub expr:     Option<ExprId>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -247,7 +247,10 @@ impl BlockBuilder<'_> {
         let sig = def.fun_sig()?;
         let name = sig.id_token()?.text().to_string();
         let sig = Signature::from_ast(&sig);
-        let expr_id = self.walk_expr(&def.expr()?)?;
+        let expr_id = match def.expr() {
+          Some(e) => Some(self.walk_expr(&e)?),
+          None => None,
+        };
 
         let stmt_id = self.alloc_stmt(
           Stmt::Binding(Binding {
@@ -266,7 +269,10 @@ impl BlockBuilder<'_> {
 
       ast::Item::ValDef(def) => {
         let name = def.id_token()?.text().to_string();
-        let expr_id = self.walk_expr(&def.expr()?)?;
+        let expr_id = match def.expr() {
+          Some(e) => Some(self.walk_expr(&e)?),
+          None => None,
+        };
 
         let stmt_id = self.alloc_stmt(
           Stmt::Binding(Binding {
