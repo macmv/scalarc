@@ -57,6 +57,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       "private" => T![private],
       "protected" => T![protected],
       "final" => T![final],
+      "abstract" => T![abstract],
       "match" => T![match],
       "true" => T![true],
       "false" => T![false],

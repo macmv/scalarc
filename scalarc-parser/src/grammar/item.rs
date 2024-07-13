@@ -96,6 +96,16 @@ fn item(p: &mut Parser) {
     _ => {}
   }
 
+  // test ok
+  // final abstract class Int extends AnyVal {}
+  match p.current() {
+    T![abstract] => {
+      p.bump();
+      p.eat_newlines();
+    }
+    _ => {}
+  }
+
   match p.current() {
     T![package] => package_item(p, m),
 
