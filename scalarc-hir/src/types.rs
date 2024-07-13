@@ -7,8 +7,7 @@ use std::{collections::HashMap, fmt, sync::Arc};
 use crate::{
   hir::{AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
   scope::FileScopes,
-  Definition, DefinitionKind, HirDatabase, HirDatabaseStorage, InFile, InFileExt, InferQuery, Name,
-  Path,
+  Definition, DefinitionKind, HirDatabase, InFile, InFileExt, InferQuery, Name, Path,
 };
 use la_arena::{Idx, RawIdx};
 use salsa::{Query, QueryDb};
@@ -296,7 +295,6 @@ impl<'a> Infer<'a> {
 pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
   let hir_ast = db.hir_ast_for_scope(block);
 
-  let file_id = block.file_id;
   let mut infer = Infer::new(db, block.file_id, &hir_ast);
 
   for &stmt in hir_ast.items.iter() {

@@ -9,8 +9,8 @@ use scalarc_syntax::{
 };
 
 use crate::{
-  hir::ErasedAstId, Definition, DefinitionKind, FileRange, HirDatabase, Name, Params, Path,
-  Reference, Signature, Type,
+  hir::ErasedAstId, Definition, DefinitionKind, FileRange, HirDatabase, Name, Path, Reference,
+  Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
