@@ -142,7 +142,6 @@ pub fn hir_ast_with_source_for_scope(
   db: &dyn HirDatabase,
   block: InFile<BlockId>,
 ) -> (Arc<Block>, Arc<BlockSourceMap>) {
-  let file_id = block.file_id;
   let ast = db.parse(block.file_id);
   let item_id_map = db.ast_id_map(block.file_id);
 
@@ -150,14 +149,14 @@ pub fn hir_ast_with_source_for_scope(
     BlockId::Block(block) => {
       let block = item_id_map.get(&ast, block);
 
-      ast_for_block(db, file_id, &item_id_map, block.items())
+      ast_for_block(&item_id_map, block.items())
     }
 
     BlockId::Class(class) => {
       let def = item_id_map.get(&ast, class);
 
       if let Some(body) = def.body() {
-        ast_for_block(db, file_id, &item_id_map, body.items())
+        ast_for_block(&item_id_map, body.items())
       } else {
         (Block::empty(), BlockSourceMap::empty())
       }
@@ -166,7 +165,7 @@ pub fn hir_ast_with_source_for_scope(
     BlockId::Source(source) => {
       let item = item_id_map.get(&ast, source);
 
-      ast_for_block(db, file_id, &item_id_map, item.items())
+      ast_for_block(&item_id_map, item.items())
     }
   };
 
@@ -192,8 +191,6 @@ impl Block {
 }
 
 struct BlockBuilder<'a> {
-  db:         &'a dyn HirDatabase,
-  file_id:    FileId,
   block:      &'a mut Block,
   source_map: &'a mut BlockSourceMap,
 
@@ -201,16 +198,13 @@ struct BlockBuilder<'a> {
 }
 
 fn ast_for_block(
-  db: &dyn HirDatabase,
-  file_id: FileId,
   id_map: &AstIdMap,
   items: impl Iterator<Item = ast::Item>,
 ) -> (Block, BlockSourceMap) {
   let mut block = Block::empty();
   let mut source_map = BlockSourceMap::empty();
 
-  BlockBuilder { db, file_id, id_map, block: &mut block, source_map: &mut source_map }
-    .walk_items(items);
+  BlockBuilder { id_map, block: &mut block, source_map: &mut source_map }.walk_items(items);
 
   (block, source_map)
 }
