@@ -51,7 +51,9 @@ impl Signature {
               if let (Some(id), Some(ty)) = (p.id_token(), p.ty()) {
                 Some((
                   id.text().into(),
-                  Type::Named(Path { elems: vec![Name(ty.syntax().text().into())] }),
+                  Type::Named(Path {
+                    elems: vec![Name("scala".into()), Name(ty.syntax().text().into())],
+                  }),
                 ))
               } else {
                 None
@@ -60,7 +62,9 @@ impl Signature {
             .collect(),
         })
         .collect(),
-      ret:    None,
+      ret:    sig.ty().map(|ty| {
+        Type::Named(Path { elems: vec![Name("scala".into()), Name(ty.syntax().text().into())] })
+      }),
     }
   }
 }
@@ -274,7 +278,13 @@ impl<'a> Infer<'a> {
 
             inferred.stmts.get(&stmt_id).cloned()
           }
-          _ => None,
+          _ => {
+            // TODO: Resolve overloads.
+            let (_, def) = decls.first().unwrap();
+
+            let stmt_id = hir_ast.stmt_map[&def.ast_id];
+            inferred.stmts.get(&stmt_id).cloned()
+          }
         }
       }
 
@@ -290,37 +300,52 @@ pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
 
   for &stmt in hir_ast.items.iter() {
     match &hir_ast.stmts[stmt] {
-      Stmt::Binding(b) => {
-        if let Some(expr) = b.expr {
-          if let Some(body_ty) = infer.type_expr(expr) {
-            let ty = match b.kind {
-              BindingKind::Val => body_ty,
-              BindingKind::Var => body_ty,
-              BindingKind::Def(ref sig) => {
-                let mut ty = body_ty;
+      Stmt::Binding(b) => match b.kind {
+        BindingKind::Def(ref sig) => {
+          infer.result.stmts.insert(
+            stmt,
+            Type::Lambda(
+              match sig.params.get(0) {
+                Some(params) => params.params.iter().map(|(_, ty)| ty.clone()).collect(),
+                None => vec![],
+              },
+              Box::new(sig.ret.clone().unwrap_or(Type::Unknown)),
+            ),
+          );
+          infer.locals.insert(b.name.clone(), Type::Unknown);
+        }
+        _ => {
+          if let Some(expr) = b.expr {
+            if let Some(body_ty) = infer.type_expr(expr) {
+              let ty = match b.kind {
+                BindingKind::Val => body_ty,
+                BindingKind::Var => body_ty,
+                BindingKind::Def(ref sig) => {
+                  let mut ty = body_ty;
 
-                for params in sig.params.iter().rev() {
-                  ty = Type::Lambda(
-                    params.params.iter().map(|(_, ty)| ty.clone()).collect(),
-                    Box::new(ty),
-                  );
+                  for params in sig.params.iter().rev() {
+                    ty = Type::Lambda(
+                      params.params.iter().map(|(_, ty)| ty.clone()).collect(),
+                      Box::new(ty),
+                    );
+                  }
+
+                  ty
                 }
+              };
 
-                ty
-              }
-            };
-
-            infer.result.stmts.insert(stmt, ty.clone());
-            infer.locals.insert(b.name.clone(), ty);
+              infer.result.stmts.insert(stmt, ty.clone());
+              infer.locals.insert(b.name.clone(), ty);
+            } else {
+              infer.result.stmts.insert(stmt, Type::Unknown);
+              infer.locals.insert(b.name.clone(), Type::Unknown);
+            }
           } else {
             infer.result.stmts.insert(stmt, Type::Unknown);
             infer.locals.insert(b.name.clone(), Type::Unknown);
           }
-        } else {
-          infer.result.stmts.insert(stmt, Type::Unknown);
-          infer.locals.insert(b.name.clone(), Type::Unknown);
         }
-      }
+      },
       Stmt::Expr(e) => {
         infer.type_expr(*e);
       }

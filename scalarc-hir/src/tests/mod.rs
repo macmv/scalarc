@@ -38,11 +38,15 @@ pub fn new_db(content: &str) -> TestDB {
   let file = FileId::temp_new();
   db.set_file_text(file, content.into());
 
+  let std = FileId::new_raw(1);
+  db.set_file_text(std, include_str!("ministd.scala").into());
+
   // Build a workspace with a single source root, with a single file in it.
   let mut targets = Arena::new();
   let mut source_roots = Arena::new();
 
-  let source_root = source_roots.alloc(SourceRoot { path: PathBuf::new(), sources: vec![file] });
+  let source_root =
+    source_roots.alloc(SourceRoot { path: PathBuf::new(), sources: vec![file, std] });
 
   targets.alloc(TargetData {
     dependencies: vec![],
