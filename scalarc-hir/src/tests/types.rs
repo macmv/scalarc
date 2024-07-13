@@ -157,3 +157,14 @@ fn type_of_call() {
     expect![@"no type"],
   );
 }
+
+#[test]
+fn type_of_stdlib() {
+  type_at(
+    r#"
+    val foo = 2 + 3
+    foo@@
+    "#,
+    expect![@"unknown"],
+  );
+}

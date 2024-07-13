@@ -18,6 +18,7 @@ use scalarc_syntax::{
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum Type {
+  Unknown,
   Named(Path),
   Tuple(Vec<Type>),
   Lambda(Vec<Type>, Box<Type>),
@@ -72,6 +73,7 @@ impl fmt::Debug for Signature {
 impl fmt::Display for Type {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
+      Type::Unknown => write!(f, "unknown"),
       Type::Named(path) => write!(f, "{}", path),
       Type::Tuple(types) => {
         write!(f, "(")?;
@@ -270,6 +272,9 @@ pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
 
           infer.result.stmts.insert(stmt, ty.clone());
           infer.locals.insert(b.name.clone(), ty);
+        } else {
+          infer.result.stmts.insert(stmt, Type::Unknown);
+          infer.locals.insert(b.name.clone(), Type::Unknown);
         }
       }
       Stmt::Expr(e) => {
