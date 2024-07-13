@@ -144,4 +144,16 @@ fn type_of_call() {
     "#,
     expect![@"(Int) => (String) => scala.Int"],
   );
+
+  type_at(
+    r#"
+    object Foo {
+      def foo = Bar.foo
+    }
+    object Bar {
+      def foo = Foo.foo@@
+    }
+    "#,
+    expect![@"no type"],
+  );
 }

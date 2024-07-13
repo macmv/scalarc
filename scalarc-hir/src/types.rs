@@ -6,9 +6,10 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
   hir::{AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
-  DefinitionKind, HirDatabase, InFile, InFileExt, Name, Path,
+  DefinitionKind, HirDatabase, HirDatabaseStorage, InFile, InFileExt, InferQuery, Name, Path,
 };
 use la_arena::{Idx, RawIdx};
+use salsa::{Query, QueryDb};
 use scalarc_source::FileId;
 use scalarc_syntax::{
   ast::{self, AstNode, SyntaxKind},
@@ -197,7 +198,7 @@ impl<'a> Infer<'a> {
             let block = BlockId::Class(AstId::new(def.ast_id)).in_file(self.file_id);
 
             let hir_ast = self.db.hir_ast_for_scope(block);
-            let inferred = self.db.infer(block);
+            let inferred = try_infer(self.db, block)?;
 
             let scope_id = scopes.ast_to_scope[&body_id.erased()];
             let scope_def = &scopes.scopes[scope_id];
@@ -280,9 +281,34 @@ pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
   Arc::new(infer.result)
 }
 
+// TODO: This hack needs more validation. In short, if you have a recursive
+// function call with no explicit signatures, then `infer` will create a cyclic
+// depdendency. Because this is invalid scala code in the first place, and its a
+// rare occurance, we just hack around that case, to make the common path more
+// cache efficient.
+fn get_query_storage<'me, Q>(db: &'me <Q as QueryDb<'me>>::DynDb) -> &'me Q::Storage
+where
+  Q: Query + 'me,
+  Q::Storage: salsa::plumbing::QueryStorageOps<Q>,
+{
+  let group_storage: &Q::GroupStorage = salsa::plumbing::HasQueryGroup::group_storage(db);
+  let query_storage: &Q::Storage = Q::query_storage(group_storage);
+  query_storage
+}
+
+fn try_infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Option<Arc<Inference>> {
+  let storage = get_query_storage::<InferQuery>(db);
+
+  use salsa::plumbing::QueryStorageOps;
+  match storage.try_fetch(db, &block) {
+    Ok(v) => Some(v),
+    Err(_) => None,
+  }
+}
+
 pub fn type_of_expr(db: &dyn HirDatabase, block: InFile<BlockId>, expr: ExprId) -> Option<Type> {
-  let inference = db.infer(block);
-  inference.exprs.get(&expr).cloned()
+  let inferred = try_infer(db, block)?;
+  inferred.exprs.get(&expr).cloned()
 }
 
 pub fn type_of_block(db: &dyn HirDatabase, block: InFile<BlockId>) -> Option<Type> {
