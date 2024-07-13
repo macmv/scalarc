@@ -24,6 +24,9 @@ pub enum BspError {
 
   #[error("error initializing bsp server: {0}")]
   InitializeError(String),
+
+  #[error("failed to connect to BSP server after {0} tries")]
+  MaxRetriesExceeded(u32),
 }
 
 #[derive(Debug)]
@@ -51,7 +54,7 @@ pub fn connect(_dir: &Path) -> Result<client::BspClient, BspError> {
   let port = choose_port();
   let config = bloop_tcp_config(port);
 
-  Ok(client::BspClient::new(config))
+  client::BspClient::new(config)
 }
 
 fn choose_port() -> u16 {

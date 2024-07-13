@@ -25,7 +25,7 @@ pub struct BspClient {
 }
 
 impl BspClient {
-  pub fn new(config: crate::BspConfig) -> Self {
+  pub fn new(config: crate::BspConfig) -> Result<Self, BspError> {
     info!("creating BSP client with config: {:?}", config);
 
     let proc = Command::new(&config.command)
@@ -45,12 +45,12 @@ impl BspClient {
         let (reader, reader_receiver) = spawn_reader(child_stdout);
         let threads = IoThreads { reader, writer };
 
-        BspClient {
+        Ok(BspClient {
           id: AtomicI32::new(1),
           sender: writer_sender,
           receiver: reader_receiver,
           threads,
-        }
+        })
       }
       crate::BspProtocol::Tcp(addr) => {
         let child_stdin = proc.stdin.unwrap();
@@ -65,7 +65,8 @@ impl BspClient {
         let mut delay = Duration::from_millis(100);
         let mut stream = None;
 
-        for _ in 0..4 {
+        const RETRIES: u32 = 4;
+        for _ in 0..RETRIES {
           match TcpStream::connect(addr) {
             Ok(s) => stream = Some(s),
             Err(e) => {
@@ -78,7 +79,7 @@ impl BspClient {
         }
 
         let Some(stream) = stream else {
-          panic!("failed to connect to BSP server");
+          return Err(BspError::MaxRetriesExceeded(RETRIES));
         };
 
         let child_stdin = stream.try_clone().unwrap();
@@ -88,12 +89,12 @@ impl BspClient {
         let (reader, reader_receiver) = spawn_reader(child_stdout);
         let threads = IoThreads { reader, writer };
 
-        BspClient {
+        Ok(BspClient {
           id: AtomicI32::new(1),
           sender: writer_sender,
           receiver: reader_receiver,
           threads,
-        }
+        })
       }
 
       #[cfg(target_os = "linux")]
@@ -114,7 +115,8 @@ impl BspClient {
         let mut stream = None;
         std::thread::sleep(delay);
 
-        for _ in 0..8 {
+        const RETRIES: u32 = 8;
+        for _ in 0..RETRIES {
           match UnixStream::connect(&path) {
             Ok(s) => stream = Some(s),
             Err(e) => {
@@ -130,7 +132,7 @@ impl BspClient {
         }
 
         let Some(stream) = stream else {
-          panic!("failed to connect to BSP server");
+          return Err(BspError::MaxRetriesExceeded(RETRIES));
         };
 
         let child_stdin = stream.try_clone().unwrap();
@@ -140,12 +142,12 @@ impl BspClient {
         let (reader, reader_receiver) = spawn_reader(child_stdout);
         let threads = IoThreads { reader, writer };
 
-        BspClient {
+        Ok(BspClient {
           id: AtomicI32::new(1),
           sender: writer_sender,
           receiver: reader_receiver,
           threads,
-        }
+        })
       }
     }
   }
