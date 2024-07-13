@@ -309,17 +309,15 @@ pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
             _ => Type::Unknown,
           };
 
-          // Functions without any parameters are special, as they don't require
-          // parenthesis to be called. So, their type is just the return type.
-          let return_type = sig.ret.clone().unwrap_or(inferred);
-          let result = if sig.params.is_empty() {
-            return_type
-          } else {
-            Type::Lambda(
-              sig.params[0].params.iter().map(|(_, ty)| ty.clone()).collect(),
-              Box::new(return_type),
-            )
-          };
+          // Functions without any parameters don't require parameters to be called, so
+          // this little loop just works.
+          let mut result = sig.ret.clone().unwrap_or(inferred);
+          for params in sig.params.iter().rev() {
+            result = Type::Lambda(
+              params.params.iter().map(|(_, ty)| ty.clone()).collect(),
+              Box::new(result),
+            );
+          }
 
           infer.result.stmts.insert(stmt, result.clone());
           infer.locals.insert(b.name.clone(), result);
