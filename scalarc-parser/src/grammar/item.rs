@@ -270,6 +270,13 @@ fn class_def(p: &mut Parser, m: Marker) {
   p.expect(T![ident]);
 
   // test ok
+  // class Foo private {}
+  if p.at(T![private]) {
+    p.bump();
+    p.eat_newlines();
+  }
+
+  // test ok
   // class Foo {}
   // class Foo() {}
   if p.current() == T!['('] {
