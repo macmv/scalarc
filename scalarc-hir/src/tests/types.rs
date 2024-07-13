@@ -165,6 +165,6 @@ fn type_of_stdlib() {
     val foo = 2 + 3
     foo@@
     "#,
-    expect![@"unknown"],
+    expect![@"scala.Int"],
   );
 }

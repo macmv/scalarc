@@ -181,45 +181,27 @@ impl<'a> Infer<'a> {
 
       Expr::Block(block) => self.db.type_of_block(block.in_file(self.file_id)),
 
-      Expr::FieldAccess(lhs, ref name) => {
-        let lhs = self.type_expr(lhs)?;
+      Expr::FieldAccess(lhs, ref name) => self.type_access(lhs, name),
+      Expr::Call(lhs, ref name, ref args) => {
+        let lhs = self.type_access(lhs, name)?;
 
-        // FIXME: Need global lookup here. This should basically be the same as
-        // goto-def.
-        let scopes = self.db.scopes_of(self.file_id);
+        if let Type::Lambda(params, ret) = lhs {
+          if params.len() != args.len() {
+            return None;
+          }
 
-        let scope_map = &scopes.scopes[Idx::from_raw(RawIdx::from_u32(0))];
-        let (_, def) = scope_map.declarations.iter().find(
-          |(name, _)| matches!(lhs, Type::Named(ref path) if path.elems[0].as_str() == name.as_str()),
-        )?;
+          for (param, arg) in params.iter().zip(args.iter()) {
+            let arg_ty = self.type_expr(*arg)?;
 
-        // This is basically just "select field `name` off of `def`".
-        match def.kind {
-          DefinitionKind::Class(Some(body_id)) => {
-            // FIXME: This should use a different file_id.
-            let block = BlockId::Class(AstId::new(def.ast_id)).in_file(self.file_id);
-
-            let hir_ast = self.db.hir_ast_for_scope(block);
-            let inferred = try_infer(self.db, block)?;
-
-            let scope_id = scopes.ast_to_scope[&body_id.erased()];
-            let scope_def = &scopes.scopes[scope_id];
-
-            let decls: Vec<_> =
-              scope_def.declarations.iter().filter(|(n, _)| n.as_str() == name).collect();
-
-            match decls[..] {
-              [] => None,
-              [(_, def)] => {
-                let stmt_id = hir_ast.stmt_map[&def.ast_id];
-
-                inferred.stmts.get(&stmt_id).cloned()
-              }
-              _ => None,
+            // TODO: Subtyping!
+            if arg_ty != *param {
+              return None;
             }
           }
 
-          _ => None,
+          Some(*ret)
+        } else {
+          None
         }
       }
 
@@ -241,6 +223,63 @@ impl<'a> Infer<'a> {
     }
 
     res
+  }
+
+  fn type_access(&mut self, lhs: ExprId, name: &str) -> Option<Type> {
+    let lhs = self.type_expr(lhs)?;
+
+    // FIXME: Go pull in the stdlib.
+    match lhs {
+      Type::Named(ref path)
+        if path.elems.len() == 2
+          && path.elems[0].as_str() == "scala"
+          && path.elems[1].as_str() == "Int" =>
+      {
+        match name {
+          "+" => return Some(Type::Lambda(vec![Type::int()], Box::new(Type::int()))),
+          _ => {}
+        }
+      }
+      _ => {}
+    }
+
+    // FIXME: Need global lookup here. This should basically be the same as
+    // goto-def.
+    let scopes = self.db.scopes_of(self.file_id);
+
+    let scope_map = &scopes.scopes[Idx::from_raw(RawIdx::from_u32(0))];
+    let (_, def) = scope_map.declarations.iter().find(
+      |(name, _)| matches!(lhs, Type::Named(ref path) if path.elems[0].as_str() == name.as_str()),
+    )?;
+
+    // This is basically just "select field `name` off of `def`".
+    match def.kind {
+      DefinitionKind::Class(Some(body_id)) => {
+        // FIXME: This should use a different file_id.
+        let block = BlockId::Class(AstId::new(def.ast_id)).in_file(self.file_id);
+
+        let hir_ast = self.db.hir_ast_for_scope(block);
+        let inferred = try_infer(self.db, block)?;
+
+        let scope_id = scopes.ast_to_scope[&body_id.erased()];
+        let scope_def = &scopes.scopes[scope_id];
+
+        let decls: Vec<_> =
+          scope_def.declarations.iter().filter(|(n, _)| n.as_str() == name).collect();
+
+        match decls[..] {
+          [] => None,
+          [(_, def)] => {
+            let stmt_id = hir_ast.stmt_map[&def.ast_id];
+
+            inferred.stmts.get(&stmt_id).cloned()
+          }
+          _ => None,
+        }
+      }
+
+      _ => None,
+    }
   }
 }
 
