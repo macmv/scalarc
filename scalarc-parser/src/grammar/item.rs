@@ -97,6 +97,16 @@ fn item(p: &mut Parser) {
   }
 
   // test ok
+  // override def foo() = {}
+  match p.current() {
+    T![override] => {
+      p.bump();
+      p.eat_newlines();
+    }
+    _ => {}
+  }
+
+  // test ok
   // final abstract class Int extends AnyVal {}
   match p.current() {
     T![abstract] => {
