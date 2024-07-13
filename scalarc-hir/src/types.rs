@@ -6,7 +6,9 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
   hir::{AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
-  DefinitionKind, HirDatabase, HirDatabaseStorage, InFile, InFileExt, InferQuery, Name, Path,
+  scope::FileScopes,
+  Definition, DefinitionKind, HirDatabase, HirDatabaseStorage, InFile, InFileExt, InferQuery, Name,
+  Path,
 };
 use la_arena::{Idx, RawIdx};
 use salsa::{Query, QueryDb};
@@ -228,35 +230,33 @@ impl<'a> Infer<'a> {
   fn type_access(&mut self, lhs: ExprId, name: &str) -> Option<Type> {
     let lhs = self.type_expr(lhs)?;
 
-    // FIXME: Go pull in the stdlib.
-    match lhs {
-      Type::Named(ref path)
-        if path.elems.len() == 2
-          && path.elems[0].as_str() == "scala"
-          && path.elems[1].as_str() == "Int" =>
-      {
-        match name {
-          "+" => return Some(Type::Lambda(vec![Type::int()], Box::new(Type::int()))),
-          _ => {}
-        }
+    let root = self.db.file_source_root(self.file_id)?;
+    for &file_id in &self.db.workspace().source_roots[root].sources {
+      // TODO: Check if the package of `file` matches `lhs`.
+      let scopes = self.db.scopes_of(file_id);
+
+      let scope_map = &scopes.scopes[Idx::from_raw(RawIdx::from_u32(0))];
+      if let Some((_, d)) = scope_map.declarations.iter().find(
+        |(name, _)| matches!(lhs, Type::Named(ref path) if path.elems.last().unwrap().as_str() == name.as_str()),
+      ) {
+        return self.select_name_from_def(&scopes, file_id, d, name);
       }
-      _ => {}
     }
 
-    // FIXME: Need global lookup here. This should basically be the same as
-    // goto-def.
-    let scopes = self.db.scopes_of(self.file_id);
+    None
+  }
 
-    let scope_map = &scopes.scopes[Idx::from_raw(RawIdx::from_u32(0))];
-    let (_, def) = scope_map.declarations.iter().find(
-      |(name, _)| matches!(lhs, Type::Named(ref path) if path.elems[0].as_str() == name.as_str()),
-    )?;
-
-    // This is basically just "select field `name` off of `def`".
+  fn select_name_from_def(
+    &self,
+    scopes: &FileScopes,
+    file_id: FileId,
+    def: &Definition,
+    name: &str,
+  ) -> Option<Type> {
     match def.kind {
       DefinitionKind::Class(Some(body_id)) => {
         // FIXME: This should use a different file_id.
-        let block = BlockId::Class(AstId::new(def.ast_id)).in_file(self.file_id);
+        let block = BlockId::Class(AstId::new(def.ast_id)).in_file(file_id);
 
         let hir_ast = self.db.hir_ast_for_scope(block);
         let inferred = try_infer(self.db, block)?;
@@ -291,26 +291,31 @@ pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
   for &stmt in hir_ast.items.iter() {
     match &hir_ast.stmts[stmt] {
       Stmt::Binding(b) => {
-        if let Some(body_ty) = infer.type_expr(b.expr) {
-          let ty = match b.kind {
-            BindingKind::Val => body_ty,
-            BindingKind::Var => body_ty,
-            BindingKind::Def(ref sig) => {
-              let mut ty = body_ty;
+        if let Some(expr) = b.expr {
+          if let Some(body_ty) = infer.type_expr(expr) {
+            let ty = match b.kind {
+              BindingKind::Val => body_ty,
+              BindingKind::Var => body_ty,
+              BindingKind::Def(ref sig) => {
+                let mut ty = body_ty;
 
-              for params in sig.params.iter().rev() {
-                ty = Type::Lambda(
-                  params.params.iter().map(|(_, ty)| ty.clone()).collect(),
-                  Box::new(ty),
-                );
+                for params in sig.params.iter().rev() {
+                  ty = Type::Lambda(
+                    params.params.iter().map(|(_, ty)| ty.clone()).collect(),
+                    Box::new(ty),
+                  );
+                }
+
+                ty
               }
+            };
 
-              ty
-            }
-          };
-
-          infer.result.stmts.insert(stmt, ty.clone());
-          infer.locals.insert(b.name.clone(), ty);
+            infer.result.stmts.insert(stmt, ty.clone());
+            infer.locals.insert(b.name.clone(), ty);
+          } else {
+            infer.result.stmts.insert(stmt, Type::Unknown);
+            infer.locals.insert(b.name.clone(), Type::Unknown);
+          }
         } else {
           infer.result.stmts.insert(stmt, Type::Unknown);
           infer.locals.insert(b.name.clone(), Type::Unknown);
