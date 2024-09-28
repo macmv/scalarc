@@ -7,9 +7,13 @@ pub fn handle_workspace_build_targets(
   state: &mut GlobalState,
   result: bsp_types::WorkspaceBuildTargetsResult,
 ) -> Result<(), Box<dyn Error>> {
-  // debug!("got build targets: {:#?}", result);
-
   if let Some(c) = &state.bsp_client {
+    if result.targets.is_empty() {
+      // Just give up.
+      warn!("no build targets found");
+      return Ok(());
+    }
+
     state.bsp_targets = Some(result.clone());
 
     // Grab all the sources!
