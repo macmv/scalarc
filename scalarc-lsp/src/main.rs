@@ -120,6 +120,8 @@ fn setup_logging() {
     .level(log::LevelFilter::Debug)
     .level_for("salsa", log::LevelFilter::Warn)
     .level_for("lsp_server", log::LevelFilter::Info)
+    // Logs from the BSP client are too verbose.
+    .level_for("scalarc_lsp::handler::bsp_notification", log::LevelFilter::Info)
     .chain(fern::log_file(dir.join("scalarc-lsp.log")).unwrap())
     .apply()
     .unwrap();

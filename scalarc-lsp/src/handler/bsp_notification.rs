@@ -1,10 +1,10 @@
 use crate::global::GlobalState;
 use std::error::Error;
 
-use scalarc_bsp::types as bsp_types;
+use scalarc_bsp::{types as bsp_types, BspFlavor};
 
 pub fn handle_log_message(
-  _snap: &mut GlobalState,
+  snap: &mut GlobalState,
   params: bsp_types::LogMessageParams,
 ) -> Result<(), Box<dyn Error>> {
   // BSP servers kinda do things, so errors and warnings will be too annoying. So
@@ -16,9 +16,17 @@ pub fn handle_log_message(
     bsp_types::MessageType::Log => None,
   };
 
+  let level = match (snap.bsp_flavor, params.ty) {
+    // SBT logs all compilation errors as BSP errors (which is insane), so we mark
+    // all of that nonsense as debug.
+    (BspFlavor::Sbt, _) => log::Level::Debug,
+    (BspFlavor::Bloop, bsp_types::MessageType::Error) => log::Level::Warn,
+    (BspFlavor::Bloop, _) => log::Level::Info,
+  };
+
   match ty {
-    Some(ty) => info!("bsp: {ty}: {}", params.message),
-    None => info!("bsp: {}", params.message),
+    Some(ty) => log!(level, "bsp: {ty}: {}", params.message),
+    None => log!(level, "bsp: {}", params.message),
   };
 
   Ok(())
