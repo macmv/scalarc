@@ -759,6 +759,24 @@ fn nested_scopes() {
         Scope {
           item: SyntaxNodePtr {
             kind: BLOCK_EXPR,
+            range: 230..261,
+          },
+          declarations: {
+            "g": Definition {
+              name: "g",
+              kind: Val(
+                None,
+              ),
+              item: SyntaxNodePtr {
+                kind: VAL_DEF,
+                range: 238..247,
+              },
+            },
+          },
+        },
+        Scope {
+          item: SyntaxNodePtr {
+            kind: BLOCK_EXPR,
             range: 275..306,
           },
           declarations: {

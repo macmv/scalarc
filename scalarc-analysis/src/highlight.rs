@@ -222,6 +222,21 @@ impl<'a> Highlighter<'a> {
           }
         }
       }
+      ast::Expr::NewExpr(n) => {
+        self.highlight_opt(n.new_token(), HighlightKind::Keyword);
+
+        if let Some(args) = n.paren_arguments() {
+          for arg in args.exprs() {
+            self.visit_expr(arg);
+          }
+        }
+
+        if let Some(block) = n.block_expr() {
+          for item in block.items() {
+            self.visit_item(item);
+          }
+        }
+      }
       _ => {}
     }
   }

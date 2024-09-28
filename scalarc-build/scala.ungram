@@ -114,8 +114,7 @@ Expr = IfExpr
      | PrefixExpr
      | PostfixExprAscription
      | MatchExpr
-     | NewClassExpr
-     | NewItemExpr
+     | NewExpr
      | BlockExpr
      | PostfixUnderscoreExpr
      | LitExpr
@@ -149,8 +148,7 @@ InfixExpr      = lhs:Expr id rhs:Expr
 PrefixExpr     = id Expr // id can only be '-' | '+' | '~' | '!'
 IdentExpr      = id
 
-SimpleExpr = NewClassExpr
-           | NewItemExpr
+SimpleExpr = NewExpr
            | BlockExpr
            | PostfixUnderscoreExpr
            | Path
@@ -162,8 +160,7 @@ SimpleExpr = NewClassExpr
            | DoubleQuotedString
            | TrippleQuotedString
 
-NewClassExpr = 'new' ClassTemplate
-NewItemExpr  = 'new' ItemBody
+NewExpr = 'new' id? TypeParams? ParenArguments? BlockExpr?
 PostfixUnderscoreExpr = Expr '_'
 
 UnderscoreExpr = '_'
@@ -172,10 +169,9 @@ FieldExpr      = Expr '.' id
 TypedExpr      = Expr TypeParams
 CallExpr       = Expr Arguments
 
-Arguments       = ParenArguments | SpreadArguments | BlockArguments
+Arguments       = ParenArguments | SpreadArguments | BlockExpr
 ParenArguments  = '(' (Expr (',' Expr)*)? ')'
 SpreadArguments = '(' (Expr (',' Expr)*)? PostfixExpr ':' '_' '*' ')'
-BlockArguments  = nl? BlockExpr
 
 BlockExpr      = '{' (Item (';' Item)*) '}'
 Block          = Item (';' Item)*
@@ -305,13 +301,15 @@ ObjectDef    = 'case'? 'object' id body:ItemBody
 ClassExtends = 'extends' ClassTemplate // TODO
 
 TraitTemplateOpt = 'extends' TraitTemplate | ('extends'? ItemBody)?
-ClassTemplate    = EarlyDefs? ClassParents ItemBody?
 TraitTemplate    = EarlyDefs? TraitParents ItemBody?
-ClassParents     = Constr ('with' Type)*
 TraitParents     = Type ('with' Type)*
+
+ClassTemplate    = EarlyDefs? ClassParents ItemBody?
+ClassParents     = Constr ('with' Type)*
 Constr           = Type Arguments*
+
 EarlyDefs        = '{' (EarlyDef (';' EarlyDef)*)? '}' 'with'
-EarlyDef         = (Annotation (nl)?)* (Modifier)* Def
+EarlyDef         = Annotation* Modifier* Def
 
 ConstrExpr     = SelfInvocation | ConstrBlock
 ConstrBlock    = '{' SelfInvocation (';' Item)* '}'

@@ -17,7 +17,9 @@ class Bar(a: String) {
     }
   }
 
-  new Foo()
+  new Foo(2 + 3) {
+    def foo = 3
+  }
 }
 
 val foo = 3

@@ -319,7 +319,7 @@ fn call_block_expr(p: &mut Parser) {
   //   4
   // }
   super::item::block_items(p);
-  m.complete(p, BLOCK_ARGUMENTS);
+  m.complete(p, BLOCK_EXPR);
 }
 
 fn postfix_dot_expr(
@@ -451,7 +451,7 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
         call_block_expr(p);
       }
 
-      Some(m.complete(p, NEW_CLASS_EXPR))
+      Some(m.complete(p, NEW_EXPR))
     }
 
     T!['{'] => {
@@ -948,7 +948,7 @@ mod tests {
           IDENT_EXPR
             IDENT 'hi'
           WHITESPACE ' '
-          BLOCK_ARGUMENTS
+          BLOCK_EXPR
             OPEN_CURLY '{'
             WHITESPACE ' '
             EXPR_ITEM
@@ -1075,7 +1075,7 @@ mod tests {
               IDENT_EXPR
                 IDENT 'println'
               WHITESPACE ' '
-              BLOCK_ARGUMENTS
+              BLOCK_EXPR
                 OPEN_CURLY '{'
                 NL_KW '\n'
                 WHITESPACE '         '
@@ -1152,7 +1152,7 @@ mod tests {
       expect![@r#"
         SOURCE_FILE
           EXPR_ITEM
-            NEW_CLASS_EXPR
+            NEW_EXPR
               NEW_KW 'new'
               WHITESPACE ' '
               IDENT 'Iterator'
@@ -1164,7 +1164,7 @@ mod tests {
       expect![@r#"
         SOURCE_FILE
           EXPR_ITEM
-            NEW_CLASS_EXPR
+            NEW_EXPR
               NEW_KW 'new'
               WHITESPACE ' '
               IDENT 'Iterator'
@@ -1179,7 +1179,7 @@ mod tests {
       expect![@r#"
         SOURCE_FILE
           EXPR_ITEM
-            NEW_CLASS_EXPR
+            NEW_EXPR
               NEW_KW 'new'
               WHITESPACE ' '
               IDENT 'Iterator'
@@ -1200,12 +1200,12 @@ mod tests {
       expect![@r#"
         SOURCE_FILE
           EXPR_ITEM
-            NEW_CLASS_EXPR
+            NEW_EXPR
               NEW_KW 'new'
               WHITESPACE ' '
               IDENT 'Iterator'
               WHITESPACE ' '
-              BLOCK_ARGUMENTS
+              BLOCK_EXPR
                 OPEN_CURLY '{'
                 WHITESPACE ' '
                 FUN_DEF
