@@ -1,6 +1,6 @@
 //! Handles global state and the main loop of the server.
 
-use crossbeam_channel::{Receiver, Select, Sender};
+use crossbeam_channel::{Receiver, RecvError, Select, Sender};
 use lsp_server::{ErrorCode, RequestId};
 use parking_lot::RwLock;
 use scalarc_analysis::{Analysis, AnalysisHost};
@@ -154,7 +154,13 @@ impl GlobalState {
     match op.index() {
       0 => Some(Event::Message(op.recv(receiver).unwrap())),
       1 => Some(Event::Response(op.recv(&self.response_receiver).unwrap())),
-      2 => Some(Event::BspMessage(op.recv(bsp_receiver.unwrap()).unwrap())),
+      2 => match op.recv(bsp_receiver.unwrap()) {
+        Ok(m) => Some(Event::BspMessage(m)),
+        Err(RecvError) => {
+          error!("BSP client disconnected, shutting down");
+          None
+        }
+      },
       _ => None,
     }
   }
