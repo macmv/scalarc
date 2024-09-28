@@ -126,7 +126,6 @@ impl<'a> Highlighter<'a> {
   }
 
   pub fn visit_expr(&mut self, expr: ast::Expr) {
-    info!("visit_expr: {:?}", expr);
     match expr {
       ast::Expr::IdentExpr(id) => {
         if let Some(id) = id.id_token() {
