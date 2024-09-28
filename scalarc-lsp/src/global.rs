@@ -512,7 +512,33 @@ impl BspResponseDispatcher<'_> {
       Some(&method) if method == R::METHOD => {
         self.global.bsp_requests.remove(&self.res.id);
 
-        let result = match serde_json::from_value::<R::Result>(self.res.result.clone().unwrap()) {
+        let res = match self.res.result.clone() {
+          Some(r) => r,
+          None => match &self.res.error {
+            Some(e) => {
+              // This is really, really dumb. BSP servers should not return errors when
+              // compilation fails!
+              //
+              // TODO: Only check this for SBT. Bloop does this correctly.
+              if e.message == "(Compile / compileIncremental) Compilation failed" {
+                return self;
+              } else {
+                error!(
+                  "in BSP response dispatcher for {}: got an error response: {}",
+                  R::METHOD,
+                  e.message
+                );
+                return self;
+              }
+            }
+            None => {
+              error!("in BSP response dispatcher for {}: got a response with no result", R::METHOD);
+              return self;
+            }
+          },
+        };
+
+        let result = match serde_json::from_value::<R::Result>(res) {
           Ok(p) => p,
           Err(e) => {
             self.log_error::<R>(e);
