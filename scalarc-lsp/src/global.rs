@@ -520,18 +520,7 @@ impl BspResponseDispatcher<'_> {
           }
         };
 
-        // TODO: Dispatch this to a thread pool.
-        let id = self.res.id.clone();
         f(self.global, result).unwrap();
-        self
-          .global
-          .sender
-          .send(lsp_server::Message::Response(lsp_server::Response {
-            id,
-            result: Some(serde_json::to_value(()).unwrap()),
-            error: None,
-          }))
-          .unwrap();
 
         self
       }
