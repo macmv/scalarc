@@ -47,16 +47,17 @@ pub enum BspProtocol {
   Socket(PathBuf),
 }
 
-pub fn connect(_dir: &Path) -> Result<client::BspClient, BspError> {
-  // let config = sbt_config(dir)?;
+pub fn connect(dir: &Path) -> Result<client::BspClient, BspError> {
+  let config = sbt_config(dir)?;
   // let config = bloop_socket_config(dir);
 
-  let port = choose_port();
-  let config = bloop_tcp_config(port);
+  // let port = choose_port();
+  // let config = bloop_tcp_config(port);
 
   client::BspClient::new(config)
 }
 
+#[allow(unused)]
 fn choose_port() -> u16 {
   // This is kinda dumb, but it works well.
   let listener = std::net::TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0))).unwrap();

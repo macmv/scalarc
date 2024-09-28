@@ -68,23 +68,19 @@ fn run() -> Result<(), Box<dyn Error>> {
 
   let root_file = root_uri.to_file_path().unwrap();
 
-  const BSP: bool = false;
-  let bsp_client = match BSP {
-    false => None,
-    true => match scalarc_bsp::connect(&root_file) {
-      Ok(c) => {
-        let res = c.send_initialize(root_uri.clone())?;
-        let _res: scalarc_bsp::types::InitializeBuildResult = serde_json::from_value(res).unwrap();
+  let bsp_client = match scalarc_bsp::connect(&root_file) {
+    Ok(c) => {
+      let res = c.send_initialize(root_uri.clone())?;
+      let _res: scalarc_bsp::types::InitializeBuildResult = serde_json::from_value(res).unwrap();
 
-        // info!("got initialize response: {:#?}", res);
+      // info!("got initialize response: {:#?}", res);
 
-        Some(c)
-      }
-      Err(e) => {
-        error!("failed to connect to BSP server: {}", e);
-        None
-      }
-    },
+      Some(c)
+    }
+    Err(e) => {
+      error!("failed to connect to BSP server: {}", e);
+      None
+    }
   };
 
   // Keep `bsp_client` around to hold onto the reader/writer threads.
