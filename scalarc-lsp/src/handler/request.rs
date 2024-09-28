@@ -45,7 +45,7 @@ pub fn handle_completion(
   snap: GlobalStateSnapshot,
   params: lsp_types::CompletionParams,
 ) -> Result<Option<lsp_types::CompletionResponse>, Box<dyn Error>> {
-  if let Some(path) = snap.workspace_path(&params.text_document_position.text_document.uri) {
+  if let Some(_) = snap.workspace_path(&params.text_document_position.text_document.uri) {
     let completions =
       snap.analysis.completions(file_position(&snap, params.text_document_position)?)?;
 
