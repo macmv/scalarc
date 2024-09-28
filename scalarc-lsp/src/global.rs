@@ -55,6 +55,7 @@ pub(crate) struct GlobalStateSnapshot {
   pub workspace: PathBuf,
 }
 
+#[derive(Debug)]
 enum Event {
   Message(lsp_server::Message),
   Response(lsp_server::Message),

@@ -104,7 +104,22 @@ fn setup_logging() {
   let dir = PathBuf::from("/home/macmv/.cache/scalarc");
   fs::create_dir_all(&dir).unwrap();
 
-  simple_logging::log_to_file(dir.join("scalarc-lsp.log"), log::LevelFilter::Info).unwrap();
+  fern::Dispatch::new()
+    .format(|out, message, record| {
+      out.finish(format_args!(
+        "[{level}][{target}] {message}",
+        // date = chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+        level = record.level(),
+        target = record.target(),
+        message = message,
+      ))
+    })
+    .level(log::LevelFilter::Debug)
+    .level_for("salsa", log::LevelFilter::Warn)
+    .level_for("lsp_server", log::LevelFilter::Info)
+    .chain(fern::log_file(dir.join("scalarc-lsp.log")).unwrap())
+    .apply()
+    .unwrap();
 
   // Copied the stdlibs panic hook, but uses `error!()` instead of stdout.
   std::panic::set_hook(Box::new(|info| {
