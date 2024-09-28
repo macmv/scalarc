@@ -131,9 +131,7 @@ impl Highlightable for ast::Item {
   fn highlight(&self, h: &mut Highlighter) {
     match self {
       ast::Item::ExprItem(e) => {
-        if let Some(e) = e.expr() {
-          h.visit(e);
-        }
+        h.visit(e.expr());
       }
       ast::Item::ClassDef(o) => {
         h.highlight_opt(o.case_token(), HighlightKind::Keyword);
@@ -148,9 +146,7 @@ impl Highlightable for ast::Item {
         h.highlight_opt(d.id_token(), HighlightKind::Variable);
         h.highlight_opt(d.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
 
-        if let Some(body) = d.expr() {
-          h.visit(body);
-        }
+        h.visit(d.expr());
       }
 
       ast::Item::FunDef(d) => {
@@ -169,9 +165,7 @@ impl Highlightable for ast::Item {
           h.highlight_opt(sig.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
         }
 
-        if let Some(body) = d.expr() {
-          h.visit(body);
-        }
+        h.visit(d.expr());
       }
       _ => {}
     }
@@ -213,18 +207,12 @@ impl Highlightable for ast::Expr {
         }
       }
       ast::Expr::InfixExpr(i) => {
-        if let Some(lhs) = i.lhs() {
-          h.visit(lhs);
-        }
+        h.visit(i.lhs());
         h.highlight_opt(i.id_token(), HighlightKind::Function);
-        if let Some(rhs) = i.rhs() {
-          h.visit(rhs);
-        }
+        h.visit(i.rhs());
       }
       ast::Expr::CallExpr(c) => {
-        if let Some(fun) = c.expr() {
-          h.visit(fun);
-        }
+        h.visit(c.expr());
 
         if let Some(args) = c.arguments() {
           match args {
@@ -240,33 +228,21 @@ impl Highlightable for ast::Expr {
       ast::Expr::IfExpr(i) => {
         h.highlight_opt(i.if_token(), HighlightKind::Keyword);
 
-        if let Some(cond) = i.cond() {
-          h.visit(cond);
-        }
-        if let Some(then) = i.then() {
-          h.visit(then);
-        }
-        if let Some(else_branch) = i.els() {
-          h.visit(else_branch);
-        }
+        h.visit(i.cond());
+        h.visit(i.then());
+        h.visit(i.els());
       }
       ast::Expr::MatchExpr(m) => {
-        if let Some(e) = m.expr() {
-          h.visit(e);
-        }
+        h.visit(m.expr());
         h.highlight_opt(m.match_token(), HighlightKind::Keyword);
 
         for case in m.case_items() {
           h.highlight_opt(case.case_token(), HighlightKind::Keyword);
 
-          if let Some(pat) = case.pattern() {
-            h.visit(pat);
-          }
+          h.visit(case.pattern());
           if let Some(guard) = case.guard() {
             h.highlight_opt(guard.if_token(), HighlightKind::Keyword);
-            if let Some(expr) = guard.expr() {
-              h.visit(expr);
-            }
+            h.visit(guard.expr());
           }
 
           if let Some(b) = case.block() {
