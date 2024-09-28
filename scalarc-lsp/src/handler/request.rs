@@ -239,16 +239,11 @@ fn file_position(
 
   let path = Path::new(pos.text_document.uri.path());
   let file_id = files.path_to_id(path);
-  let file = files.read(file_id);
 
-  let mut i = 0;
-  for (num, line) in file.lines().enumerate() {
-    if num as u32 == pos.position.line {
-      return Ok(FileLocation { file: file_id, index: TextSize::new(i + pos.position.character) });
-    }
+  let index = snap.analysis.line_index(file_id)?;
 
-    i += line.len() as u32 + 1;
+  match index.offset(line_index::LineCol { line: pos.position.line, col: pos.position.character }) {
+    Some(index) => Ok(FileLocation { file: file_id, index }),
+    None => Err("position not found".into()),
   }
-
-  Err("position not found".into())
 }
