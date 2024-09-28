@@ -64,7 +64,7 @@ impl Highlight {
     let ast = db.parse(file);
 
     for item in ast.tree().items() {
-      hl.visit_item(item);
+      hl.visit(item);
     }
 
     hl.hl
@@ -76,195 +76,7 @@ impl<'a> Highlighter<'a> {
     Highlighter { db, file, hl: Highlight { tokens: vec![] } }
   }
 
-  pub fn visit_item(&mut self, item: ast::Item) {
-    match item {
-      ast::Item::ExprItem(e) => {
-        if let Some(e) = e.expr() {
-          self.visit_expr(e);
-        }
-      }
-      ast::Item::ClassDef(o) => {
-        self.highlight_opt(o.case_token(), HighlightKind::Keyword);
-        self.highlight_opt(o.class_token(), HighlightKind::Keyword);
-        self.highlight_opt(o.id_token(), HighlightKind::Class);
-
-        self.visit_body(o.body());
-      }
-
-      ast::Item::ValDef(d) => {
-        self.highlight_opt(d.val_token(), HighlightKind::Keyword);
-        self.highlight_opt(d.id_token(), HighlightKind::Variable);
-        self.highlight_opt(d.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
-
-        if let Some(body) = d.expr() {
-          self.visit_expr(body);
-        }
-      }
-
-      ast::Item::FunDef(d) => {
-        self.highlight_opt(d.def_token(), HighlightKind::Keyword);
-
-        if let Some(sig) = d.fun_sig() {
-          self.highlight_opt(sig.id_token(), HighlightKind::Function);
-
-          for params in sig.fun_paramss() {
-            for param in params.fun_params() {
-              self.highlight_opt(param.id_token(), HighlightKind::Parameter);
-              self.highlight_opt(param.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
-            }
-          }
-
-          self.highlight_opt(sig.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
-        }
-
-        if let Some(body) = d.expr() {
-          self.visit_expr(body);
-        }
-      }
-      _ => {}
-    }
-  }
-
-  pub fn visit_expr(&mut self, expr: ast::Expr) {
-    match expr {
-      ast::Expr::IdentExpr(id) => {
-        if let Some(id) = id.id_token() {
-          // FIXME: This isn't particularly efficient. However, the scopes for the whole
-          // file will get cached, so its not all that bad.
-          let def = self.db.def_at_index(self.file, id.text_range().start());
-
-          if let Some(def) = def {
-            self.highlight(
-              id.text_range(),
-              match def.kind {
-                DefinitionKind::Val(_) => HighlightKind::Variable,
-                DefinitionKind::Var => HighlightKind::Variable,
-                DefinitionKind::Parameter => HighlightKind::Parameter,
-                DefinitionKind::Def(_) => HighlightKind::Function,
-                DefinitionKind::Class(_) => HighlightKind::Class,
-              },
-            );
-          }
-        }
-      }
-      ast::Expr::LitExpr(lit) => {
-        self.highlight(lit.syntax().text_range(), HighlightKind::Number);
-      }
-      ast::Expr::DoubleQuotedString(d) => {
-        self.highlight(d.syntax().text_range(), HighlightKind::String);
-      }
-      ast::Expr::BlockExpr(b) => {
-        for item in b.items() {
-          self.visit_item(item);
-        }
-      }
-      ast::Expr::InfixExpr(i) => {
-        if let Some(lhs) = i.lhs() {
-          self.visit_expr(lhs);
-        }
-        self.highlight_opt(i.id_token(), HighlightKind::Function);
-        if let Some(rhs) = i.rhs() {
-          self.visit_expr(rhs);
-        }
-      }
-      ast::Expr::CallExpr(c) => {
-        if let Some(fun) = c.expr() {
-          self.visit_expr(fun);
-        }
-
-        if let Some(args) = c.arguments() {
-          match args {
-            ast::Arguments::ParenArguments(p) => {
-              for arg in p.exprs() {
-                self.visit_expr(arg);
-              }
-            }
-            _ => {}
-          }
-        }
-      }
-      ast::Expr::IfExpr(i) => {
-        self.highlight_opt(i.if_token(), HighlightKind::Keyword);
-
-        if let Some(cond) = i.cond() {
-          self.visit_expr(cond);
-        }
-        if let Some(then) = i.then() {
-          self.visit_expr(then);
-        }
-        if let Some(else_branch) = i.els() {
-          self.visit_expr(else_branch);
-        }
-      }
-      ast::Expr::MatchExpr(m) => {
-        if let Some(e) = m.expr() {
-          self.visit_expr(e);
-        }
-        self.highlight_opt(m.match_token(), HighlightKind::Keyword);
-
-        for case in m.case_items() {
-          self.highlight_opt(case.case_token(), HighlightKind::Keyword);
-
-          if let Some(pat) = case.pattern() {
-            self.visit_pattern(pat);
-          }
-          if let Some(guard) = case.guard() {
-            self.highlight_opt(guard.if_token(), HighlightKind::Keyword);
-            if let Some(expr) = guard.expr() {
-              self.visit_expr(expr);
-            }
-          }
-
-          if let Some(b) = case.block() {
-            for item in b.items() {
-              self.visit_item(item);
-            }
-          }
-        }
-      }
-      ast::Expr::NewExpr(n) => {
-        self.highlight_opt(n.new_token(), HighlightKind::Keyword);
-
-        if let Some(args) = n.paren_arguments() {
-          for arg in args.exprs() {
-            self.visit_expr(arg);
-          }
-        }
-
-        if let Some(block) = n.block_expr() {
-          for item in block.items() {
-            self.visit_item(item);
-          }
-        }
-      }
-      _ => {}
-    }
-  }
-
-  fn visit_pattern(&mut self, pat: ast::Pattern) {
-    match pat {
-      ast::Pattern::IdentPattern(i) => {
-        self.highlight_opt(i.id_token(), HighlightKind::Variable);
-      }
-      ast::Pattern::TypePattern(i) => {
-        self.highlight_opt(i.id_token(), HighlightKind::Variable);
-
-        if let Some(ty) = i.ty() {
-          self.highlight(ty.syntax().text_range(), HighlightKind::Type);
-        }
-      }
-
-      _ => {}
-    }
-  }
-
-  fn visit_body(&mut self, body: Option<ast::ItemBody>) {
-    if let Some(body) = body {
-      for item in body.items() {
-        self.visit_item(item);
-      }
-    }
-  }
+  pub fn visit<T: Highlightable>(&mut self, node: T) { node.highlight(self); }
 
   pub fn highlight_opt<T: TextRangeable>(&mut self, token: Option<T>, kind: HighlightKind) {
     if let Some(token) = token {
@@ -297,5 +109,216 @@ impl TextRangeable for TextRange {
 impl HighlightKind {
   pub fn iter() -> impl Iterator<Item = HighlightKind> {
     (0..=HighlightKind::Variable as u8).map(|i| unsafe { std::mem::transmute(i) })
+  }
+}
+
+trait Highlightable {
+  fn highlight(&self, h: &mut Highlighter);
+}
+
+impl<T> Highlightable for Option<T>
+where
+  T: Highlightable,
+{
+  fn highlight(&self, h: &mut Highlighter) {
+    if let Some(v) = self {
+      v.highlight(h);
+    }
+  }
+}
+
+impl Highlightable for ast::Item {
+  fn highlight(&self, h: &mut Highlighter) {
+    match self {
+      ast::Item::ExprItem(e) => {
+        if let Some(e) = e.expr() {
+          h.visit(e);
+        }
+      }
+      ast::Item::ClassDef(o) => {
+        h.highlight_opt(o.case_token(), HighlightKind::Keyword);
+        h.highlight_opt(o.class_token(), HighlightKind::Keyword);
+        h.highlight_opt(o.id_token(), HighlightKind::Class);
+
+        h.visit(o.body());
+      }
+
+      ast::Item::ValDef(d) => {
+        h.highlight_opt(d.val_token(), HighlightKind::Keyword);
+        h.highlight_opt(d.id_token(), HighlightKind::Variable);
+        h.highlight_opt(d.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
+
+        if let Some(body) = d.expr() {
+          h.visit(body);
+        }
+      }
+
+      ast::Item::FunDef(d) => {
+        h.highlight_opt(d.def_token(), HighlightKind::Keyword);
+
+        if let Some(sig) = d.fun_sig() {
+          h.highlight_opt(sig.id_token(), HighlightKind::Function);
+
+          for params in sig.fun_paramss() {
+            for param in params.fun_params() {
+              h.highlight_opt(param.id_token(), HighlightKind::Parameter);
+              h.highlight_opt(param.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
+            }
+          }
+
+          h.highlight_opt(sig.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
+        }
+
+        if let Some(body) = d.expr() {
+          h.visit(body);
+        }
+      }
+      _ => {}
+    }
+  }
+}
+
+impl Highlightable for ast::Expr {
+  fn highlight(&self, h: &mut Highlighter) {
+    match self {
+      ast::Expr::IdentExpr(id) => {
+        if let Some(id) = id.id_token() {
+          // FIXME: This isn't particularly efficient. However, the scopes for the whole
+          // file will get cached, so its not all that bad.
+          let def = h.db.def_at_index(h.file, id.text_range().start());
+
+          if let Some(def) = def {
+            h.highlight(
+              id.text_range(),
+              match def.kind {
+                DefinitionKind::Val(_) => HighlightKind::Variable,
+                DefinitionKind::Var => HighlightKind::Variable,
+                DefinitionKind::Parameter => HighlightKind::Parameter,
+                DefinitionKind::Def(_) => HighlightKind::Function,
+                DefinitionKind::Class(_) => HighlightKind::Class,
+              },
+            );
+          }
+        }
+      }
+      ast::Expr::LitExpr(lit) => {
+        h.highlight(lit.syntax().text_range(), HighlightKind::Number);
+      }
+      ast::Expr::DoubleQuotedString(d) => {
+        h.highlight(d.syntax().text_range(), HighlightKind::String);
+      }
+      ast::Expr::BlockExpr(b) => {
+        for item in b.items() {
+          h.visit(item);
+        }
+      }
+      ast::Expr::InfixExpr(i) => {
+        if let Some(lhs) = i.lhs() {
+          h.visit(lhs);
+        }
+        h.highlight_opt(i.id_token(), HighlightKind::Function);
+        if let Some(rhs) = i.rhs() {
+          h.visit(rhs);
+        }
+      }
+      ast::Expr::CallExpr(c) => {
+        if let Some(fun) = c.expr() {
+          h.visit(fun);
+        }
+
+        if let Some(args) = c.arguments() {
+          match args {
+            ast::Arguments::ParenArguments(p) => {
+              for arg in p.exprs() {
+                h.visit(arg);
+              }
+            }
+            _ => {}
+          }
+        }
+      }
+      ast::Expr::IfExpr(i) => {
+        h.highlight_opt(i.if_token(), HighlightKind::Keyword);
+
+        if let Some(cond) = i.cond() {
+          h.visit(cond);
+        }
+        if let Some(then) = i.then() {
+          h.visit(then);
+        }
+        if let Some(else_branch) = i.els() {
+          h.visit(else_branch);
+        }
+      }
+      ast::Expr::MatchExpr(m) => {
+        if let Some(e) = m.expr() {
+          h.visit(e);
+        }
+        h.highlight_opt(m.match_token(), HighlightKind::Keyword);
+
+        for case in m.case_items() {
+          h.highlight_opt(case.case_token(), HighlightKind::Keyword);
+
+          if let Some(pat) = case.pattern() {
+            h.visit(pat);
+          }
+          if let Some(guard) = case.guard() {
+            h.highlight_opt(guard.if_token(), HighlightKind::Keyword);
+            if let Some(expr) = guard.expr() {
+              h.visit(expr);
+            }
+          }
+
+          if let Some(b) = case.block() {
+            for item in b.items() {
+              h.visit(item);
+            }
+          }
+        }
+      }
+      ast::Expr::NewExpr(n) => {
+        h.highlight_opt(n.new_token(), HighlightKind::Keyword);
+
+        if let Some(args) = n.paren_arguments() {
+          for arg in args.exprs() {
+            h.visit(arg);
+          }
+        }
+
+        if let Some(block) = n.block_expr() {
+          for item in block.items() {
+            h.visit(item);
+          }
+        }
+      }
+      _ => {}
+    }
+  }
+}
+
+impl Highlightable for ast::Pattern {
+  fn highlight(&self, h: &mut Highlighter) {
+    match self {
+      ast::Pattern::IdentPattern(i) => {
+        h.highlight_opt(i.id_token(), HighlightKind::Variable);
+      }
+      ast::Pattern::TypePattern(i) => {
+        h.highlight_opt(i.id_token(), HighlightKind::Variable);
+
+        if let Some(ty) = i.ty() {
+          h.highlight(ty.syntax().text_range(), HighlightKind::Type);
+        }
+      }
+
+      _ => {}
+    }
+  }
+}
+
+impl Highlightable for ast::ItemBody {
+  fn highlight(&self, h: &mut Highlighter) {
+    for item in self.items() {
+      h.visit(item);
+    }
   }
 }
