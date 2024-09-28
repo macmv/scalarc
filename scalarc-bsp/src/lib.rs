@@ -48,7 +48,7 @@ pub enum BspProtocol {
 }
 
 /// Which BSP server are we connected to?
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum BspFlavor {
   Sbt,
   Bloop,

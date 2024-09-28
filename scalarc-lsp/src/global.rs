@@ -521,9 +521,9 @@ impl BspResponseDispatcher<'_> {
             Some(e) => {
               // This is really, really dumb. BSP servers should not return errors when
               // compilation fails!
-              //
-              // TODO: Only check this for SBT. Bloop does this correctly.
-              if e.message == "(Compile / compileIncremental) Compilation failed" {
+              if self.global.bsp_flavor == BspFlavor::Sbt
+                && e.message == "(Compile / compileIncremental) Compilation failed"
+              {
                 return self;
               } else {
                 error!(
