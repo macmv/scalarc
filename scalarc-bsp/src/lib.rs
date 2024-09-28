@@ -47,12 +47,24 @@ pub enum BspProtocol {
   Socket(PathBuf),
 }
 
-pub fn connect(dir: &Path) -> Result<client::BspClient, BspError> {
-  let config = sbt_config(dir)?;
-  // let config = bloop_socket_config(dir);
+/// Which BSP server are we connected to?
+#[derive(Clone, Copy, Debug)]
+pub enum BspFlavor {
+  Sbt,
+  Bloop,
+}
 
-  // let port = choose_port();
-  // let config = bloop_tcp_config(port);
+pub fn connect(dir: &Path, flavor: BspFlavor) -> Result<client::BspClient, BspError> {
+  let config = match flavor {
+    BspFlavor::Sbt => sbt_config(dir)?,
+    BspFlavor::Bloop => {
+      // TODO: Config to pick tcp/socket.
+      // let config = bloop_socket_config(dir);
+
+      let port = choose_port();
+      bloop_tcp_config(port)
+    }
+  };
 
   client::BspClient::new(config)
 }

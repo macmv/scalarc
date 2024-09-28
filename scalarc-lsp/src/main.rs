@@ -68,7 +68,10 @@ fn run() -> Result<(), Box<dyn Error>> {
 
   let root_file = root_uri.to_file_path().unwrap();
 
-  let bsp_client = match scalarc_bsp::connect(&root_file) {
+  // TODO: Config this.
+  let bsp_flavor = scalarc_bsp::BspFlavor::Sbt;
+
+  let bsp_client = match scalarc_bsp::connect(&root_file, bsp_flavor) {
     Ok(c) => {
       let res = c.send_initialize(root_uri.clone())?;
       let _res: scalarc_bsp::types::InitializeBuildResult = serde_json::from_value(res).unwrap();
@@ -88,7 +91,7 @@ fn run() -> Result<(), Box<dyn Error>> {
   // TODO: Close the bsp server on an exit request.
   let bsp_receiver = bsp_client.as_ref().map(|c| c.receiver.clone());
 
-  let mut global = global::GlobalState::new(connection.sender, bsp_client, root_uri);
+  let mut global = global::GlobalState::new(connection.sender, bsp_client, bsp_flavor, root_uri);
 
   if let Some(c) = &global.bsp_client {
     let id = c.request(scalarc_bsp::types::WorkspaceBuildTargetsRequest);

@@ -4,7 +4,7 @@ use crossbeam_channel::{Receiver, RecvError, Select, Sender};
 use lsp_server::{ErrorCode, RequestId};
 use parking_lot::RwLock;
 use scalarc_analysis::{Analysis, AnalysisHost};
-use scalarc_bsp::{client::BspClient, types as bsp_types};
+use scalarc_bsp::{client::BspClient, types as bsp_types, BspFlavor};
 use scalarc_source::{FileId, SourceRootId, Workspace};
 use scalarc_syntax::TextSize;
 use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
@@ -26,6 +26,7 @@ pub struct GlobalState {
 
   pub analysis_host: AnalysisHost,
   pub bsp_client:    Option<BspClient>,
+  pub bsp_flavor:    BspFlavor,
 
   /// Diagnostics from the build server. These are not all the diagnostics seen
   /// from the client, as parsing errors from `scalarc-syntax` will be fetched
@@ -66,6 +67,7 @@ impl GlobalState {
   pub fn new(
     sender: Sender<lsp_server::Message>,
     bsp_client: Option<BspClient>,
+    bsp_flavor: BspFlavor,
     workspace: Url,
   ) -> Self {
     let (pool_tx, pool_rx) = crossbeam_channel::bounded::<Box<dyn FnOnce() + Send>>(0);
@@ -92,6 +94,7 @@ impl GlobalState {
 
       analysis_host: AnalysisHost::new(),
       bsp_client,
+      bsp_flavor,
 
       diagnostics: HashMap::new(),
       diagnostic_changes: vec![],
