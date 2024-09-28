@@ -46,8 +46,6 @@ pub fn handle_completion(
   params: lsp_types::CompletionParams,
 ) -> Result<Option<lsp_types::CompletionResponse>, Box<dyn Error>> {
   if let Some(path) = snap.workspace_path(&params.text_document_position.text_document.uri) {
-    info!("path: {:?}", path);
-
     let completions =
       snap.analysis.completions(file_position(&snap, params.text_document_position)?)?;
 
@@ -93,7 +91,6 @@ pub fn handle_semantic_tokens_full(
     let highlight = snap.analysis.highlight(file_id)?;
 
     let tokens = to_semantic_tokens(snap, file_id, &highlight)?;
-    info!("tokens: {:?}", tokens);
 
     Ok(Some(lsp_types::SemanticTokensResult::Tokens(lsp_types::SemanticTokens {
       data:      tokens,
@@ -190,8 +187,6 @@ pub fn semantic_tokens_legend() -> lsp_types::SemanticTokensLegend {
     }
   }
 
-  info!("{:?}", HighlightKind::iter().map(token_type).collect::<Vec<_>>());
-
   lsp_types::SemanticTokensLegend {
     token_types:     HighlightKind::iter().map(token_type).collect(),
     token_modifiers: vec![],
@@ -209,8 +204,6 @@ fn to_semantic_tokens(
 
   let mut line = 0;
   let mut col = 0;
-
-  info!("highlight: {:?}", highlight.tokens);
 
   for h in highlight.tokens.iter() {
     let range = h.range;
