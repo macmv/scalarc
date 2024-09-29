@@ -218,6 +218,18 @@ impl<'a> Infer<'a> {
         Some(Type::Tuple(types))
       }
 
+      Expr::New(ref path, ref args) => {
+        // TODO: Do we care about the arguments?
+        for arg in args {
+          let _ = self.type_expr(*arg);
+        }
+
+        // FIXME: Need name resolution.
+        Some(Type::Named(Path {
+          elems: path.segments.iter().map(|s| Name::new(s.clone())).collect(),
+        }))
+      }
+
       _ => None,
     };
 

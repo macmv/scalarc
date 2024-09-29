@@ -168,3 +168,18 @@ fn type_of_stdlib() {
     expect![@"scala.Int"],
   );
 }
+
+#[test]
+fn type_of_class() {
+  type_at(
+    r#"
+    class Foo {
+      val x = 2
+    }
+
+    val foo = new Foo()
+    foo@@
+    "#,
+    expect![@"Foo"],
+  );
+}
