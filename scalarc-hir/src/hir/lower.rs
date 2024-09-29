@@ -223,7 +223,12 @@ impl BlockLower<'_> {
 
       ast::Expr::FieldExpr(field) => {
         let lhs = self.walk_expr(&field.expr()?)?;
-        let name = field.id_token()?.text().to_string();
+        // If there is no ID token, we still act like there's a field access, so that
+        // completing `foo.|` works when nothing has been typed yet.
+        let name = match field.id_token() {
+          Some(t) => t.text().to_string(),
+          None => String::new(),
+        };
 
         Some(self.alloc_expr(Expr::FieldAccess(lhs, name), expr))
       }
