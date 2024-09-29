@@ -24,3 +24,4 @@ scalarc-hir = { path = "scalarc-hir" }
 scalarc-analysis = { path = "scalarc-analysis" }
 scalarc-test = { path = "scalarc-test" }
 scalarc-bsp = { path = "scalarc-bsp" }
+scalarc-coursier = { path = "scalarc-coursier" }

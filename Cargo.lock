@@ -489,6 +489,7 @@ dependencies = [
  "parking_lot 0.12.2",
  "scalarc-analysis",
  "scalarc-bsp",
+ "scalarc-coursier",
  "scalarc-hir",
  "scalarc-source",
  "scalarc-syntax",

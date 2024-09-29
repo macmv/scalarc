@@ -3,6 +3,7 @@
 use std::{collections::HashMap, io, path::Path};
 
 use la_arena::Arena;
+use lsp_types::Url;
 use scalarc_bsp::types as bsp_types;
 use scalarc_source::{FileId, SourceRoot, SourceRootId};
 
@@ -62,6 +63,29 @@ pub fn workspace_from_sources(
 
       let source_id = source_roots.alloc(root);
       targets[id].source_roots.push(source_id);
+    }
+  }
+
+  // Add the standard library.
+  let root_path = scalarc_coursier::sources_path();
+  let mut sources = vec![];
+
+  let source_id = SourceRootId::from_raw((source_roots.len() as u32).into());
+  files.create_source_root(source_id, &root_path);
+  discover_sources(&root_path, &mut sources, files).unwrap();
+  let root = SourceRoot { path: root_path, sources };
+  let source_id = source_roots.alloc(root);
+
+  let std_target = targets.alloc(scalarc_source::TargetData {
+    dependencies: vec![],
+    bsp_id:       Url::parse("file:///std").unwrap(),
+    source_roots: vec![],
+  });
+  targets[std_target].source_roots.push(source_id);
+
+  for (id, target) in targets.iter_mut() {
+    if id != std_target {
+      target.dependencies.push(std_target);
     }
   }
 
