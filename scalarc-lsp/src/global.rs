@@ -11,7 +11,7 @@ use std::{collections::HashMap, error::Error, path::PathBuf, sync::Arc};
 
 use lsp_types::{notification::Notification, Url};
 
-use crate::files::Files;
+use crate::{files::Files, progress::ProgressReporter};
 
 pub struct GlobalState {
   pub sender: Sender<lsp_server::Message>,
@@ -193,6 +193,44 @@ impl GlobalState {
     }
 
     self.analysis_host.set_workspace(workspace);
+    let workspace = self.analysis_host.workspace();
+
+    // Update all the file contents.
+    {
+      let files = self.files.read();
+      for root in workspace.source_roots.values() {
+        for &file in &root.sources {
+          self.analysis_host.change(scalarc_analysis::Change { file, text: files.read(file) });
+        }
+      }
+    }
+
+    // Now that we've got everything setup, go ahead and index everything!
+
+    for (target_id, target) in workspace.targets.iter() {
+      let token = u32::from(target_id.into_raw());
+
+      let mut completed = 0;
+      let total = workspace.targets[target_id]
+        .source_roots
+        .iter()
+        .map(|root| workspace.source_roots[*root].sources.len())
+        .sum::<usize>();
+
+      let reporter =
+        ProgressReporter::new(&self.sender, token, format!("Indexing {}", target.bsp_id));
+
+      for &root in workspace.targets[target_id].source_roots.iter() {
+        for &file in workspace.source_roots[root].sources.iter() {
+          self.analysis_host.index_file(file);
+          completed += 1;
+
+          reporter.update(format!("{completed}/{total} files"), completed as f64 / total as f64);
+        }
+      }
+
+      reporter.finish(format!("{completed}/{total} files"));
+    }
   }
 
   fn process_changes(&mut self) {

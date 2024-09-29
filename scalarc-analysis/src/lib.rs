@@ -66,6 +66,16 @@ impl AnalysisHost {
   pub fn change(&mut self, change: Change) {
     self.db.set_file_text(change.file, change.text.into());
   }
+
+  pub fn index_file(&mut self, file: FileId) {
+    // Currently, this just populates the LRU with the complete scope map and HIR
+    // ast for the given file. This works nicely, as it is the primary input for
+    // completions.
+    //
+    // However, once type inferrence is more complete, it might be better to infer
+    // types as part of indexing.
+    self.db.definitions_for_file(file);
+  }
 }
 
 pub struct Change {
