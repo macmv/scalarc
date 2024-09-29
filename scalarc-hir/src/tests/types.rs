@@ -198,7 +198,7 @@ fn type_of_object_vs_class() {
 
     Foo.x@@
     "#,
-    expect![@"no type"],
+    expect![@"scala.Int"],
   );
 
   type_at(

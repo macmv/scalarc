@@ -269,38 +269,38 @@ impl<'a> Infer<'a> {
   }
 
   fn select_name_from_def(&self, def: &Definition, name: &str) -> Option<Type> {
-    match def.kind {
+    let (block, body) = match def.kind {
       DefinitionKind::Class(Some(body_id)) => {
-        let block = BlockId::Class(AstId::new(def.ast_id)).in_file(def.file_id);
-
-        let hir_ast = self.db.hir_ast_for_scope(block);
-        let inferred = try_infer(self.db, block)?;
-
-        let scopes = self.db.scopes_of(def.file_id);
-        let scope_id = scopes.ast_to_scope[&body_id.erased()];
-        let scope_def = &scopes.scopes[scope_id];
-
-        let decls: Vec<_> =
-          scope_def.declarations.iter().filter(|(n, _)| n.as_str() == name).collect();
-
-        match decls[..] {
-          [] => None,
-          [(_, def)] => {
-            let stmt_id = hir_ast.stmt_map[&def.ast_id];
-
-            inferred.stmts.get(&stmt_id).cloned()
-          }
-          _ => {
-            // TODO: Resolve overloads.
-            let (_, def) = decls.first().unwrap();
-
-            let stmt_id = hir_ast.stmt_map[&def.ast_id];
-            inferred.stmts.get(&stmt_id).cloned()
-          }
-        }
+        (BlockId::Class(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
       }
+      DefinitionKind::Object(Some(body_id)) => {
+        (BlockId::Object(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
+      }
+      _ => return None,
+    };
 
-      _ => None,
+    let hir_ast = self.db.hir_ast_for_scope(block);
+    let inferred = try_infer(self.db, block)?;
+
+    let scopes = self.db.scopes_of(def.file_id);
+    let scope = scopes.get(body)?;
+
+    let decls: Vec<_> = scope.declarations.iter().filter(|(n, _)| n.as_str() == name).collect();
+
+    match decls[..] {
+      [] => None,
+      [(_, def)] => {
+        let stmt_id = hir_ast.stmt_map[&def.ast_id];
+
+        inferred.stmts.get(&stmt_id).cloned()
+      }
+      _ => {
+        // TODO: Resolve overloads.
+        let (_, def) = decls.first().unwrap();
+
+        let stmt_id = hir_ast.stmt_map[&def.ast_id];
+        inferred.stmts.get(&stmt_id).cloned()
+      }
     }
   }
 }
