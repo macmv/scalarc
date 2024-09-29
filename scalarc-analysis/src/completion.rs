@@ -17,9 +17,20 @@ pub fn completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion> {
 
   let Some(source_root) = db.file_source_root(pos.file) else { return vec![] };
   let target = db.source_root_target(source_root);
-  let definitions = db.definitions_for_target(target);
 
-  for (mut path, def) in definitions.items {
+  let mut definitions = vec![];
+  let mut targets = vec![target];
+
+  while let Some(target) = targets.pop() {
+    info!("searching {target:?}");
+    definitions.extend(db.definitions_for_target(target).items);
+
+    for dep in &db.workspace().targets[target].dependencies {
+      targets.push(*dep);
+    }
+  }
+
+  for (mut path, def) in definitions {
     completions
       .push(Completion { label: path.elems.pop().unwrap().into_string(), kind: def.kind });
   }

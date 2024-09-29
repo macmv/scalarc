@@ -87,7 +87,6 @@ pub trait HirDatabase: SourceDatabase {
   fn ast_id_map(&self, file: FileId) -> Arc<hir::AstIdMap>;
 
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
-
   fn definitions_for_file(&self, file: FileId) -> DefinitionMap;
 
   #[salsa::invoke(scope::scopes_of)]
@@ -141,17 +140,33 @@ fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionM
   let workspace = db.workspace();
   for &root in workspace.targets[target].source_roots.iter() {
     for &file in workspace.source_roots[root].sources.iter() {
-      let definitions = db.definitions_for_file(file);
-      items.extend(definitions.items);
+      items.extend(db.definitions_for_file(file).items);
     }
   }
 
   DefinitionMap { items }
 }
 
-// FIXME: Replace with the zero scope for this file.
-fn definitions_for_file(_db: &dyn HirDatabase, _file: FileId) -> DefinitionMap {
-  DefinitionMap { items: HashMap::new() }
+fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap {
+  let file_scopes = db.scopes_of(file_id);
+
+  // Only the outermost scope is visible.
+  //
+  // FIXME: This is just wrong.
+  let Some(scope) = file_scopes.scopes.iter().next() else {
+    return DefinitionMap { items: HashMap::new() };
+  };
+
+  DefinitionMap {
+    // TODO: Parse the `package` statement and build a path from that.
+    items: scope
+      .1
+      .declarations
+      .iter()
+      .rev()
+      .map(|(_, def)| (Path { elems: vec![def.name.clone()] }, def.clone()))
+      .collect(),
+  }
 }
 
 impl Default for Path {

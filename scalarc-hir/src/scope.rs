@@ -123,7 +123,9 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
       let target = db.source_root_target(source_root);
       let definitions = db.definitions_for_target(target);
 
-      definitions.items.get(&path).cloned()
+      // FIXME: Re-implement.
+      // definitions.items.get(&path).cloned()
+      None
     }
 
     _ => None,
