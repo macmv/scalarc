@@ -167,7 +167,6 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
     let mut scope = Scope { parent, ast_id, declarations: vec![] };
 
     if let Some(it) = Item::cast(item.clone()) {
-      dbg!(&it);
       match it {
         Item::ClassDef(c) => {
           if let Some(p) = c.fun_params() {
@@ -192,8 +191,6 @@ pub fn scopes_of(db: &dyn HirDatabase, file_id: FileId) -> FileScopes {
       ast_to_scope.insert(ast_id, scope_id);
     }
   }
-
-  dbg!(&ast_to_scope);
 
   FileScopes { scopes, ast_to_scope }
 }
