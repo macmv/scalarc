@@ -84,6 +84,7 @@ pub enum DefinitionKind {
   Parameter,
   Def(Signature),
   Class(Option<AstId<ItemBody>>),
+  Object(Option<AstId<ItemBody>>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -184,6 +185,7 @@ fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap 
 
         match def.kind {
           DefinitionKind::Class(_) => (DefinitionKey::Class(path), def.clone()),
+          DefinitionKind::Object(_) => (DefinitionKey::Object(path), def.clone()),
           _ => (DefinitionKey::Object(path), def.clone()),
         }
       })

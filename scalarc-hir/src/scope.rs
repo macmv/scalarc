@@ -254,6 +254,22 @@ fn def_of_node(
       })
     }
 
+    SyntaxKind::OBJECT_DEF => {
+      let ast_id_map = db.ast_id_map(file_id);
+      let ast_id = ast_id_map.erased_ast_id(&n);
+
+      let c = scalarc_syntax::ast::ObjectDef::cast(n.clone()).unwrap();
+      let id = c.id_token()?;
+
+      Some(Definition {
+        name: id.text().into(),
+        file_id,
+        parent_scope: scope,
+        ast_id,
+        kind: DefinitionKind::Object(c.body().map(|node| ast_id_map.ast_id(&node))),
+      })
+    }
+
     SyntaxKind::FUN_DEF => {
       let ast_id = db.ast_id_map(file_id).erased_ast_id(&n);
 
