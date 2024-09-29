@@ -318,6 +318,14 @@ impl GlobalState {
     path.strip_prefix(&self.workspace).ok().map(Into::into)
   }
 
+  pub fn absolute_path(&self, uri: &Url) -> Option<PathBuf> {
+    if uri.scheme() != "file" {
+      return None;
+    }
+
+    uri.to_file_path().ok()
+  }
+
   pub fn snapshot(&self) -> GlobalStateSnapshot {
     GlobalStateSnapshot {
       analysis:  self.analysis_host.snapshot(),

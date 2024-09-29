@@ -4,7 +4,7 @@ use std::{collections::HashMap, io, path::Path};
 
 use la_arena::Arena;
 use scalarc_bsp::types as bsp_types;
-use scalarc_source::{FileId, SourceRoot};
+use scalarc_source::{FileId, SourceRoot, SourceRootId};
 
 use crate::files::Files;
 
@@ -49,11 +49,14 @@ pub fn workspace_from_sources(
       let root_path = source.uri.to_file_path().unwrap();
       let mut sources = vec![];
 
+      let source_id = SourceRootId::from_raw((source_roots.len() as u32).into());
+      files.create_source_root(source_id, &root_path);
+
       // BSP kinda falls apart right here. Source roots are only real like 20% of the
       // time. The other 80% is "project" source directories that don't exist, target
       // directories, testing directories, and magical directories for the standard
       // library that don't exist at all.
-      let _ = discover_sources(&root_path, &mut sources, files);
+      let _ = discover_sources(&root_path, source_id, &mut sources, files);
 
       let root = SourceRoot { path: root_path, sources };
 
@@ -69,6 +72,7 @@ pub fn workspace_from_sources(
 
 fn discover_sources(
   path: impl AsRef<Path>,
+  source_id: SourceRootId,
   sources: &mut Vec<FileId>,
   files: &mut Files,
 ) -> io::Result<()> {
@@ -76,9 +80,9 @@ fn discover_sources(
     let entry = entry?;
     let path = entry.path();
     if path.is_dir() {
-      let _ = discover_sources(&path, sources, files);
+      let _ = discover_sources(&path, source_id, sources, files);
     } else {
-      match files.get(&path) {
+      match files.get(source_id, &path) {
         Some(id) => sources.push(id),
         None => {
           let id = files.create(&path);
