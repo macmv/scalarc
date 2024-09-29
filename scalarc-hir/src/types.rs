@@ -6,7 +6,6 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
   hir::{AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
-  scope::FileScopes,
   Definition, DefinitionKind, HirDatabase, InFile, InFileExt, InferQuery, Name, Path,
 };
 use salsa::{Query, QueryDb};
@@ -242,8 +241,7 @@ impl<'a> Infer<'a> {
       let defs = self.db.definitions_for_target(target);
 
       if let Some(def) = defs.items.get(&path) {
-        let scopes = self.db.scopes_of(def.file_id);
-        return self.select_name_from_def(&scopes, def.file_id, def, name);
+        return self.select_name_from_def(def, name);
       }
 
       for dep in self.db.workspace().targets[target].dependencies.iter() {
@@ -254,21 +252,15 @@ impl<'a> Infer<'a> {
     None
   }
 
-  fn select_name_from_def(
-    &self,
-    scopes: &FileScopes,
-    file_id: FileId,
-    def: &Definition,
-    name: &str,
-  ) -> Option<Type> {
+  fn select_name_from_def(&self, def: &Definition, name: &str) -> Option<Type> {
     match def.kind {
       DefinitionKind::Class(Some(body_id)) => {
-        // FIXME: This should use a different file_id.
-        let block = BlockId::Class(AstId::new(def.ast_id)).in_file(file_id);
+        let block = BlockId::Class(AstId::new(def.ast_id)).in_file(def.file_id);
 
         let hir_ast = self.db.hir_ast_for_scope(block);
         let inferred = try_infer(self.db, block)?;
 
+        let scopes = self.db.scopes_of(def.file_id);
         let scope_id = scopes.ast_to_scope[&body_id.erased()];
         let scope_def = &scopes.scopes[scope_id];
 
