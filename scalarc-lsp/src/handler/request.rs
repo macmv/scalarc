@@ -45,7 +45,7 @@ pub fn handle_completion(
   snap: GlobalStateSnapshot,
   params: lsp_types::CompletionParams,
 ) -> Result<Option<lsp_types::CompletionResponse>, Box<dyn Error>> {
-  if let Some(_) = snap.workspace_path(&params.text_document_position.text_document.uri) {
+  if let Some(_) = snap.absolute_path(&params.text_document_position.text_document.uri) {
     let completions =
       snap.analysis.completions(file_position(&snap, params.text_document_position)?)?;
 
@@ -86,8 +86,8 @@ pub fn handle_semantic_tokens_full(
   snap: GlobalStateSnapshot,
   params: lsp_types::SemanticTokensParams,
 ) -> Result<Option<lsp_types::SemanticTokensResult>, Box<dyn Error>> {
-  if let Some(path) = snap.workspace_path(&params.text_document.uri) {
-    let file_id = snap.files.read().path_to_id(&path);
+  if let Some(path) = snap.absolute_path(&params.text_document.uri) {
+    let file_id = snap.files.read().get_absolute(&path).ok_or("file not found")?;
     let highlight = snap.analysis.highlight(file_id)?;
 
     let tokens = to_semantic_tokens(snap, file_id, &highlight)?;
@@ -112,11 +112,8 @@ pub fn handle_goto_definition(
     let files = snap.files.read();
 
     Ok(Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_types::Location::new(
-      lsp_types::Url::parse(&format!(
-        "file://{}",
-        files.workspace.join(files.id_to_path(pos.file)).display()
-      ))
-      .unwrap(),
+      lsp_types::Url::parse(&format!("file://{}", files.id_to_absolute_path(pos.file).display()))
+        .unwrap(),
       converter.range(pos.range),
     ))))
   } else {
@@ -238,7 +235,7 @@ fn file_position(
   let files = snap.files.read();
 
   let path = Path::new(pos.text_document.uri.path());
-  let file_id = files.path_to_id(path);
+  let file_id = files.get_absolute(path).ok_or("file not found")?;
 
   let index = snap.analysis.line_index(file_id)?;
 

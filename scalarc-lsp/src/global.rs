@@ -226,8 +226,10 @@ impl GlobalState {
         .send(lsp_server::Message::Notification(lsp_server::Notification {
           method: lsp_types::notification::PublishDiagnostics::METHOD.into(),
           params: serde_json::to_value(lsp_types::PublishDiagnosticsParams {
-            uri:         Url::from_file_path(self.workspace.join(files.id_to_path(file_id)))
-              .unwrap(),
+            uri:         Url::from_file_path(
+              self.workspace.join(files.id_to_absolute_path(file_id)),
+            )
+            .unwrap(),
             diagnostics: diagnostics
               .into_iter()
               .filter_map(|d| {
@@ -309,15 +311,6 @@ impl GlobalState {
       .on_sync::<bsp_types::PublishDiagnosticsParams>(bsp_notification::handle_diagnostics);
   }
 
-  pub fn workspace_path(&self, uri: &Url) -> Option<PathBuf> {
-    if uri.scheme() != "file" {
-      return None;
-    }
-
-    let path = uri.to_file_path().ok()?;
-    path.strip_prefix(&self.workspace).ok().map(Into::into)
-  }
-
   pub fn absolute_path(&self, uri: &Url) -> Option<PathBuf> {
     if uri.scheme() != "file" {
       return None;
@@ -336,13 +329,12 @@ impl GlobalState {
 }
 
 impl GlobalStateSnapshot {
-  pub fn workspace_path(&self, uri: &Url) -> Option<PathBuf> {
+  pub fn absolute_path(&self, uri: &Url) -> Option<PathBuf> {
     if uri.scheme() != "file" {
       return None;
     }
 
-    let path = uri.to_file_path().ok()?;
-    path.strip_prefix(&self.workspace).ok().map(Into::into)
+    uri.to_file_path().ok()
   }
 }
 

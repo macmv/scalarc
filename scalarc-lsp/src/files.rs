@@ -8,56 +8,63 @@ use std::{
 use scalarc_source::{FileId, SourceRootId};
 
 pub struct Files {
-  files:       HashMap<PathBuf, String>,
-  ids:         HashMap<PathBuf, FileId>,
-  reverse_ids: HashMap<FileId, PathBuf>,
+  files:       HashMap<FileId, File>,
+  file_lookup: HashMap<FilePath, FileId>,
 
-  file_roots: HashMap<FileId, SourceRootId>,
-  root_paths: HashMap<PathBuf, SourceRootId>,
-  roots:      HashMap<SourceRootId, PathBuf>,
+  roots:       HashMap<SourceRootId, SourceRoot>,
+  root_lookup: HashMap<PathBuf, SourceRootId>,
 
   changes: Vec<FileId>,
 
   pub workspace: PathBuf,
 }
 
+struct File {
+  contents: String,
+  path:     FilePath,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum FilePath {
+  Rooted { root: SourceRootId, relative_path: PathBuf },
+  // Some files don't have a source root, in which case we just leave this blank.
+  Absolute(PathBuf),
+}
+
+struct SourceRoot {
+  absolute_path: PathBuf,
+}
+
 impl Files {
   pub fn new(workspace: PathBuf) -> Self {
     Files {
       files: HashMap::new(),
-      ids: HashMap::new(),
-      reverse_ids: HashMap::new(),
-      file_roots: HashMap::new(),
-      root_paths: HashMap::new(),
+      file_lookup: HashMap::new(),
       roots: HashMap::new(),
+      root_lookup: HashMap::new(),
       changes: vec![],
       workspace,
     }
   }
 
-  pub fn canonicalize(&self, root: SourceRootId, path: &Path) -> Option<PathBuf> {
-    let path = path.to_path_buf();
-    if path.is_absolute() {
-      path.strip_prefix(&self.workspace).ok().map(|p| p.to_path_buf())
+  fn make_file_path(&self, root_id: SourceRootId, path: &Path) -> FilePath {
+    assert!(path.is_absolute(), "cannot create source root for relative path {}", path.display());
+
+    let root = self.roots.get(&root_id).unwrap();
+
+    if let Ok(rel) = path.strip_prefix(&root.absolute_path) {
+      FilePath::Rooted { root: root_id, relative_path: rel.to_path_buf() }
     } else {
-      Some(path)
+      FilePath::Absolute(path.to_path_buf())
     }
   }
 
   pub fn read(&self, id: FileId) -> String {
-    let path = self.reverse_ids.get(&id).unwrap();
-    let root = *self.file_roots.get(&id).unwrap();
-
-    let Some(path) = self.canonicalize(root, path) else { return "".into() };
-    self.files.get(&path).cloned().unwrap_or_default()
+    let file = self.files.get(&id).unwrap();
+    file.contents.clone()
   }
   pub fn write(&mut self, id: FileId, contents: String) {
-    let path = self.reverse_ids.get(&id).unwrap();
-    let root = *self.file_roots.get(&id).unwrap();
-
-    let Some(path) = self.canonicalize(root, path) else { return };
-    self.intern_path(root, &path);
-    self.files.insert(path.clone(), contents);
+    self.files.get_mut(&id).unwrap().contents = contents;
     self.changes.push(id);
   }
 
@@ -66,66 +73,72 @@ impl Files {
   pub fn create_source_root(&mut self, root: SourceRootId, path: &Path) {
     assert!(path.is_absolute(), "cannot create source root for relative path {}", path.display());
 
-    self.root_paths.insert(path.into(), root);
-    self.roots.insert(root, path.into());
+    self.roots.insert(root, SourceRoot { absolute_path: path.to_path_buf() });
+    self.root_lookup.insert(path.into(), root);
   }
 
   #[track_caller]
   pub fn create(&mut self, path: &Path) -> FileId {
     let root = self.source_root_for_path(path);
 
-    let path = self.canonicalize(root, path).unwrap();
-    self.intern_path(root, &path);
-    self.ids[&path]
-  }
-
-  pub fn get(&self, root: SourceRootId, path: &Path) -> Option<FileId> {
-    let path = self.canonicalize(root, path).unwrap();
-    self.ids.get(&path).copied()
-  }
-
-  pub fn path_to_id(&self, path: &Path) -> FileId {
-    let root = self.source_root_for_path(path);
-
-    let Some(path) = self.canonicalize(root, path) else {
-      panic!("path {} not in workspace {}", path.display(), self.workspace.display())
+    let path = match root {
+      Some(r) => self.make_file_path(r, path),
+      None => FilePath::Absolute(path.to_path_buf()),
     };
+    let id = FileId::new_raw(self.files.len() as u32);
 
-    match self.ids.get(&path) {
-      Some(id) => *id,
-      None => {
-        info!("{:?}", &self.files.keys());
-        panic!("no such file at {}", path.display())
+    self.file_lookup.insert(path.clone(), id);
+    self.files.insert(id, File { contents: String::new(), path });
+
+    id
+  }
+
+  #[track_caller]
+  pub fn get_relative(&self, root: SourceRootId, path: &Path) -> Option<FileId> {
+    assert!(path.is_relative(), "cannot find source root for absolute path {}", path.display());
+
+    self.file_lookup.get(&FilePath::Rooted { root, relative_path: path.to_path_buf() }).copied()
+  }
+
+  #[track_caller]
+  pub fn get_absolute(&self, path: &Path) -> Option<FileId> {
+    assert!(path.is_absolute(), "cannot lookup absolute for relative path {}", path.display());
+
+    match self.source_root_for_path(path) {
+      Some(root) => {
+        let relative = path.strip_prefix(&self.roots[&root].absolute_path).unwrap();
+
+        self
+          .file_lookup
+          .get(&FilePath::Rooted { root, relative_path: relative.to_path_buf() })
+          .copied()
       }
+      None => self.file_lookup.get(&FilePath::Absolute(path.to_path_buf())).copied(),
     }
   }
 
   #[track_caller]
-  fn source_root_for_path(&self, path: &Path) -> SourceRootId {
+  fn source_root_for_path(&self, path: &Path) -> Option<SourceRootId> {
     assert!(path.is_absolute(), "cannot find source root for relative path {}", path.display());
 
     let mut p = path.to_path_buf();
     while p.pop() {
-      if let Some(id) = self.root_paths.get(&p) {
-        return *id;
+      if let Some(id) = self.root_lookup.get(&p) {
+        return Some(*id);
       }
     }
-    panic!("no source root for path {}", path.display())
+
+    None
   }
 
-  pub fn id_to_path(&self, file_id: FileId) -> &Path {
-    match self.reverse_ids.get(&file_id) {
-      Some(id) => id,
-      None => panic!("no such file with id {file_id:?}"),
-    }
-  }
-
-  fn intern_path(&mut self, root: SourceRootId, path: &Path) {
-    if !self.ids.contains_key(path) {
-      let id = FileId::new_raw(self.ids.len() as u32);
-      self.ids.insert(path.into(), id);
-      self.reverse_ids.insert(id, path.into());
-      self.file_roots.insert(id, root);
+  pub fn id_to_absolute_path(&self, id: FileId) -> PathBuf {
+    let file = self.files.get(&id).unwrap();
+    match &file.path {
+      FilePath::Rooted { root, relative_path } => {
+        let root = self.roots.get(root).unwrap();
+        root.absolute_path.join(relative_path)
+      }
+      FilePath::Absolute(path) => path.clone(),
     }
   }
 }
@@ -135,15 +148,32 @@ mod tests {
   use super::*;
 
   #[test]
-  fn path_to_id() {
+  fn get_works() {
     let mut files = Files::new(PathBuf::new());
+    let root = SourceRootId::from_raw(0.into());
+    let file = FileId::new_raw(0);
 
-    files.create_source_root(SourceRootId::from_raw(0.into()), Path::new("/foo"));
+    files.create_source_root(root, Path::new("/foo"));
 
     let id = files.create(Path::new("/foo/bar"));
     files.write(id, "bar".to_string());
 
-    let id = files.path_to_id(Path::new("/foo/bar"));
-    assert_eq!(id, FileId::new_raw(0));
+    let id = files.get_absolute(Path::new("/foo/bar"));
+    assert_eq!(id, Some(file));
+
+    let id = files.get_relative(root, Path::new("bar"));
+    assert_eq!(id, Some(file));
+  }
+
+  #[test]
+  fn get_works_with_no_root() {
+    let mut files = Files::new(PathBuf::new());
+    let file = FileId::new_raw(0);
+
+    let id = files.create(Path::new("/foo/bar"));
+    files.write(id, "bar".to_string());
+
+    let id = files.get_absolute(Path::new("/foo/bar"));
+    assert_eq!(id, Some(file));
   }
 }
