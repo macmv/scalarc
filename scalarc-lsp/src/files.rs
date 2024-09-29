@@ -94,13 +94,6 @@ impl Files {
   }
 
   #[track_caller]
-  pub fn get_relative(&self, root: SourceRootId, path: &Path) -> Option<FileId> {
-    assert!(path.is_relative(), "cannot find source root for absolute path {}", path.display());
-
-    self.file_lookup.get(&FilePath::Rooted { root, relative_path: path.to_path_buf() }).copied()
-  }
-
-  #[track_caller]
   pub fn get_absolute(&self, path: &Path) -> Option<FileId> {
     assert!(path.is_absolute(), "cannot lookup absolute for relative path {}", path.display());
 
@@ -159,9 +152,6 @@ mod tests {
     files.write(id, "bar".to_string());
 
     let id = files.get_absolute(Path::new("/foo/bar"));
-    assert_eq!(id, Some(file));
-
-    let id = files.get_relative(root, Path::new("bar"));
     assert_eq!(id, Some(file));
   }
 
