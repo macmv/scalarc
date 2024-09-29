@@ -3,14 +3,14 @@ use std::{collections::HashMap, mem};
 use la_arena::{Arena, Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
-  ast::{AstNode, Item, SyntaxKind},
+  ast::{AstNode, Item, ItemBody, SyntaxKind},
   node::SyntaxNode,
   TextSize, T,
 };
 
 use crate::{
-  hir::ErasedAstId, Definition, DefinitionKind, FileRange, HirDatabase, Name, Path, Reference,
-  Signature, Type,
+  hir::{AstId, ErasedAstId},
+  Definition, DefinitionKind, FileRange, HirDatabase, Name, Path, Reference, Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -35,6 +35,12 @@ pub struct FileScopes {
 
 impl Scope {
   fn is_empty(&self) -> bool { self.declarations.is_empty() }
+}
+
+impl FileScopes {
+  pub fn get(&self, ast_id: AstId<ItemBody>) -> Option<&Scope> {
+    self.ast_to_scope.get(&ast_id.erased()).map(|id| &self.scopes[*id])
+  }
 }
 
 /// Returns the definitions at the given scope. The innermost declarations (ie,

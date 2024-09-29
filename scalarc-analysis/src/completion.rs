@@ -74,8 +74,7 @@ fn fields_of_def(db: &RootDatabase, def: &Definition) -> Option<Vec<Completion>>
   match def.kind {
     DefinitionKind::Class(Some(body_id)) => {
       let scopes = db.scopes_of(def.file_id);
-      let scope_id = scopes.ast_to_scope[&body_id.erased()];
-      let scope = &scopes.scopes[scope_id];
+      let scope = scopes.get(body_id)?;
 
       let mut completions = vec![];
       let mut names = HashSet::new();
