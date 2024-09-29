@@ -36,8 +36,8 @@ pub fn handle_diagnostics(
   global: &mut GlobalState,
   params: bsp_types::PublishDiagnosticsParams,
 ) -> Result<(), Box<dyn Error>> {
-  if let Some(path) = global.workspace_path(&params.text_document.uri) {
-    let file_id = global.files.read().path_to_id(&path);
+  if let Some(path) = global.absolute_path(&params.text_document.uri) {
+    let file_id = global.files.read().get_absolute(&path).ok_or("file not found")?;
 
     let diagnostics = global.diagnostics.entry(file_id).or_default();
 

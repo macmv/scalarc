@@ -7,7 +7,7 @@ pub fn handle_open_text_document(
   global: &mut GlobalState,
   params: lsp_types::DidOpenTextDocumentParams,
 ) -> Result<(), Box<dyn Error>> {
-  if let Some(path) = global.workspace_path(&params.text_document.uri) {
+  if let Some(path) = global.absolute_path(&params.text_document.uri) {
     let mut w = global.files.write();
     let file_id = w.create(&path);
     w.write(file_id, params.text_document.text.clone());
@@ -20,8 +20,8 @@ pub fn handle_change_text_document(
   global: &mut GlobalState,
   params: lsp_types::DidChangeTextDocumentParams,
 ) -> Result<(), Box<dyn Error>> {
-  if let Some(path) = global.workspace_path(&params.text_document.uri) {
-    let file_id = global.files.read().path_to_id(&path);
+  if let Some(path) = global.absolute_path(&params.text_document.uri) {
+    let file_id = global.files.read().get_absolute(&path).ok_or("file not found")?;
     let file = global.files.read().read(file_id);
 
     let new_file = apply_changes(file.clone(), &params.content_changes);
@@ -38,17 +38,12 @@ pub fn handle_save_text_document(
   global: &mut GlobalState,
   params: lsp_types::DidSaveTextDocumentParams,
 ) -> Result<(), Box<dyn Error>> {
-  if let Some(path) = global.workspace_path(&params.text_document.uri) {
-    let abs_path = global.workspace.join(path);
-
+  if let Some(path) = global.absolute_path(&params.text_document.uri) {
     if let Some(ref client) = global.bsp_client {
       let workspace = global.analysis_host.workspace();
 
-      let source_roots = workspace
-        .source_roots
-        .iter()
-        .filter(|s| abs_path.starts_with(&s.1.path))
-        .collect::<Vec<_>>();
+      let source_roots =
+        workspace.source_roots.iter().filter(|s| path.starts_with(&s.1.path)).collect::<Vec<_>>();
       let targets = workspace
         .targets
         .iter()

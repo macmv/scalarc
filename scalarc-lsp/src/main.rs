@@ -91,7 +91,7 @@ fn run() -> Result<(), Box<dyn Error>> {
   // TODO: Close the bsp server on an exit request.
   let bsp_receiver = bsp_client.as_ref().map(|c| c.receiver.clone());
 
-  let mut global = global::GlobalState::new(connection.sender, bsp_client, bsp_flavor, root_uri);
+  let mut global = global::GlobalState::new(connection.sender, bsp_client, bsp_flavor);
 
   if let Some(c) = &global.bsp_client {
     let id = c.request(scalarc_bsp::types::WorkspaceBuildTargetsRequest);
