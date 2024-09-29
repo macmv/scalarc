@@ -6,6 +6,7 @@ mod files;
 mod global;
 mod handler;
 mod info;
+mod progress;
 mod search;
 
 #[macro_use]
