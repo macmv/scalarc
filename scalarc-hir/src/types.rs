@@ -6,7 +6,8 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
   hir::{AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
-  Definition, DefinitionKind, HirDatabase, InFile, InFileExt, InferQuery, Name, Path,
+  Definition, DefinitionKey, DefinitionKind, HirDatabase, InFile, InFileExt, InferQuery, Name,
+  Path,
 };
 use salsa::{Query, QueryDb};
 use scalarc_source::FileId;
@@ -244,8 +245,9 @@ impl<'a> Infer<'a> {
 
   fn type_access(&mut self, lhs: ExprId, name: &str) -> Option<Type> {
     let lhs = self.type_expr(lhs)?;
-    let path = match lhs {
-      Type::Instance(ref path) => path.clone(),
+    let key = match lhs {
+      Type::Object(ref path) => DefinitionKey::Object(path.clone()),
+      Type::Instance(ref path) => DefinitionKey::Class(path.clone()),
       _ => return None,
     };
 
@@ -254,7 +256,7 @@ impl<'a> Infer<'a> {
     while let Some(target) = targets.pop() {
       let defs = self.db.definitions_for_target(target);
 
-      if let Some(def) = defs.items.get(&path) {
+      if let Some(def) = defs.items.get(&key) {
         return self.select_name_from_def(def, name);
       }
 

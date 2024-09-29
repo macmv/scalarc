@@ -42,7 +42,13 @@ impl<T> InFileExt for T {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefinitionMap {
-  pub items: HashMap<Path, Definition>,
+  pub items: HashMap<DefinitionKey, Definition>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum DefinitionKey {
+  Object(Path),
+  Class(Path),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -176,7 +182,10 @@ fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap 
         let mut path = package.clone();
         path.elems.push(def.name.clone());
 
-        (path, def.clone())
+        match def.kind {
+          DefinitionKind::Class(_) => (DefinitionKey::Class(path), def.clone()),
+          _ => (DefinitionKey::Object(path), def.clone()),
+        }
       })
       .collect(),
   }
