@@ -111,9 +111,17 @@ impl Files {
   fn source_root_for_path(&self, path: &Path) -> Option<SourceRootId> {
     assert!(path.is_absolute(), "cannot find source root for relative path {}", path.display());
 
+    Self::source_root_for_path_lookup(&self.root_lookup, path)
+  }
+
+  fn source_root_for_path_lookup(
+    lookup: &HashMap<PathBuf, SourceRootId>,
+    path: &Path,
+  ) -> Option<SourceRootId> {
     let mut p = path.to_path_buf();
+
     while p.pop() {
-      if let Some(id) = self.root_lookup.get(&p) {
+      if let Some(id) = lookup.get(&p) {
         return Some(*id);
       }
     }
@@ -129,6 +137,36 @@ impl Files {
         root.absolute_path.join(relative_path)
       }
       FilePath::Absolute(path) => path.clone(),
+    }
+  }
+
+  pub fn reindex_all(&mut self) {
+    self.file_lookup.clear();
+
+    for file in self.files.values_mut() {
+      let abs_path = match &file.path {
+        FilePath::Rooted { root, relative_path } => {
+          self.roots[&root].absolute_path.join(relative_path)
+        }
+        FilePath::Absolute(path) => path.clone(),
+      };
+
+      file.path =
+        if let Some(root) = Self::source_root_for_path_lookup(&self.root_lookup, &abs_path) {
+          FilePath::Rooted {
+            root,
+            relative_path: abs_path
+              .strip_prefix(&self.roots[&root].absolute_path)
+              .unwrap()
+              .to_path_buf(),
+          }
+        } else {
+          FilePath::Absolute(abs_path.clone())
+        };
+    }
+
+    for (id, file) in &self.files {
+      self.file_lookup.insert(file.path.clone(), *id);
     }
   }
 }
@@ -162,5 +200,26 @@ mod tests {
 
     let id = files.get_absolute(Path::new("/foo/bar"));
     assert_eq!(id, Some(file));
+  }
+
+  #[test]
+  fn reindex_works() {
+    let mut files = Files::new();
+    let root = SourceRootId::from_raw(0.into());
+
+    let file_1 = files.create(Path::new("/foo/bar"));
+    let file_2 = files.create(Path::new("/baz"));
+    files.create_source_root(root, Path::new("/foo"));
+
+    assert_eq!(files.files[&file_1].path, FilePath::Absolute(PathBuf::from("/foo/bar")));
+    assert_eq!(files.files[&file_2].path, FilePath::Absolute(PathBuf::from("/baz")));
+
+    files.reindex_all();
+
+    assert_eq!(
+      files.files[&file_1].path,
+      FilePath::Rooted { root, relative_path: PathBuf::from("bar") }
+    );
+    assert_eq!(files.files[&file_2].path, FilePath::Absolute(PathBuf::from("/baz")));
   }
 }

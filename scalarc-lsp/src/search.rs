@@ -65,6 +65,8 @@ pub fn workspace_from_sources(
     }
   }
 
+  files.reindex_all();
+
   // info!("targets: {:#?}", &targets);
 
   scalarc_source::Workspace { root: Default::default(), targets, source_roots }
