@@ -35,35 +35,41 @@ fn check_completions() {
   assert_eq!(
     completions_for(
       r#"
-        val x = 1
-        val y = 2
-        val z = 3 + 4
-        |
+        object Foo {
+          val x = 1
+          val y = 2
+          val z = 3 + 4
+          |
+        }
       "#,
     ),
-    vec!["z", "y", "x"]
+    vec!["Foo", "z", "y", "x"]
   );
 
   assert_eq!(
     completions_for(
       r#"
-        val x = 1
-        val y = 2
-        |
-        val z = 3 + 4
+        object Foo {
+          val x = 1
+          val y = 2
+          |
+          val z = 3 + 4
+        }
       "#,
     ),
-    vec!["y", "x"]
+    vec!["Foo", "y", "x"]
   );
 
   assert_eq!(
     completions_for(
       r#"
-        val x = 1
-        val y = 2
-        val z = |3 + 4
+        object Foo {
+          val x = 1
+          val y = 2
+          val z = |3 + 4
+        }
       "#,
     ),
-    vec!["y", "x"]
+    vec!["Foo", "y", "x"]
   );
 }
