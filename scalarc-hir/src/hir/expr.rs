@@ -88,6 +88,7 @@ impl Eq for EqFloat {}
 pub enum BlockId {
   Block(AstId<ast::BlockExpr>),
   Class(AstId<ast::ClassDef>),
+  Object(AstId<ast::ObjectDef>),
   Source(AstId<ast::SourceFile>),
 }
 
@@ -96,6 +97,9 @@ impl From<AstId<ast::BlockExpr>> for BlockId {
 }
 impl From<AstId<ast::ClassDef>> for BlockId {
   fn from(id: AstId<ast::ClassDef>) -> Self { BlockId::Class(id) }
+}
+impl From<AstId<ast::ObjectDef>> for BlockId {
+  fn from(id: AstId<ast::ObjectDef>) -> Self { BlockId::Object(id) }
 }
 impl From<AstId<ast::SourceFile>> for BlockId {
   fn from(id: AstId<ast::SourceFile>) -> Self { BlockId::Source(id) }
@@ -106,6 +110,7 @@ impl BlockId {
     match self {
       BlockId::Block(id) => id.erased(),
       BlockId::Class(id) => id.erased(),
+      BlockId::Object(id) => id.erased(),
       BlockId::Source(id) => id.erased(),
     }
   }

@@ -26,6 +26,7 @@ pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> InFil
       match node {
         ast::BlockExpr(it) => break BlockId::Block(ast_id_map.ast_id(&it)),
         ast::ClassDef(it) => break BlockId::Class(ast_id_map.ast_id(&it)),
+        ast::ObjectDef(it) => break BlockId::Object(ast_id_map.ast_id(&it)),
         ast::SourceFile(it) => break BlockId::Source(ast_id_map.ast_id(&it)),
         _ => node = node.parent().unwrap(),
       }
@@ -50,6 +51,16 @@ pub fn hir_ast_with_source_for_scope(
     }
 
     BlockId::Class(class) => {
+      let def = item_id_map.get(&ast, class);
+
+      if let Some(body) = def.body() {
+        ast_for_block(&item_id_map, body.items())
+      } else {
+        (Block::empty(), BlockSourceMap::empty())
+      }
+    }
+
+    BlockId::Object(class) => {
       let def = item_id_map.get(&ast, class);
 
       if let Some(body) = def.body() {
