@@ -15,8 +15,6 @@ pub struct Files {
   root_lookup: HashMap<PathBuf, SourceRootId>,
 
   changes: Vec<FileId>,
-
-  pub workspace: PathBuf,
 }
 
 struct File {
@@ -36,14 +34,13 @@ struct SourceRoot {
 }
 
 impl Files {
-  pub fn new(workspace: PathBuf) -> Self {
+  pub fn new() -> Self {
     Files {
-      files: HashMap::new(),
+      files:       HashMap::new(),
       file_lookup: HashMap::new(),
-      roots: HashMap::new(),
+      roots:       HashMap::new(),
       root_lookup: HashMap::new(),
-      changes: vec![],
-      workspace,
+      changes:     vec![],
     }
   }
 
@@ -142,7 +139,7 @@ mod tests {
 
   #[test]
   fn get_works() {
-    let mut files = Files::new(PathBuf::new());
+    let mut files = Files::new();
     let root = SourceRootId::from_raw(0.into());
     let file = FileId::new_raw(0);
 
@@ -157,7 +154,7 @@ mod tests {
 
   #[test]
   fn get_works_with_no_root() {
-    let mut files = Files::new(PathBuf::new());
+    let mut files = Files::new();
     let file = FileId::new_raw(0);
 
     let id = files.create(Path::new("/foo/bar"));

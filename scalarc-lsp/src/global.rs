@@ -14,8 +14,7 @@ use lsp_types::{notification::Notification, Url};
 use crate::files::Files;
 
 pub struct GlobalState {
-  pub sender:    Sender<lsp_server::Message>,
-  pub workspace: PathBuf,
+  pub sender: Sender<lsp_server::Message>,
 
   pub files: Arc<RwLock<Files>>,
 
@@ -51,9 +50,8 @@ pub struct GlobalState {
 }
 
 pub(crate) struct GlobalStateSnapshot {
-  pub analysis:  Analysis,
-  pub files:     Arc<RwLock<Files>>,
-  pub workspace: PathBuf,
+  pub analysis: Analysis,
+  pub files:    Arc<RwLock<Files>>,
 }
 
 #[derive(Debug)]
@@ -68,7 +66,6 @@ impl GlobalState {
     sender: Sender<lsp_server::Message>,
     bsp_client: Option<BspClient>,
     bsp_flavor: BspFlavor,
-    workspace: Url,
   ) -> Self {
     let (pool_tx, pool_rx) = crossbeam_channel::bounded::<Box<dyn FnOnce() + Send>>(0);
 
@@ -87,9 +84,8 @@ impl GlobalState {
 
     GlobalState {
       sender,
-      workspace: workspace.to_file_path().unwrap(),
 
-      files: Arc::new(RwLock::new(Files::new(workspace.to_file_path().unwrap()))),
+      files: Arc::new(RwLock::new(Files::new())),
       file_to_source_root: HashMap::new(),
 
       analysis_host: AnalysisHost::new(),
@@ -226,10 +222,7 @@ impl GlobalState {
         .send(lsp_server::Message::Notification(lsp_server::Notification {
           method: lsp_types::notification::PublishDiagnostics::METHOD.into(),
           params: serde_json::to_value(lsp_types::PublishDiagnosticsParams {
-            uri:         Url::from_file_path(
-              self.workspace.join(files.id_to_absolute_path(file_id)),
-            )
-            .unwrap(),
+            uri:         Url::from_file_path(files.id_to_absolute_path(file_id)).unwrap(),
             diagnostics: diagnostics
               .into_iter()
               .filter_map(|d| {
@@ -320,11 +313,7 @@ impl GlobalState {
   }
 
   pub fn snapshot(&self) -> GlobalStateSnapshot {
-    GlobalStateSnapshot {
-      analysis:  self.analysis_host.snapshot(),
-      files:     self.files.clone(),
-      workspace: self.workspace.clone(),
-    }
+    GlobalStateSnapshot { analysis: self.analysis_host.snapshot(), files: self.files.clone() }
   }
 }
 
