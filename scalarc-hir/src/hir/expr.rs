@@ -65,6 +65,8 @@ pub enum Expr {
 
   FieldAccess(ExprId, String),
   Call(ExprId, String, Vec<ExprId>),
+
+  New(UnresolvedPath, Vec<ExprId>),
 }
 
 #[derive(Debug, PartialEq, Eq)]

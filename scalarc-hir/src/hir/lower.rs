@@ -253,6 +253,18 @@ impl BlockLower<'_> {
         }
       }
 
+      ast::Expr::NewExpr(new) => {
+        let name = UnresolvedPath { segments: vec![new.id_token()?.text().to_string()] };
+        let mut args = vec![];
+        if let Some(a) = new.paren_arguments() {
+          for arg in a.exprs() {
+            args.push(self.walk_expr(&arg)?);
+          }
+        }
+
+        Some(self.alloc_expr(Expr::New(name, args), expr))
+      }
+
       _ => {
         warn!("Unhandled expr: {expr:#?}");
         None
@@ -413,6 +425,71 @@ mod tests {
             Idx::<Stmt>(2),
             Idx::<Stmt>(3),
             Idx::<Stmt>(4),
+          ],
+        }"#
+      ],
+    );
+  }
+
+  #[test]
+  fn new_expr() {
+    check(
+      r#"
+      {
+        val foo = new Foo(2, 3)
+      }
+      "#,
+      expect![@r#"
+        Block {
+          stmts: Arena {
+            len: 1,
+            data: [
+              Binding(
+                Binding {
+                  implicit: false,
+                  kind: Val,
+                  ty: None,
+                  name: "foo",
+                  expr: Some(
+                    Idx::<Expr>(2),
+                  ),
+                },
+              ),
+            ],
+          },
+          exprs: Arena {
+            len: 3,
+            data: [
+              Literal(
+                Int(
+                  2,
+                ),
+              ),
+              Literal(
+                Int(
+                  3,
+                ),
+              ),
+              New(
+                UnresolvedPath {
+                  segments: [
+                    "Foo",
+                  ],
+                },
+                [
+                  Idx::<Expr>(0),
+                  Idx::<Expr>(1),
+                ],
+              ),
+            ],
+          },
+          stmt_map: {
+            ErasedAstId {
+              raw: Idx::<Scala>>(2),
+            }: Idx::<Stmt>(0),
+          },
+          items: [
+            Idx::<Stmt>(0),
           ],
         }"#
       ],
