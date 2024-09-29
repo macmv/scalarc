@@ -1,16 +1,15 @@
-use std::{path::PathBuf, sync::Arc};
-
+use crate::{completion::completions, database::RootDatabase};
 use la_arena::Arena;
 use scalarc_source::{FileId, SourceDatabase, SourceRoot, TargetData};
-
-use crate::{completion::completions, database::RootDatabase};
+use scalarc_test::{expect, Expect};
+use std::{path::PathBuf, sync::Arc};
 
 fn simple_completions(db: &RootDatabase, cursor: crate::FileLocation) -> Vec<String> {
   let completions = completions(db, cursor);
   completions.into_iter().map(|c| c.label).collect()
 }
 
-fn completions_for(src: &str) -> Vec<String> {
+fn completions_for(src: &str, expect: Expect) {
   let cursor = src.find('|').unwrap() as u32;
   let real_src = src[..cursor as usize].to_string() + &src[cursor as usize + 1..];
 
@@ -46,49 +45,46 @@ fn completions_for(src: &str) -> Vec<String> {
   let workspace = scalarc_source::Workspace { root: Default::default(), targets, source_roots };
   db.set_workspace(Arc::new(workspace));
 
-  simple_completions(&db, crate::FileLocation { file, index: cursor.into() })
+  let completions = simple_completions(&db, crate::FileLocation { file, index: cursor.into() });
+  let expected = format!("[{}]", completions.join(", "));
+
+  expect.assert_eq(&expected);
 }
 
 #[test]
 fn check_completions() {
-  assert_eq!(
-    completions_for(
-      r#"
-        object Foo {
-          val x = 1
-          val y = 2
-          val z = 3 + 4
-          |
-        }
-      "#,
-    ),
-    vec!["Foo", "Int", "z", "y", "x"]
+  completions_for(
+    r#"
+      object Foo {
+        val x = 1
+        val y = 2
+        val z = 3 + 4
+        |
+      }
+    "#,
+    expect![@"[Foo, Int, z, y, x]"],
   );
 
-  assert_eq!(
-    completions_for(
-      r#"
-        object Foo {
-          val x = 1
-          val y = 2
-          |
-          val z = 3 + 4
-        }
-      "#,
-    ),
-    vec!["Foo", "Int", "y", "x"]
+  completions_for(
+    r#"
+      object Foo {
+        val x = 1
+        val y = 2
+        |
+        val z = 3 + 4
+      }
+    "#,
+    expect![@"[Foo, Int, y, x]"],
   );
 
-  assert_eq!(
-    completions_for(
-      r#"
-        object Foo {
-          val x = 1
-          val y = 2
-          val z = |3 + 4
-        }
-      "#,
-    ),
-    vec!["Foo", "Int", "y", "x"]
+  completions_for(
+    r#"
+      object Foo {
+        val x = 1
+        val y = 2
+        val z = |3 + 4
+      }
+    "#,
+    expect![@"[Foo, Int, y, x]"],
   );
 }

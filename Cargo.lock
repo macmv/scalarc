@@ -426,6 +426,7 @@ dependencies = [
  "scalarc-parser",
  "scalarc-source",
  "scalarc-syntax",
+ "scalarc-test",
 ]
 
 [[package]]
