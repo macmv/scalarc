@@ -222,7 +222,7 @@ ConstrAnnotation  =  '@' Type Arguments
 ItemBody = nl? '{' SelfType? (Item (';' Item)*) '}'
 SelfType = id (':' Type)? '=>'
 
-Package = 'package' (id ('.' id)*)
+Package = 'package' Path
 
 Import     = 'import' (ImportExpr (',' ImportExpr)*)
 ImportExpr = Path | ImportSelectors

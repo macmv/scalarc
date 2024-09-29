@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{scope::Scope, Definition, HirDatabase};
+use crate::{scope::Scope, Definition, DefinitionMap, HirDatabase};
 use la_arena::Arena;
 use scalarc_source::FileId;
 use scalarc_syntax::TextSize;
@@ -12,6 +12,12 @@ fn scopes_of(src: &str, expected: Expect) {
   let db = new_db(src);
   let actual = db.scopes_of(FileId::temp_new());
   expected.assert_eq(&DebugUtil { db: &db, item: &actual.scopes }.to_string());
+}
+
+fn def_map(src: &str, expected: Expect) {
+  let db = new_db(&src);
+  let actual = db.definitions_for_file(FileId::temp_new());
+  expected.assert_eq(&DebugUtil { db: &db, item: &actual }.to_string());
 }
 
 fn defs_at(src: &str, expected: Expect) {
@@ -92,6 +98,12 @@ impl fmt::Debug for DebugUtil<'_, '_, Scope> {
       .field("item", &item)
       .field("declarations", &self.child(&self.item.declarations))
       .finish()
+  }
+}
+
+impl fmt::Debug for DebugUtil<'_, '_, DefinitionMap> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    f.debug_map().entries(self.item.items.iter().map(|(k, v)| (k, self.child(v)))).finish()
   }
 }
 
@@ -821,5 +833,40 @@ fn refs_to_val() {
         @a@
       }
     "#],
+  );
+}
+
+#[test]
+fn def_map_packages() {
+  def_map(
+    r#"
+    package foo.bar
+    val baz = 3
+    "#,
+    expect![@r#"
+      {
+        Path {
+          elems: [
+            Name(
+              "foo",
+            ),
+            Name(
+              "bar",
+            ),
+            Name(
+              "baz",
+            ),
+          ],
+        }: Definition {
+          name: "baz",
+          kind: Val(
+            None,
+          ),
+          item: SyntaxNodePtr {
+            kind: VAL_DEF,
+            range: 25..36,
+          },
+        },
+      }"#],
   );
 }

@@ -9,7 +9,6 @@ use crate::{
   scope::FileScopes,
   Definition, DefinitionKind, HirDatabase, InFile, InFileExt, InferQuery, Name, Path,
 };
-use la_arena::{Idx, RawIdx};
 use salsa::{Query, QueryDb};
 use scalarc_source::FileId;
 use scalarc_syntax::{

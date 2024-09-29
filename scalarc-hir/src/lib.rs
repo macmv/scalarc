@@ -189,8 +189,10 @@ fn package_for_file(db: &dyn HirDatabase, file: FileId) -> Option<Path> {
       ast::Item::Package(p) => {
         let mut elems = vec![];
 
-        for id in p.ids() {
-          elems.push(Name::new(id.to_string()));
+        if let Some(p) = p.path() {
+          for id in p.ids() {
+            elems.push(Name::new(id.to_string()));
+          }
         }
 
         return Some(Path { elems });
