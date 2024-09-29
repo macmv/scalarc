@@ -60,6 +60,7 @@ pub struct FileRange {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Definition {
   pub name:         Name,
+  pub file_id:      FileId,
   pub parent_scope: ScopeId,
   pub ast_id:       ErasedAstId,
   pub kind:         DefinitionKind,

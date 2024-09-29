@@ -227,6 +227,7 @@ fn def_of_node(
 
       Some(Definition {
         name: id.text().into(),
+        file_id,
         parent_scope: scope,
         ast_id,
         kind: DefinitionKind::Val(ty),
@@ -242,6 +243,7 @@ fn def_of_node(
 
       Some(Definition {
         name: id.text().into(),
+        file_id,
         parent_scope: scope,
         ast_id,
         kind: DefinitionKind::Class(c.body().map(|node| ast_id_map.ast_id(&node))),
@@ -260,6 +262,7 @@ fn def_of_node(
 
       Some(Definition {
         name: id.text().into(),
+        file_id,
         parent_scope: scope,
         ast_id,
         kind: DefinitionKind::Def(hir_sig),
@@ -276,6 +279,7 @@ fn def_of_node(
       let id = p.id_token()?;
       Some(Definition {
         name: id.text().into(),
+        file_id,
         parent_scope: scope,
         ast_id,
         kind: DefinitionKind::Parameter,

@@ -242,8 +242,8 @@ impl<'a> Infer<'a> {
       let defs = self.db.definitions_for_target(target);
 
       if let Some(def) = defs.items.get(&path) {
-        let scopes = self.db.scopes_of(self.file_id);
-        return self.select_name_from_def(&scopes, self.file_id, def, name);
+        let scopes = self.db.scopes_of(def.file_id);
+        return self.select_name_from_def(&scopes, def.file_id, def, name);
       }
 
       for dep in self.db.workspace().targets[target].dependencies.iter() {
