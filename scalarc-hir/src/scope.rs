@@ -226,7 +226,8 @@ fn def_of_node(
       let v = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
       let id = v.id_token()?;
 
-      let ty = v.ty().map(|ty| Type::Named(Path { elems: vec![Name(ty.syntax().text().into())] }));
+      let ty =
+        v.ty().map(|ty| Type::Instance(Path { elems: vec![Name(ty.syntax().text().into())] }));
 
       Some(Definition {
         name: id.text().into(),

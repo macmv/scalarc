@@ -18,7 +18,8 @@ use scalarc_syntax::{
 #[derive(Clone, PartialEq, Eq)]
 pub enum Type {
   Unknown,
-  Named(Path),
+  Object(Path),
+  Instance(Path),
   Tuple(Vec<Type>),
   Lambda(Vec<Type>, Box<Type>),
 }
@@ -48,7 +49,7 @@ impl Signature {
               if let (Some(id), Some(ty)) = (p.id_token(), p.ty()) {
                 Some((
                   id.text().into(),
-                  Type::Named(Path {
+                  Type::Instance(Path {
                     elems: vec![Name("scala".into()), Name(ty.syntax().text().into())],
                   }),
                 ))
@@ -60,7 +61,7 @@ impl Signature {
         })
         .collect(),
       ret:    sig.ty().map(|ty| {
-        Type::Named(Path { elems: vec![Name("scala".into()), Name(ty.syntax().text().into())] })
+        Type::Instance(Path { elems: vec![Name("scala".into()), Name(ty.syntax().text().into())] })
       }),
     }
   }
@@ -77,7 +78,8 @@ impl fmt::Display for Type {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
       Type::Unknown => write!(f, "unknown"),
-      Type::Named(path) => write!(f, "{}", path),
+      Type::Instance(path) => write!(f, "@{}", path),
+      Type::Object(path) => write!(f, "${}", path),
       Type::Tuple(types) => {
         write!(f, "(")?;
         for (i, ty) in types.iter().enumerate() {
@@ -170,7 +172,7 @@ impl<'a> Infer<'a> {
         if let Some(local) = self.locals.get(&path.segments[0]) {
           Some(local.clone())
         } else {
-          Some(Type::Named(Path {
+          Some(Type::Object(Path {
             elems: path.segments.iter().map(|s| Name::new(s.clone())).collect(),
           }))
         }
@@ -225,7 +227,7 @@ impl<'a> Infer<'a> {
         }
 
         // FIXME: Need name resolution.
-        Some(Type::Named(Path {
+        Some(Type::Instance(Path {
           elems: path.segments.iter().map(|s| Name::new(s.clone())).collect(),
         }))
       }
@@ -243,7 +245,7 @@ impl<'a> Infer<'a> {
   fn type_access(&mut self, lhs: ExprId, name: &str) -> Option<Type> {
     let lhs = self.type_expr(lhs)?;
     let path = match lhs {
-      Type::Named(ref path) => path.clone(),
+      Type::Instance(ref path) => path.clone(),
       _ => return None,
     };
 
@@ -497,6 +499,6 @@ pub fn type_at_item(db: &dyn HirDatabase, file_id: FileId, item: ErasedAstId) ->
 }
 
 impl Type {
-  pub fn int() -> Self { Type::Named(Path { elems: vec!["scala".into(), "Int".into()] }) }
-  pub fn float() -> Self { Type::Named(Path { elems: vec!["scala".into(), "Float".into()] }) }
+  pub fn int() -> Self { Type::Instance(Path { elems: vec!["scala".into(), "Int".into()] }) }
+  pub fn float() -> Self { Type::Instance(Path { elems: vec!["scala".into(), "Float".into()] }) }
 }
