@@ -87,15 +87,18 @@ fn check_completions() {
     "#,
     expect![@"[Foo, Int, y, x]"],
   );
+}
 
+#[test]
+fn dot_access() {
   completions_for(
     r#"
-      class Foo {
+      object Foo {
         val x = 1
       }
 
-      new Foo().|
+      Foo.f|oo
     "#,
-    expect![@"[Foo, Int, Foo]"],
+    expect![@"[x, Foo]"],
   );
 }
