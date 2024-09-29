@@ -79,7 +79,7 @@ impl fmt::Display for Type {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
       Type::Unknown => write!(f, "unknown"),
-      Type::Instance(path) => write!(f, "@{}", path),
+      Type::Instance(path) => write!(f, "{}", path),
       Type::Object(path) => write!(f, "${}", path),
       Type::Tuple(types) => {
         write!(f, "(")?;
