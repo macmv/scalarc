@@ -183,3 +183,36 @@ fn type_of_class() {
     expect![@"Foo"],
   );
 }
+
+#[test]
+fn type_of_object_vs_class() {
+  type_at(
+    r#"
+    object Foo {
+      val x = 2
+    }
+
+    class Foo {
+      val y = 2
+    }
+
+    Foo.x@@
+    "#,
+    expect![@"scala.Int"],
+  );
+
+  type_at(
+    r#"
+    object Foo {
+      val x = 2
+    }
+
+    class Foo {
+      val y = 2
+    }
+
+    new Foo().y@@
+    "#,
+    expect![@"scala.Int"],
+  );
+}
