@@ -5,7 +5,7 @@ use std::{collections::HashMap, io, path::Path};
 use la_arena::Arena;
 use lsp_types::Url;
 use scalarc_bsp::types as bsp_types;
-use scalarc_source::{FileId, SourceRoot, SourceRootId};
+use scalarc_source::{FileId, SourceRoot};
 
 use crate::files::Files;
 
