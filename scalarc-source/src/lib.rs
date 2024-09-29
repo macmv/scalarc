@@ -24,6 +24,9 @@ pub trait SourceDatabase: std::fmt::Debug {
 
   #[salsa::invoke(source_root::source_root_target)]
   fn source_root_target(&self, id: SourceRootId) -> TargetId;
+
+  #[salsa::invoke(source_root::file_target)]
+  fn file_target(&self, file_id: FileId) -> Option<TargetId>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

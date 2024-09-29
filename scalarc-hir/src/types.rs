@@ -232,17 +232,23 @@ impl<'a> Infer<'a> {
 
   fn type_access(&mut self, lhs: ExprId, name: &str) -> Option<Type> {
     let lhs = self.type_expr(lhs)?;
+    let path = match lhs {
+      Type::Named(ref path) => path.clone(),
+      _ => return None,
+    };
 
-    let root = self.db.file_source_root(self.file_id)?;
-    for &file_id in &self.db.workspace().source_roots[root].sources {
-      // TODO: Check if the package of `file` matches `lhs`.
-      let scopes = self.db.scopes_of(file_id);
+    let mut targets = vec![self.db.file_target(self.file_id)?];
 
-      let scope_map = &scopes.scopes[Idx::from_raw(RawIdx::from_u32(0))];
-      if let Some((_, d)) = scope_map.declarations.iter().find(
-        |(name, _)| matches!(lhs, Type::Named(ref path) if path.elems.last().unwrap().as_str() == name.as_str()),
-      ) {
-        return self.select_name_from_def(&scopes, file_id, d, name);
+    while let Some(target) = targets.pop() {
+      let defs = self.db.definitions_for_target(target);
+
+      if let Some(def) = defs.items.get(&path) {
+        let scopes = self.db.scopes_of(self.file_id);
+        return self.select_name_from_def(&scopes, self.file_id, def, name);
+      }
+
+      for dep in self.db.workspace().targets[target].dependencies.iter() {
+        targets.push(*dep);
       }
     }
 

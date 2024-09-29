@@ -41,20 +41,27 @@ pub fn new_db(content: &str) -> TestDB {
   let std = FileId::new_raw(1);
   db.set_file_text(std, include_str!("ministd.scala").into());
 
-  // Build a workspace with a single source root, with a single file in it.
+  // Build a workspace with two targets: one for std, and one for this test.
   let mut targets = Arena::new();
   let mut source_roots = Arena::new();
 
-  let source_root =
-    source_roots.alloc(SourceRoot { path: PathBuf::new(), sources: vec![file, std] });
+  let std_source = source_roots.alloc(SourceRoot { path: PathBuf::new(), sources: vec![std] });
+  let test_source = source_roots.alloc(SourceRoot { path: PathBuf::new(), sources: vec![file] });
 
-  targets.alloc(TargetData {
+  let std_target = targets.alloc(TargetData {
     dependencies: vec![],
-    bsp_id:       "file:///".parse().unwrap(),
-    source_roots: vec![source_root],
+    bsp_id:       "file:///std".parse().unwrap(),
+    source_roots: vec![std_source],
   });
 
-  db.set_file_source_root(file, Some(source_root));
+  targets.alloc(TargetData {
+    dependencies: vec![std_target],
+    bsp_id:       "file:///test".parse().unwrap(),
+    source_roots: vec![test_source],
+  });
+
+  db.set_file_source_root(std, Some(std_source));
+  db.set_file_source_root(file, Some(test_source));
 
   let workspace = scalarc_source::Workspace { root: Default::default(), targets, source_roots };
   db.set_workspace(Arc::new(workspace));
