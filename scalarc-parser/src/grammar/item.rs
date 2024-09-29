@@ -266,16 +266,27 @@ fn class_def(p: &mut Parser, m: Marker) {
     p.eat(T![case]);
   }
 
-  match p.current() {
+  let kind = match p.current() {
     // test ok
     // object Foo
-    T![object] => p.eat(T![object]),
+    T![object] => {
+      p.eat(T![object]);
+      OBJECT_DEF
+    }
 
     // test ok
     // class Foo
-    T![class] => p.eat(T![class]),
-    _ => p.error("expected class or object"),
-  }
+    T![class] => {
+      p.eat(T![class]);
+      CLASS_DEF
+    }
+
+    _ => {
+      p.error("expected class or object");
+      m.abandon(p);
+      return;
+    }
+  };
 
   p.expect(T![ident]);
 
@@ -315,7 +326,7 @@ fn class_def(p: &mut Parser, m: Marker) {
     item_body(p);
   }
 
-  m.complete(p, CLASS_DEF);
+  m.complete(p, kind);
 }
 
 fn item_body(p: &mut Parser) {
@@ -912,6 +923,24 @@ mod tests {
             WHITESPACE ' '
             SIMPLE_TYPE
               IDENT 'Baz'
+            WHITESPACE ' '
+            ITEM_BODY
+              OPEN_CURLY '{'
+              CLOSE_CURLY '}'
+      "#],
+    );
+  }
+
+  #[test]
+  fn object_works() {
+    check(
+      "object Foo {}",
+      expect![@r#"
+        SOURCE_FILE
+          OBJECT_DEF
+            OBJECT_KW 'object'
+            WHITESPACE ' '
+            IDENT 'Foo'
             WHITESPACE ' '
             ITEM_BODY
               OPEN_CURLY '{'
