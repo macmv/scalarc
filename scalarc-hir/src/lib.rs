@@ -1,6 +1,9 @@
 use hir::{AstId, BlockId, ErasedAstId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
-use scalarc_syntax::{ast::ItemBody, SyntaxNodePtr, TextRange, TextSize};
+use scalarc_syntax::{
+  ast::{self, ItemBody},
+  SyntaxNodePtr, TextRange, TextSize,
+};
 use scope::{FileScopes, ScopeId};
 use std::{collections::HashMap, sync::Arc};
 
@@ -115,6 +118,10 @@ pub trait HirDatabase: SourceDatabase {
   // This query is stable across reparses.
   fn hir_ast_for_scope(&self, block: InFile<BlockId>) -> Arc<hir::Block>;
 
+  // This query returns a stable result across reparses, but depends on the CST
+  // directly.
+  fn package_for_file(&self, file: FileId) -> Option<Path>;
+
   // Returns the BlockId of any node in a file. This returns an `InFile` for ease
   // of use, the `file_id` will always be the same as the given file_id.
   #[salsa::invoke(hir::block_for_node)]
@@ -149,6 +156,7 @@ fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionM
 
 fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap {
   let file_scopes = db.scopes_of(file_id);
+  let package = db.package_for_file(file_id).unwrap_or_default();
 
   // Only the outermost scope is visible.
   //
@@ -158,15 +166,40 @@ fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap 
   };
 
   DefinitionMap {
-    // TODO: Parse the `package` statement and build a path from that.
     items: scope
       .1
       .declarations
       .iter()
       .rev()
-      .map(|(_, def)| (Path { elems: vec![def.name.clone()] }, def.clone()))
+      .map(|(_, def)| {
+        let mut path = package.clone();
+        path.elems.push(def.name.clone());
+
+        (path, def.clone())
+      })
       .collect(),
   }
+}
+
+fn package_for_file(db: &dyn HirDatabase, file: FileId) -> Option<Path> {
+  let ast = db.parse(file);
+
+  for item in ast.tree().items() {
+    match item {
+      ast::Item::Package(p) => {
+        let mut elems = vec![];
+
+        for id in p.ids() {
+          elems.push(Name::new(id.to_string()));
+        }
+
+        return Some(Path { elems });
+      }
+      _ => {}
+    }
+  }
+
+  None
 }
 
 impl Default for Path {
