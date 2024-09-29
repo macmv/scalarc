@@ -110,7 +110,7 @@ fn dot_access() {
 
      Foo.|foo
    "#,
-    expect![@"[x, Foo]"],
+    expect![@"[x]"],
   );
 }
 
@@ -124,6 +124,6 @@ fn dot_access_invalid_syntax() {
 
      Foo.|
    "#,
-    expect![@"[x, Foo]"],
+    expect![@"[x]"],
   );
 }

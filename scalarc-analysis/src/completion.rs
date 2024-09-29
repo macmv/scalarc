@@ -76,13 +76,20 @@ fn fields_of_def(db: &RootDatabase, def: &Definition) -> Option<Vec<Completion>>
       let item = db.ast_id_map(def.file_id).get_erased(def.ast_id);
       let index = item.text_range().end();
 
-      let mut completions = vec![];
-      let definitions = db.defs_at_index(def.file_id, index);
+      let file_scopes = db.scopes_of(def.file_id);
+      let ast_id_map = db.ast_id_map(def.file_id);
 
+      // TODO: Instead of searching by span, store this scope on def directly.
+      let scope = file_scopes.scopes.iter().rev().find(|(_, scope)| {
+        let item = ast_id_map.get_erased(scope.ast_id);
+        item.text_range().contains_inclusive(index)
+      })?;
+
+      let mut completions = vec![];
       let mut names = HashSet::new();
-      for def in definitions {
+      for (_, def) in &scope.1.declarations {
         if names.insert(def.name.clone()) {
-          completions.push(Completion { label: def.name.as_str().into(), kind: def.kind });
+          completions.push(Completion { label: def.name.as_str().into(), kind: def.kind.clone() });
         }
       }
 
