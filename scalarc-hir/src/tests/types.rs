@@ -62,7 +62,7 @@ fn type_of_object() {
 
     val foo@@ = Foo
     "#,
-    expect![@"Foo"],
+    expect![@"$Foo"],
   );
 
   type_at(
