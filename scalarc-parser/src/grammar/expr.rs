@@ -333,7 +333,12 @@ fn postfix_dot_expr(
       p.eat(T![ident]);
       Ok(m.complete(p, FIELD_EXPR))
     }
-    _ => Err(lhs),
+    _ => {
+      let m = lhs.precede(p);
+      p.eat(T![.]);
+      p.error(format!("expected identifier, got {:?}", p.current()));
+      Err(m.complete(p, FIELD_EXPR))
+    }
   }
 }
 
@@ -1030,11 +1035,24 @@ mod tests {
     check_expr(
       "foo.3",
       expect![@r#"
-        IDENT_EXPR
-          IDENT 'foo'
-        error: expected operator, got DOT
-        DOT '.'
+        FIELD_EXPR
+          IDENT_EXPR
+            IDENT 'foo'
+          DOT '.'
+          error: expected identifier, got INT_LIT_KW
+        error: expected operator, got INT_LIT_KW
         INT_LIT_KW '3'
+      "#],
+    );
+
+    check_expr(
+      "foo.",
+      expect![@r#"
+        FIELD_EXPR
+          IDENT_EXPR
+            IDENT 'foo'
+          DOT '.'
+          error: expected identifier, got EOF
       "#],
     );
   }
