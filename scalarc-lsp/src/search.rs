@@ -50,18 +50,16 @@ pub fn workspace_from_sources(
       let root_path = source.uri.to_file_path().unwrap();
       let mut sources = vec![];
 
-      let source_id = SourceRootId::from_raw((source_roots.len() as u32).into());
-      files.create_source_root(source_id, &root_path);
-
       // BSP kinda falls apart right here. Source roots are only real like 20% of the
       // time. The other 80% is "project" source directories that don't exist, target
       // directories, testing directories, and magical directories for the standard
       // library that don't exist at all.
       let _ = discover_sources(&root_path, &mut sources, files);
 
-      let root = SourceRoot { path: root_path, sources };
+      let root = SourceRoot { path: root_path.clone(), sources };
 
       let source_id = source_roots.alloc(root);
+      files.create_source_root(source_id, &root_path);
       targets[id].source_roots.push(source_id);
     }
   }
@@ -70,11 +68,10 @@ pub fn workspace_from_sources(
   let root_path = scalarc_coursier::sources_path();
   let mut sources = vec![];
 
-  let source_id = SourceRootId::from_raw((source_roots.len() as u32).into());
-  files.create_source_root(source_id, &root_path);
   discover_sources(&root_path, &mut sources, files).unwrap();
-  let root = SourceRoot { path: root_path, sources };
+  let root = SourceRoot { path: root_path.clone(), sources };
   let source_id = source_roots.alloc(root);
+  files.create_source_root(source_id, &root_path);
 
   let std_target = targets.alloc(scalarc_source::TargetData {
     dependencies: vec![],
