@@ -13,8 +13,6 @@ pub struct Completion {
 }
 
 pub fn completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion> {
-  info!("finding completions...");
-
   completions_inner(db, pos).unwrap_or_default()
 }
 
@@ -102,7 +100,6 @@ fn top_level_completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion
   let mut targets = vec![target];
 
   while let Some(target) = targets.pop() {
-    info!("searching {target:?}");
     definitions.extend(db.definitions_for_target(target).items);
 
     for dep in &db.workspace().targets[target].dependencies {
@@ -126,8 +123,6 @@ fn top_level_completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion
       completions.push(Completion { label: def.name.as_str().into(), kind: def.kind });
     }
   }
-
-  info!("got {} completions!", completions.len());
 
   completions
 }
