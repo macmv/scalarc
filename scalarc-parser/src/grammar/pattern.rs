@@ -14,8 +14,13 @@ fn pattern_inner(p: &mut Parser) -> Option<CompletedMarker> {
     let m = lhs.precede(p);
     p.eat(IDENT);
     p.eat_newlines();
-    atom_pattern(p)?;
-    lhs = m.complete(p, UNION_PATTERN);
+    match atom_pattern(p) {
+      Some(_) => lhs = m.complete(p, UNION_PATTERN),
+      None => {
+        m.abandon(p);
+        break;
+      }
+    }
   }
   None
 }
@@ -111,8 +116,17 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
 
           // test ok
           // case foo =>
+          //
+          // test ok
           // case foo if bar =>
           T![=>] | T![if] => {
+            m2.complete(p, PATH);
+
+            Some(m.complete(p, PATH_PATTERN))
+          }
+
+          // `|` is a valid terminator, for union patterns.
+          T![ident] if p.slice() == "|" => {
             m2.complete(p, PATH);
 
             Some(m.complete(p, PATH_PATTERN))
