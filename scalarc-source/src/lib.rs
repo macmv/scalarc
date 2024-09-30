@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::HashSet, path::PathBuf, sync::Arc};
 
 use la_arena::{Arena, Idx};
 use scalarc_syntax::{Parse, SourceFile};
@@ -45,6 +45,31 @@ pub struct Workspace {
 
   pub targets:      Arena<TargetData>,
   pub source_roots: Arena<SourceRoot>,
+}
+
+impl Workspace {
+  pub fn all_dependencies(&self, target: TargetId) -> DependencyIter {
+    DependencyIter { workspace: self, seen: HashSet::new(), stack: vec![target] }
+  }
+}
+
+pub struct DependencyIter<'a> {
+  workspace: &'a Workspace,
+  seen:      HashSet<TargetId>,
+  stack:     Vec<TargetId>,
+}
+
+impl Iterator for DependencyIter<'_> {
+  type Item = TargetId;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    let mut target = self.stack.pop()?;
+    while !self.seen.insert(target) {
+      target = self.stack.pop()?;
+    }
+    self.stack.extend(self.workspace.targets[target].dependencies.iter().copied());
+    Some(target)
+  }
 }
 
 /// Targets are similar to packages, but are slightly more granular. For

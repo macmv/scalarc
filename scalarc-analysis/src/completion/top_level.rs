@@ -9,14 +9,8 @@ impl Completer<'_> {
     let target = self.db.source_root_target(source_root);
 
     let mut definitions = vec![];
-    let mut targets = vec![target];
-
-    while let Some(target) = targets.pop() {
+    for target in self.db.workspace().all_dependencies(target) {
       definitions.extend(self.db.definitions_for_target(target).items);
-
-      for dep in &self.db.workspace().targets[target].dependencies {
-        targets.push(*dep);
-      }
     }
 
     let mut completions = definitions

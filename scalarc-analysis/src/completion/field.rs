@@ -11,17 +11,11 @@ impl Completer<'_> {
       _ => return vec![],
     };
 
-    let mut targets = vec![target];
-
-    while let Some(target) = targets.pop() {
+    for target in self.db.workspace().all_dependencies(target) {
       let defs = self.db.definitions_for_target(target);
 
       if let Some(def) = defs.items.get(&key) {
         return self.fields_of_def(def).unwrap_or_default();
-      }
-
-      for dep in self.db.workspace().targets[target].dependencies.iter() {
-        targets.push(*dep);
       }
     }
 

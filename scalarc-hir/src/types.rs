@@ -251,17 +251,11 @@ impl<'a> Infer<'a> {
       _ => return None,
     };
 
-    let mut targets = vec![self.db.file_target(self.file_id)?];
-
-    while let Some(target) = targets.pop() {
+    for target in self.db.workspace().all_dependencies(self.db.file_target(self.file_id)?) {
       let defs = self.db.definitions_for_target(target);
 
       if let Some(def) = defs.items.get(&key) {
         return self.select_name_from_def(def, name);
-      }
-
-      for dep in self.db.workspace().targets[target].dependencies.iter() {
-        targets.push(*dep);
       }
     }
 
