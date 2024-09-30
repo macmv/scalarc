@@ -280,8 +280,8 @@ impl Highlightable for ast::Expr {
 impl Highlightable for ast::Pattern {
   fn highlight(&self, h: &mut Highlighter) {
     match self {
-      ast::Pattern::IdentPattern(i) => {
-        h.highlight_opt(i.id_token(), HighlightKind::Variable);
+      ast::Pattern::PathPattern(_) => {
+        // h.highlight_opt(i.path(), HighlightKind::Variable);
       }
       ast::Pattern::TypePattern(i) => {
         h.highlight_opt(i.id_token(), HighlightKind::Variable);
