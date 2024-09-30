@@ -240,6 +240,67 @@ fn val_def() {
 }
 
 #[test]
+fn var_def() {
+  check(
+    "var foo = 3",
+    expect![@r#"
+      SOURCE_FILE
+        VAR_DEF
+          VAR_KW 'var'
+          WHITESPACE ' '
+          IDENT 'foo'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '3'
+    "#],
+  );
+
+  check(
+    "var foo: Int = 3",
+    expect![@r#"
+      SOURCE_FILE
+        VAR_DEF
+          VAR_KW 'var'
+          WHITESPACE ' '
+          IDENT 'foo'
+          COLON ':'
+          WHITESPACE ' '
+          SIMPLE_TYPE
+            IDENT 'Int'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '3'
+    "#],
+  );
+
+  // Vars allow `_` for null. We just parse `_` as an identifier, but this is
+  // special cased in the real scala compiler.
+  check(
+    "var foo: Int = _",
+    expect![@r#"
+      SOURCE_FILE
+        VAR_DEF
+          VAR_KW 'var'
+          WHITESPACE ' '
+          IDENT 'foo'
+          COLON ':'
+          WHITESPACE ' '
+          SIMPLE_TYPE
+            IDENT 'Int'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          IDENT_EXPR
+            IDENT '_'
+    "#],
+  );
+}
+
+#[test]
 fn class_def() {
   check(
     "class Foo() {}",

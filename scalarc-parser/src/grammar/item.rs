@@ -121,7 +121,7 @@ fn item(p: &mut Parser) {
 
     T![import] => import_item(p, m),
     T![def] => fun_def(p, m),
-    T![val] => val_def(p, m),
+    T![val] | T![var] => val_def(p, m),
 
     T![class] | T![object] => class_def(p, m),
     T![case] if matches!(p.peek(), T![class] | T![object]) => class_def(p, m),
@@ -518,7 +518,12 @@ fn fun_param(p: &mut Parser) {
 // test ok
 // val foo = 3
 fn val_def(p: &mut Parser, m: Marker) {
-  p.eat(T![val]);
+  let kind = match p.current() {
+    T![val] => VAL_DEF,
+    T![var] => VAR_DEF,
+    _ => panic!("expected val or var"),
+  };
+  p.bump();
   p.expect(T![ident]);
 
   let mut found_type = false;
@@ -550,7 +555,7 @@ fn val_def(p: &mut Parser, m: Marker) {
     p.error("expected type or expr");
   }
 
-  m.complete(p, VAL_DEF);
+  m.complete(p, kind);
 }
 
 pub fn case_item(p: &mut Parser, m: Marker) {
