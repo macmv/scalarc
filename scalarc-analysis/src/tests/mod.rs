@@ -99,7 +99,7 @@ fn dot_access() {
 
       F|oo.foo
     "#,
-    expect![@"[Foo, Int, Foo]"],
+    expect![@"[Foo, Int]"],
   );
 
   completions_for(
@@ -125,5 +125,18 @@ fn dot_access_invalid_syntax() {
      Foo.|
    "#,
     expect![@"[x]"],
+  );
+}
+
+#[test]
+fn complete_def() {
+  completions_for(
+    r#"
+     object Foo {
+       def a = 3
+       def b = |
+     }
+   "#,
+    expect![@"[Foo, Int, a]"],
   );
 }

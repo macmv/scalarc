@@ -33,8 +33,13 @@ impl Completer<'_> {
 
     let mut names = HashSet::new();
     for def in definitions {
-      if names.insert(def.name.clone()) {
-        completions.push(Completion { label: def.name.as_str().into(), kind: def.kind });
+      match def.kind {
+        DefinitionKind::Val(_) | DefinitionKind::Def(_) => {
+          if names.insert(def.name.clone()) {
+            completions.push(Completion { label: def.name.as_str().into(), kind: def.kind });
+          }
+        }
+        _ => continue,
       }
     }
 
