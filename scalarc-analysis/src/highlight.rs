@@ -190,6 +190,7 @@ impl Highlightable for ast::Expr {
                 DefinitionKind::Parameter => HighlightKind::Parameter,
                 DefinitionKind::Def(_) => HighlightKind::Function,
                 DefinitionKind::Class(_) => HighlightKind::Class,
+                DefinitionKind::Object(_) => HighlightKind::Object,
               },
             );
           }

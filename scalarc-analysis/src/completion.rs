@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use scalarc_hir::{Definition, DefinitionKind, HirDatabase, Type};
+use scalarc_hir::{Definition, DefinitionKey, DefinitionKind, HirDatabase, Type};
 use scalarc_parser::{SyntaxKind, T};
 use scalarc_source::{FileId, SourceDatabase};
 use scalarc_syntax::{ast, ast::AstNode};
@@ -48,8 +48,9 @@ fn completions_inner(db: &RootDatabase, pos: FileLocation) -> Option<Vec<Complet
 }
 
 fn field_completions(db: &RootDatabase, file_id: FileId, ty: Type) -> Option<Vec<Completion>> {
-  let path = match ty {
-    Type::Named(ref path) => path.clone(),
+  let key = match ty {
+    Type::Object(ref path) => DefinitionKey::Object(path.clone()),
+    Type::Instance(ref path) => DefinitionKey::Class(path.clone()),
     _ => return None,
   };
 
@@ -58,7 +59,7 @@ fn field_completions(db: &RootDatabase, file_id: FileId, ty: Type) -> Option<Vec
   while let Some(target) = targets.pop() {
     let defs = db.definitions_for_target(target);
 
-    if let Some(def) = defs.items.get(&path) {
+    if let Some(def) = defs.items.get(&key) {
       return fields_of_def(db, def);
     }
 
@@ -71,23 +72,24 @@ fn field_completions(db: &RootDatabase, file_id: FileId, ty: Type) -> Option<Vec
 }
 
 fn fields_of_def(db: &RootDatabase, def: &Definition) -> Option<Vec<Completion>> {
-  match def.kind {
-    DefinitionKind::Class(Some(body_id)) => {
-      let scopes = db.scopes_of(def.file_id);
-      let scope = scopes.get(body_id)?;
+  let body = match def.kind {
+    DefinitionKind::Class(Some(body_id)) => body_id,
+    DefinitionKind::Object(Some(body_id)) => body_id,
+    _ => return None,
+  };
 
-      let mut completions = vec![];
-      let mut names = HashSet::new();
-      for (_, def) in &scope.declarations {
-        if names.insert(def.name.clone()) {
-          completions.push(Completion { label: def.name.as_str().into(), kind: def.kind.clone() });
-        }
-      }
+  let scopes = db.scopes_of(def.file_id);
+  let scope = scopes.get(body)?;
 
-      Some(completions)
+  let mut completions = vec![];
+  let mut names = HashSet::new();
+  for (_, def) in &scope.declarations {
+    if names.insert(def.name.clone()) {
+      completions.push(Completion { label: def.name.as_str().into(), kind: def.kind.clone() });
     }
-    _ => None,
   }
+
+  Some(completions)
 }
 
 fn top_level_completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion> {
@@ -107,8 +109,11 @@ fn top_level_completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion
 
   let mut completions = definitions
     .into_iter()
-    .map(|(mut path, def)| Completion {
-      label: path.elems.pop().unwrap().into_string(),
+    .map(|(key, def)| Completion {
+      label: match key {
+        DefinitionKey::Class(mut p) => p.elems.pop().unwrap().into_string(),
+        DefinitionKey::Object(mut p) => p.elems.pop().unwrap().into_string(),
+      },
       kind:  def.kind,
     })
     .collect::<Vec<_>>();
