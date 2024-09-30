@@ -322,7 +322,7 @@ fn class_def(p: &mut Parser, m: Marker) {
   // class Foo {}
   // class Foo() {}
   if p.current() == T!['('] {
-    fun_params(p);
+    fun_params(p, true);
   }
 
   // test ok
@@ -400,7 +400,7 @@ fn fun_sig(p: &mut Parser) {
   // def foo(a: String) = 2
   // def bar(a: String)(b: String) = 3
   while p.at(T!['(']) {
-    fun_params(p);
+    fun_params(p, false);
   }
 
   // test ok
@@ -459,7 +459,7 @@ fn generic_def(p: &mut Parser) {
   }
 }
 
-fn fun_params(p: &mut Parser) {
+fn fun_params(p: &mut Parser, is_class: bool) {
   let m = p.start();
   p.eat(T!['(']);
 
@@ -467,6 +467,12 @@ fn fun_params(p: &mut Parser) {
   // def foo(implicit a: Int) = 3
   if p.at(T![implicit]) {
     p.eat(T![implicit]);
+  }
+
+  // test ok
+  // class Foo(val a: Int) {}
+  if is_class && p.at(T![val]) {
+    p.eat(T![val]);
   }
 
   // test ok
