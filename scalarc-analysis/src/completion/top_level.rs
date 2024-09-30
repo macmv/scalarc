@@ -34,7 +34,7 @@ impl Completer<'_> {
     let mut names = HashSet::new();
     for def in definitions {
       match def.kind {
-        DefinitionKind::Val(_) | DefinitionKind::Def(_) => {
+        DefinitionKind::Val(_) | DefinitionKind::Def(_) | DefinitionKind::Parameter => {
           if names.insert(def.name.clone()) {
             completions.push(Completion { label: def.name.as_str().into(), kind: def.kind });
           }

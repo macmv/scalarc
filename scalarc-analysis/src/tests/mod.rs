@@ -140,3 +140,24 @@ fn complete_def() {
     expect![@"[Foo, Int, a]"],
   );
 }
+
+#[test]
+fn complete_params() {
+  completions_for(
+    r#"
+     class Foo(a: Int) {
+       |
+     }
+   "#,
+    expect![@"[Int, a]"],
+  );
+
+  completions_for(
+    r#"
+     class Foo(val a: Int) {
+       |
+     }
+   "#,
+    expect![@"[Int, a]"],
+  );
+}
