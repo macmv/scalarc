@@ -120,6 +120,8 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
 
           _ => {
             m2.abandon(p);
+            m.abandon(p);
+
             p.error(format!("expected pattern, got {:?}", p.current()));
             None
           }
