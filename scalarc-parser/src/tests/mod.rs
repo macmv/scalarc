@@ -3,6 +3,7 @@ use scalarc_test::Expect;
 use crate::{format::format_events, EntryPoint, Event, Lexer};
 
 mod inline;
+mod syntax;
 
 pub fn check_expr(text: &str, expected_tree: Expect) {
   check_inner(EntryPoint::Expr, text, expected_tree);
