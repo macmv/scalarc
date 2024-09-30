@@ -22,7 +22,7 @@ fn pattern_inner(p: &mut Parser) -> Option<CompletedMarker> {
 
 // Paterns like `Seq(1)` or `Nil`
 fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
-  let mut m = p.start();
+  let m = p.start();
 
   match p.current() {
     // test ok
@@ -111,7 +111,8 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
 
           // test ok
           // case foo =>
-          T![=>] => {
+          // case foo if bar =>
+          T![=>] | T![if] => {
             m2.complete(p, PATH);
 
             Some(m.complete(p, PATH_PATTERN))
