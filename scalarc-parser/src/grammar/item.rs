@@ -238,31 +238,32 @@ fn import_item(p: &mut Parser, m: Marker) {
 // }
 fn import_list(p: &mut Parser, m: Marker) {
   p.eat(T!['{']);
+  p.eat_newlines();
+
   loop {
-    match p.current() {
-      T![ident] => {
-        let m = p.start();
-        p.eat(T![ident]);
-        m.complete(p, IMPORT_SELECTOR_ID);
-      }
+    {
+      let m = p.start();
+      p.expect(T![ident]);
+      m.complete(p, IMPORT_SELECTOR_ID);
+    }
+    p.eat_newlines();
 
-      T![,] => p.eat(T![,]),
+    if p.current() == T![,] {
+      p.eat(T![,]);
 
-      T!['}'] => {
-        p.eat(T!['}']);
-        break;
-      }
-
-      T![nl] => p.eat(T![nl]),
-
-      _ => {
-        p.error("expected '}'");
-        break;
-      }
+      // test ok
+      // import foo.bar.{
+      //   baz
+      //   ,
+      //   blah
+      // }
+      p.eat_newlines();
+    } else {
+      p.expect(T!['}']);
+      m.complete(p, IMPORT_SELECTORS);
+      break;
     }
   }
-
-  m.complete(p, IMPORT_SELECTORS);
 }
 
 // test ok
