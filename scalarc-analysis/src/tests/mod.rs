@@ -1,11 +1,11 @@
-use crate::{completion::completions, database::RootDatabase};
+use crate::{completion::CompletionsDatabase, database::RootDatabase};
 use la_arena::Arena;
 use scalarc_source::{FileId, SourceDatabase, SourceRoot, TargetData};
 use scalarc_test::{expect, Expect};
 use std::{path::PathBuf, sync::Arc};
 
 fn simple_completions(db: &RootDatabase, cursor: crate::FileLocation) -> Vec<String> {
-  let completions = completions(db, cursor);
+  let completions = db.completions(cursor);
   completions.into_iter().map(|c| c.label).collect()
 }
 

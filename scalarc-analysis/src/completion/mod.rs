@@ -1,6 +1,7 @@
 use crate::FileLocation;
-use scalarc_hir::{DefinitionKind, HirDatabase};
+use scalarc_hir::{DefinitionKind, HirDatabase, Type};
 use scalarc_parser::{SyntaxKind, T};
+use scalarc_source::TargetId;
 use scalarc_syntax::{ast, ast::AstNode};
 
 mod field;
@@ -12,16 +13,18 @@ pub struct Completion {
   pub kind:  DefinitionKind,
 }
 
-pub fn completions(db: &dyn CompletionsDatabase, pos: FileLocation) -> Vec<Completion> {
-  completions_inner(db, pos).unwrap_or_default()
-}
-
 #[salsa::query_group(CompletionsDatabaseStorage)]
 pub trait CompletionsDatabase: HirDatabase {
   fn completions(&self, pos: FileLocation) -> Vec<Completion>;
+
+  #[salsa::invoke(field::field_completions)]
+  fn field_completions(&self, target: TargetId, ty: Type) -> Vec<Completion>;
+
+  #[salsa::invoke(top_level::top_level_completions)]
+  fn top_level_completions(&self, pos: FileLocation) -> Vec<Completion>;
 }
 
-fn completions_inner(db: &dyn CompletionsDatabase, pos: FileLocation) -> Option<Vec<Completion>> {
+fn completions(db: &dyn CompletionsDatabase, pos: FileLocation) -> Vec<Completion> {
   let ast = db.parse(pos.file);
   let node = ast
     .syntax_node()
@@ -41,13 +44,14 @@ fn completions_inner(db: &dyn CompletionsDatabase, pos: FileLocation) -> Option<
   scalarc_syntax::match_ast! {
     match parent {
       ast::FieldExpr(f) => {
-        let lhs = f.expr()?;
+        let Some(lhs) = f.expr() else  { return vec![] };
         // TODO: This is a bit dumb, but not all that dumb.
-        let ty = db.type_at(pos.file, lhs.syntax().text_range().end())?;
+        let Some(ty) = db.type_at(pos.file, lhs.syntax().text_range().end()) else { return vec![] };
 
-        field::field_completions(db, pos.file, ty)
+        let target = db.file_target(pos.file).unwrap();
+        db.field_completions(target, ty)
       },
-      _ => Some(top_level::top_level_completions(db, pos))
+      _ => db.top_level_completions(pos)
     }
   }
 }

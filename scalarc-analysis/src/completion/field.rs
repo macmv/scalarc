@@ -1,26 +1,26 @@
 use super::{Completion, CompletionsDatabase};
 use scalarc_hir::{Definition, DefinitionKey, DefinitionKind, Type};
-use scalarc_source::FileId;
+use scalarc_source::TargetId;
 use std::collections::HashSet;
 
 pub fn field_completions(
   db: &dyn CompletionsDatabase,
-  file_id: FileId,
+  target: TargetId,
   ty: Type,
-) -> Option<Vec<Completion>> {
+) -> Vec<Completion> {
   let key = match ty {
     Type::Object(ref path) => DefinitionKey::Object(path.clone()),
     Type::Instance(ref path) => DefinitionKey::Class(path.clone()),
-    _ => return None,
+    _ => return vec![],
   };
 
-  let mut targets = vec![db.file_target(file_id)?];
+  let mut targets = vec![target];
 
   while let Some(target) = targets.pop() {
     let defs = db.definitions_for_target(target);
 
     if let Some(def) = defs.items.get(&key) {
-      return fields_of_def(db, def);
+      return fields_of_def(db, def).unwrap_or_default();
     }
 
     for dep in db.workspace().targets[target].dependencies.iter() {
@@ -28,7 +28,7 @@ pub fn field_completions(
     }
   }
 
-  None
+  vec![]
 }
 
 fn fields_of_def(db: &dyn CompletionsDatabase, def: &Definition) -> Option<Vec<Completion>> {

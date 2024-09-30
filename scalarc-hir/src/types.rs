@@ -16,7 +16,7 @@ use scalarc_syntax::{
   AstPtr, SyntaxNodePtr, TextSize, T,
 };
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum Type {
   Unknown,
   Object(Path),
