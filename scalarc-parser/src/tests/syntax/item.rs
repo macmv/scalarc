@@ -460,8 +460,9 @@ fn case_item() {
         CASE_ITEM
           CASE_KW 'case'
           WHITESPACE ' '
-          IDENT_PATTERN
-            IDENT '_'
+          PATH_PATTERN
+            PATH
+              IDENT '_'
           WHITESPACE ' '
           GUARD
             IF_KW 'if'

@@ -681,8 +681,9 @@ fn match_exprs() {
             CASE_ITEM
               CASE_KW 'case'
               WHITESPACE ' '
-              IDENT_PATTERN
-                IDENT '_'
+              PATH_PATTERN
+                PATH
+                  IDENT '_'
               WHITESPACE ' '
               FAT_ARROW '=>'
               WHITESPACE ' '
