@@ -119,7 +119,10 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
           //
           // test ok
           // case foo if bar =>
-          T![=>] | T![if] => {
+          //
+          // test ok
+          // case Seq(foo, bar) =>
+          T![=>] | T![if] | T![,] | T![')'] => {
             m2.complete(p, PATH);
 
             Some(m.complete(p, PATH_PATTERN))
