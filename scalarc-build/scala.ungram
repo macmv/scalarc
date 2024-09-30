@@ -277,15 +277,15 @@ Pattern = UnionPattern
   | AtPattern
   | ArgPattern
   | LitPattern
-  | IdentPattern
+  | PathPattern
 
 PatternArgs = '(' (Pattern (',' Pattern)*) ')'
 
 UnionPattern = Pattern ('|' Pattern)*
-TypePattern = id ':' Type
+TypePattern  = id ':' Type
 AtPattern    = id '@' Pattern
-ArgPattern   = id PatternArgs
-IdentPattern = id
+ArgPattern   = Path PatternArgs
+PathPattern  = Path
 
 // TODO: Need to merge this with ValDef and VarDef
 // PatDef      = ('val' | 'var') PatternAt (',' PatternAt)* (':' Type)? '=' Expr
