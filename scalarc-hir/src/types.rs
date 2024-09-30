@@ -6,7 +6,8 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
   hir::{AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
-  Definition, DefinitionKind, HirDatabase, InFile, InFileExt, InferQuery, Name, Path,
+  Definition, DefinitionKey, DefinitionKind, HirDatabase, InFile, InFileExt, InferQuery, Name,
+  Path,
 };
 use salsa::{Query, QueryDb};
 use scalarc_source::FileId;
@@ -18,7 +19,8 @@ use scalarc_syntax::{
 #[derive(Clone, PartialEq, Eq)]
 pub enum Type {
   Unknown,
-  Named(Path),
+  Object(Path),
+  Instance(Path),
   Tuple(Vec<Type>),
   Lambda(Vec<Type>, Box<Type>),
 }
@@ -48,7 +50,7 @@ impl Signature {
               if let (Some(id), Some(ty)) = (p.id_token(), p.ty()) {
                 Some((
                   id.text().into(),
-                  Type::Named(Path {
+                  Type::Instance(Path {
                     elems: vec![Name("scala".into()), Name(ty.syntax().text().into())],
                   }),
                 ))
@@ -60,7 +62,7 @@ impl Signature {
         })
         .collect(),
       ret:    sig.ty().map(|ty| {
-        Type::Named(Path { elems: vec![Name("scala".into()), Name(ty.syntax().text().into())] })
+        Type::Instance(Path { elems: vec![Name("scala".into()), Name(ty.syntax().text().into())] })
       }),
     }
   }
@@ -77,7 +79,8 @@ impl fmt::Display for Type {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self {
       Type::Unknown => write!(f, "unknown"),
-      Type::Named(path) => write!(f, "{}", path),
+      Type::Instance(path) => write!(f, "{}", path),
+      Type::Object(path) => write!(f, "${}", path),
       Type::Tuple(types) => {
         write!(f, "(")?;
         for (i, ty) in types.iter().enumerate() {
@@ -170,7 +173,7 @@ impl<'a> Infer<'a> {
         if let Some(local) = self.locals.get(&path.segments[0]) {
           Some(local.clone())
         } else {
-          Some(Type::Named(Path {
+          Some(Type::Object(Path {
             elems: path.segments.iter().map(|s| Name::new(s.clone())).collect(),
           }))
         }
@@ -225,7 +228,7 @@ impl<'a> Infer<'a> {
         }
 
         // FIXME: Need name resolution.
-        Some(Type::Named(Path {
+        Some(Type::Instance(Path {
           elems: path.segments.iter().map(|s| Name::new(s.clone())).collect(),
         }))
       }
@@ -242,8 +245,9 @@ impl<'a> Infer<'a> {
 
   fn type_access(&mut self, lhs: ExprId, name: &str) -> Option<Type> {
     let lhs = self.type_expr(lhs)?;
-    let path = match lhs {
-      Type::Named(ref path) => path.clone(),
+    let key = match lhs {
+      Type::Object(ref path) => DefinitionKey::Object(path.clone()),
+      Type::Instance(ref path) => DefinitionKey::Class(path.clone()),
       _ => return None,
     };
 
@@ -252,7 +256,7 @@ impl<'a> Infer<'a> {
     while let Some(target) = targets.pop() {
       let defs = self.db.definitions_for_target(target);
 
-      if let Some(def) = defs.items.get(&path) {
+      if let Some(def) = defs.items.get(&key) {
         return self.select_name_from_def(def, name);
       }
 
@@ -265,38 +269,38 @@ impl<'a> Infer<'a> {
   }
 
   fn select_name_from_def(&self, def: &Definition, name: &str) -> Option<Type> {
-    match def.kind {
+    let (block, body) = match def.kind {
       DefinitionKind::Class(Some(body_id)) => {
-        let block = BlockId::Class(AstId::new(def.ast_id)).in_file(def.file_id);
-
-        let hir_ast = self.db.hir_ast_for_scope(block);
-        let inferred = try_infer(self.db, block)?;
-
-        let scopes = self.db.scopes_of(def.file_id);
-        let scope_id = scopes.ast_to_scope[&body_id.erased()];
-        let scope_def = &scopes.scopes[scope_id];
-
-        let decls: Vec<_> =
-          scope_def.declarations.iter().filter(|(n, _)| n.as_str() == name).collect();
-
-        match decls[..] {
-          [] => None,
-          [(_, def)] => {
-            let stmt_id = hir_ast.stmt_map[&def.ast_id];
-
-            inferred.stmts.get(&stmt_id).cloned()
-          }
-          _ => {
-            // TODO: Resolve overloads.
-            let (_, def) = decls.first().unwrap();
-
-            let stmt_id = hir_ast.stmt_map[&def.ast_id];
-            inferred.stmts.get(&stmt_id).cloned()
-          }
-        }
+        (BlockId::Class(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
       }
+      DefinitionKind::Object(Some(body_id)) => {
+        (BlockId::Object(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
+      }
+      _ => return None,
+    };
 
-      _ => None,
+    let hir_ast = self.db.hir_ast_for_scope(block);
+    let inferred = try_infer(self.db, block)?;
+
+    let scopes = self.db.scopes_of(def.file_id);
+    let scope = scopes.get(body)?;
+
+    let decls: Vec<_> = scope.declarations.iter().filter(|(n, _)| n.as_str() == name).collect();
+
+    match decls[..] {
+      [] => None,
+      [(_, def)] => {
+        let stmt_id = hir_ast.stmt_map[&def.ast_id];
+
+        inferred.stmts.get(&stmt_id).cloned()
+      }
+      _ => {
+        // TODO: Resolve overloads.
+        let (_, def) = decls.first().unwrap();
+
+        let stmt_id = hir_ast.stmt_map[&def.ast_id];
+        inferred.stmts.get(&stmt_id).cloned()
+      }
     }
   }
 }
@@ -497,6 +501,6 @@ pub fn type_at_item(db: &dyn HirDatabase, file_id: FileId, item: ErasedAstId) ->
 }
 
 impl Type {
-  pub fn int() -> Self { Type::Named(Path { elems: vec!["scala".into(), "Int".into()] }) }
-  pub fn float() -> Self { Type::Named(Path { elems: vec!["scala".into(), "Float".into()] }) }
+  pub fn int() -> Self { Type::Instance(Path { elems: vec!["scala".into(), "Int".into()] }) }
+  pub fn float() -> Self { Type::Instance(Path { elems: vec!["scala".into(), "Float".into()] }) }
 }

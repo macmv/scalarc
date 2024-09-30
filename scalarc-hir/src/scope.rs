@@ -226,7 +226,8 @@ fn def_of_node(
       let v = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
       let id = v.id_token()?;
 
-      let ty = v.ty().map(|ty| Type::Named(Path { elems: vec![Name(ty.syntax().text().into())] }));
+      let ty =
+        v.ty().map(|ty| Type::Instance(Path { elems: vec![Name(ty.syntax().text().into())] }));
 
       Some(Definition {
         name: id.text().into(),
@@ -250,6 +251,22 @@ fn def_of_node(
         parent_scope: scope,
         ast_id,
         kind: DefinitionKind::Class(c.body().map(|node| ast_id_map.ast_id(&node))),
+      })
+    }
+
+    SyntaxKind::OBJECT_DEF => {
+      let ast_id_map = db.ast_id_map(file_id);
+      let ast_id = ast_id_map.erased_ast_id(&n);
+
+      let c = scalarc_syntax::ast::ObjectDef::cast(n.clone()).unwrap();
+      let id = c.id_token()?;
+
+      Some(Definition {
+        name: id.text().into(),
+        file_id,
+        parent_scope: scope,
+        ast_id,
+        kind: DefinitionKind::Object(c.body().map(|node| ast_id_map.ast_id(&node))),
       })
     }
 

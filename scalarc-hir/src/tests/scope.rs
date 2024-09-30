@@ -845,19 +845,21 @@ fn def_map_packages() {
     "#,
     expect![@r#"
       {
-        Path {
-          elems: [
-            Name(
-              "foo",
-            ),
-            Name(
-              "bar",
-            ),
-            Name(
-              "baz",
-            ),
-          ],
-        }: Definition {
+        Object(
+          Path {
+            elems: [
+              Name(
+                "foo",
+              ),
+              Name(
+                "bar",
+              ),
+              Name(
+                "baz",
+              ),
+            ],
+          },
+        ): Definition {
           name: "baz",
           kind: Val(
             None,
