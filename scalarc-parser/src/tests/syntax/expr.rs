@@ -884,3 +884,22 @@ fn if_expr() {
     "#],
   );
 }
+
+#[test]
+fn bare_assignment() {
+  check(
+    "x = 3",
+    expect![@r#"
+      SOURCE_FILE
+        EXPR_ITEM
+          ASSIGN_EXPR
+            IDENT_EXPR
+              IDENT 'x'
+            WHITESPACE ' '
+            EQ '='
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
+    "#],
+  );
+}

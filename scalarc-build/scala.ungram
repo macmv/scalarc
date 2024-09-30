@@ -108,7 +108,7 @@ Expr = IfExpr
      | ThrowExpr
      | ReturnExpr
      | LambdaExpr
-     | AssignDotExpr
+     | AssignExpr
      | PostfixExpr
      | InfixExpr
      | PrefixExpr
@@ -138,7 +138,7 @@ ReturnExpr  = 'return' Expr?
 
 LambdaExpr = ('todo') '=>' Expr
 
-AssignDotExpr = SimpleExpr '=' Expr
+AssignExpr = Expr '=' Expr
 
 PostfixExprAscription = PostfixExpr Ascription
 MatchExpr             = Expr 'match' '{' CaseItem (CaseItem)* '}'
@@ -147,18 +147,6 @@ PostfixExpr    = Expr id
 InfixExpr      = lhs:Expr id rhs:Expr
 PrefixExpr     = id Expr // id can only be '-' | '+' | '~' | '!'
 IdentExpr      = id
-
-SimpleExpr = NewExpr
-           | BlockExpr
-           | PostfixUnderscoreExpr
-           | Path
-           | UnderscoreExpr
-           | TupleExpr
-           | FieldExpr
-           | CallExpr
-           | LitExpr
-           | DoubleQuotedString
-           | TrippleQuotedString
 
 NewExpr = 'new' id? TypeParams? ParenArguments? BlockExpr?
 PostfixUnderscoreExpr = Expr '_'

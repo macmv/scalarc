@@ -38,7 +38,11 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
   };
 
   loop {
-    if p.current() == T![ident] || (p.current() == T![=>] && fat_arrow) {
+    // test ok
+    // foo = 3
+    if p.current() == T![ident] || p.current() == T![=] || (p.current() == T![=>] && fat_arrow) {
+      let kind = if p.current() == T![=] { ASSIGN_EXPR } else { INFIX_EXPR };
+
       let op = p.slice();
       let (l_bp, r_bp) = op_bp(op);
       if l_bp < min_bp {
@@ -64,7 +68,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
       };
 
       expr_bp(p, r_bp, fat_arrow);
-      lhs = m.complete(p, INFIX_EXPR);
+      lhs = m.complete(p, kind);
     } else {
       match p.current() {
         T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | T![else] | EOF => {
