@@ -151,6 +151,34 @@ fn fun_dec() {
             INT_LIT_KW '3'
     "#],
   );
+
+  check(
+    "def foo[a <: Int] = 3",
+    expect![@r#"
+      SOURCE_FILE
+        FUN_DEF
+          DEF_KW 'def'
+          WHITESPACE ' '
+          FUN_SIG
+            IDENT 'foo'
+            TYPE_PARAMS
+              OPEN_BRACKET '['
+              LOWER_BOUND_PARAM
+                SIMPLE_TYPE
+                  IDENT 'a'
+                WHITESPACE ' '
+                LESS_COLON '<:'
+                WHITESPACE ' '
+                SIMPLE_TYPE
+                  IDENT 'Int'
+              CLOSE_BRACKET ']'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '3'
+    "#],
+  );
 }
 
 #[test]
