@@ -22,7 +22,9 @@ pub fn type_expr(p: &mut Parser) {
         lhs = m.complete(p, GENERIC_TYPE);
       }
 
-      T![,] | T![']'] | T![')'] | T!['}'] | T![=] | T![nl] | EOF => return,
+      T![,] | T![']'] | T![')'] | T!['}'] | T![=] | T![nl] | T![<:] | T![>:] | T![:] | EOF => {
+        return
+      }
 
       // This is for class definitions. Not sure if correct or not.
       T!['{'] | T![with] => return,
@@ -36,6 +38,34 @@ pub fn type_expr(p: &mut Parser) {
         return;
       }
     }
+  }
+}
+
+// A type parameter on a definition, like `A <: B`.
+pub fn type_param(p: &mut Parser) {
+  let m = p.start();
+  type_expr(p);
+
+  if p.at(T![<:]) {
+    // test ok
+    // def foo[T <: Int] = 3
+    p.eat(T![<:]);
+    type_expr(p);
+    m.complete(p, LOWER_BOUND_PARAM);
+  } else if p.at(T![>:]) {
+    // test ok
+    // def foo[T >: Int] = 3
+    p.eat(T![>:]);
+    type_expr(p);
+    m.complete(p, UPPER_BOUND_PARAM);
+  } else if p.at(T![:]) {
+    // test ok
+    // def foo[T: Int] = 3
+    p.eat(T![:]);
+    type_expr(p);
+    m.complete(p, IMPLICIT_PARAM);
+  } else {
+    m.complete(p, SIMPLE_PARAM);
   }
 }
 

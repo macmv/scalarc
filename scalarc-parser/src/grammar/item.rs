@@ -433,7 +433,10 @@ fn generic_def(p: &mut Parser) {
   p.eat_newlines();
 
   loop {
-    type_param(p);
+    // test ok
+    // def foo[A <: Int] = 3
+    super::type_expr::type_param(p);
+
     p.eat_newlines();
     // test ok
     // def foo[A, B] = 3
@@ -453,13 +456,6 @@ fn generic_def(p: &mut Parser) {
       break;
     }
   }
-}
-
-// test ok
-// def foo[A] = 3
-fn type_param(p: &mut Parser) {
-  // TODO: Parse things like `A <: Int`.
-  super::type_expr::type_expr(p);
 }
 
 fn fun_params(p: &mut Parser) {

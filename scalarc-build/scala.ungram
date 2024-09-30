@@ -83,13 +83,26 @@ Type = LambdaType
      | PathType
      | SimpleType
 
+TypeParam = SimpleParam
+          | LowerBoundParam
+          | UpperBoundParam
+          | ImplicitParam
+
+LowerBoundParam = Type '<:' Type
+UpperBoundParam = Type '>:' Type
+ImplicitParam = Type ':' Type
+SimpleParam = Type
+
 LambdaType  = '(' ')' '=>' Type // TODO
-GenericType = Type TypeParams
+GenericType = Type TypeArgs
 PathType    = Type '.' id
 TupleType   = '(' (Type (',' Type)*)? ')'
 SimpleType  = id
 
-TypeParams = '[' (Type (',' Type)*) ']'
+// Type parameters: `[T <: Ordering]`, like in a declaration.
+TypeParams = '[' (TypeParam (',' TypeParam)*) ']'
+// Type arguments: [List[Int]]`, like in a call.
+TypeArgs   = '[' (Type (',' Type)*) ']'
 Types      = (Type (',' Type)*)
 Refinement = nl? '{' Def (';' Def)* '}'
 TypePat    = Type
