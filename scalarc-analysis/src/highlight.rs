@@ -24,6 +24,9 @@ pub enum HighlightKind {
   /// Class names and references.
   Class,
 
+  /// Trait names and references.
+  Trait,
+
   /// Object names and references.
   Object,
 
@@ -190,6 +193,7 @@ impl Highlightable for ast::Expr {
                 DefinitionKind::Parameter => HighlightKind::Parameter,
                 DefinitionKind::Def(_) => HighlightKind::Function,
                 DefinitionKind::Class(_) => HighlightKind::Class,
+                DefinitionKind::Trait(_) => HighlightKind::Trait,
                 DefinitionKind::Object(_) => HighlightKind::Object,
               },
             );

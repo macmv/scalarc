@@ -63,6 +63,7 @@ pub fn handle_completion(
               (lsp_types::CompletionItemKind::FUNCTION, Some(sig.to_string()))
             }
             DefinitionKind::Class(_) => (lsp_types::CompletionItemKind::CLASS, None),
+            DefinitionKind::Trait(_) => (lsp_types::CompletionItemKind::INTERFACE, None),
             DefinitionKind::Object(_) => (lsp_types::CompletionItemKind::CLASS, None),
           };
 
@@ -174,6 +175,7 @@ pub fn semantic_tokens_legend() -> lsp_types::SemanticTokensLegend {
   fn token_type(kind: HighlightKind) -> SemanticTokenType {
     match kind {
       HighlightKind::Class => SemanticTokenType::new("class"),
+      HighlightKind::Trait => SemanticTokenType::new("interface"),
       HighlightKind::Object => SemanticTokenType::new("object"),
       HighlightKind::Function => SemanticTokenType::new("function"),
       HighlightKind::Keyword => SemanticTokenType::new("keyword"),

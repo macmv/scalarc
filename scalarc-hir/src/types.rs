@@ -267,6 +267,9 @@ impl<'a> Infer<'a> {
       DefinitionKind::Class(Some(body_id)) => {
         (BlockId::Class(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
       }
+      DefinitionKind::Trait(Some(body_id)) => {
+        (BlockId::Trait(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
+      }
       DefinitionKind::Object(Some(body_id)) => {
         (BlockId::Object(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
       }

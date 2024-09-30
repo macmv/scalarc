@@ -195,6 +195,7 @@ macro_rules! register_ast_item {
 register_ast_item! {
   impl AstItem for
   ClassDef,
+  TraitDef,
   ObjectDef,
   FunDef,
     FunParam,

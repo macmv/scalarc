@@ -84,6 +84,7 @@ pub enum DefinitionKind {
   Parameter,
   Def(Signature),
   Class(Option<AstId<ItemBody>>),
+  Trait(Option<AstId<ItemBody>>),
   Object(Option<AstId<ItemBody>>),
 }
 

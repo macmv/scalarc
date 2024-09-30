@@ -297,7 +297,7 @@ TypeDef     = 'type' id TypeParams? '=' Type
 
 // TODO:`FunParams` should be `ClassFunParams`
 ClassDef     = 'case'? 'class' id TypeParams? ConstrAnnotation* AccessModifier? FunParams ClassExtends body:ItemBody
-TraitDef     = 'trait' id TypeParams? TraitTemplateOpt
+TraitDef     = 'trait' id TypeParams? body:ItemBody
 ObjectDef    = 'case'? 'object' id body:ItemBody
 ClassExtends = 'extends' ClassTemplate // TODO
 
