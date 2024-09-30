@@ -232,6 +232,10 @@ fn import_item(p: &mut Parser, m: Marker) {
 
 // test ok
 // import foo.{ bar, baz }
+// import foo.bar.{
+//   qux,
+//   quz
+// }
 fn import_list(p: &mut Parser, m: Marker) {
   p.eat(T!['{']);
   loop {
@@ -249,7 +253,12 @@ fn import_list(p: &mut Parser, m: Marker) {
         break;
       }
 
-      _ => break,
+      T![nl] => p.eat(T![nl]),
+
+      _ => {
+        p.error("expected '}'");
+        break;
+      }
     }
   }
 
