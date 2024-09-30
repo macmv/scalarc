@@ -51,7 +51,7 @@ pub enum DefinitionKey {
   Class(Path),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct FileLocation {
   pub file:  FileId,
   pub index: TextSize,

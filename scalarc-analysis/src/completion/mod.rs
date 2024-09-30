@@ -1,22 +1,27 @@
-use crate::{database::RootDatabase, FileLocation};
+use crate::FileLocation;
 use scalarc_hir::{DefinitionKind, HirDatabase};
 use scalarc_parser::{SyntaxKind, T};
-use scalarc_source::SourceDatabase;
 use scalarc_syntax::{ast, ast::AstNode};
 
 mod field;
 mod top_level;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Completion {
   pub label: String,
   pub kind:  DefinitionKind,
 }
 
-pub fn completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion> {
+pub fn completions(db: &dyn CompletionsDatabase, pos: FileLocation) -> Vec<Completion> {
   completions_inner(db, pos).unwrap_or_default()
 }
 
-fn completions_inner(db: &RootDatabase, pos: FileLocation) -> Option<Vec<Completion>> {
+#[salsa::query_group(CompletionsDatabaseStorage)]
+pub trait CompletionsDatabase: HirDatabase {
+  fn completions(&self, pos: FileLocation) -> Vec<Completion>;
+}
+
+fn completions_inner(db: &dyn CompletionsDatabase, pos: FileLocation) -> Option<Vec<Completion>> {
   let ast = db.parse(pos.file);
   let node = ast
     .syntax_node()

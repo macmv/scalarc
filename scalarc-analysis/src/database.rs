@@ -1,11 +1,13 @@
 use std::{fmt, sync::Arc};
 
+use crate::completion::CompletionsDatabaseStorage;
 use line_index::LineIndex;
 use scalarc_source::FileId;
 
 #[salsa::database(
   scalarc_source::SourceDatabaseStorage,
   scalarc_hir::HirDatabaseStorage,
+  CompletionsDatabaseStorage,
   LineIndexDatabaseStorage
 )]
 #[derive(Default)]

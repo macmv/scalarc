@@ -1,10 +1,13 @@
-use super::Completion;
-use crate::database::RootDatabase;
-use scalarc_hir::{Definition, DefinitionKey, DefinitionKind, HirDatabase, Type};
-use scalarc_source::{FileId, SourceDatabase};
+use super::{Completion, CompletionsDatabase};
+use scalarc_hir::{Definition, DefinitionKey, DefinitionKind, Type};
+use scalarc_source::FileId;
 use std::collections::HashSet;
 
-pub fn field_completions(db: &RootDatabase, file_id: FileId, ty: Type) -> Option<Vec<Completion>> {
+pub fn field_completions(
+  db: &dyn CompletionsDatabase,
+  file_id: FileId,
+  ty: Type,
+) -> Option<Vec<Completion>> {
   let key = match ty {
     Type::Object(ref path) => DefinitionKey::Object(path.clone()),
     Type::Instance(ref path) => DefinitionKey::Class(path.clone()),
@@ -28,7 +31,7 @@ pub fn field_completions(db: &RootDatabase, file_id: FileId, ty: Type) -> Option
   None
 }
 
-fn fields_of_def(db: &RootDatabase, def: &Definition) -> Option<Vec<Completion>> {
+fn fields_of_def(db: &dyn CompletionsDatabase, def: &Definition) -> Option<Vec<Completion>> {
   let body = match def.kind {
     DefinitionKind::Class(Some(body_id)) => body_id,
     DefinitionKind::Object(Some(body_id)) => body_id,

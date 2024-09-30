@@ -1,10 +1,8 @@
-use super::Completion;
-use crate::database::RootDatabase;
-use scalarc_hir::{DefinitionKey, FileLocation, HirDatabase};
-use scalarc_source::SourceDatabase;
+use super::{Completion, CompletionsDatabase};
+use scalarc_hir::{DefinitionKey, FileLocation};
 use std::collections::HashSet;
 
-pub fn top_level_completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion> {
+pub fn top_level_completions(db: &dyn CompletionsDatabase, pos: FileLocation) -> Vec<Completion> {
   let Some(source_root) = db.file_source_root(pos.file) else { return vec![] };
   let target = db.source_root_target(source_root);
 
