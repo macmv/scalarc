@@ -484,12 +484,12 @@ fn newline_magic() {
             BLOCK_EXPR
               OPEN_CURLY '{'
               NL_KW '\n'
-              WHITESPACE '         '
+              WHITESPACE '       '
               EXPR_ITEM
                 LIT_EXPR
                   INT_LIT_KW '3'
               NL_KW '\n'
-              WHITESPACE '       '
+              WHITESPACE '     '
               CLOSE_CURLY '}'
     "#],
   );
@@ -506,17 +506,17 @@ fn newline_magic() {
           IDENT_EXPR
             IDENT 'println'
         NL_KW '\n'
-        WHITESPACE '       '
+        WHITESPACE '     '
         EXPR_ITEM
           BLOCK_EXPR
             OPEN_CURLY '{'
             NL_KW '\n'
-            WHITESPACE '         '
+            WHITESPACE '       '
             EXPR_ITEM
               LIT_EXPR
                 INT_LIT_KW '3'
             NL_KW '\n'
-            WHITESPACE '       '
+            WHITESPACE '     '
             CLOSE_CURLY '}'
     "#],
   );
@@ -535,17 +535,17 @@ fn newline_magic() {
             IDENT 'println'
         NL_KW '\n'
         NL_KW '\n'
-        WHITESPACE '       '
+        WHITESPACE '     '
         EXPR_ITEM
           BLOCK_EXPR
             OPEN_CURLY '{'
             NL_KW '\n'
-            WHITESPACE '         '
+            WHITESPACE '       '
             EXPR_ITEM
               LIT_EXPR
                 INT_LIT_KW '3'
             NL_KW '\n'
-            WHITESPACE '       '
+            WHITESPACE '     '
             CLOSE_CURLY '}'
     "#],
   );
@@ -649,7 +649,7 @@ fn match_exprs() {
             WHITESPACE ' '
             OPEN_CURLY '{'
             NL_KW '\n'
-            WHITESPACE '        '
+            WHITESPACE '      '
             CASE_ITEM
               CASE_KW 'case'
               WHITESPACE ' '
@@ -663,7 +663,7 @@ fn match_exprs() {
                   LIT_EXPR
                     INT_LIT_KW '3'
                 NL_KW '\n'
-            WHITESPACE '        '
+            WHITESPACE '      '
             CASE_ITEM
               CASE_KW 'case'
               WHITESPACE ' '
@@ -677,7 +677,7 @@ fn match_exprs() {
                   LIT_EXPR
                     INT_LIT_KW '4'
                 NL_KW '\n'
-            WHITESPACE '        '
+            WHITESPACE '      '
             CASE_ITEM
               CASE_KW 'case'
               WHITESPACE ' '
@@ -691,7 +691,7 @@ fn match_exprs() {
                   LIT_EXPR
                     INT_LIT_KW '5'
                 NL_KW '\n'
-            WHITESPACE '      '
+            WHITESPACE '    '
             CLOSE_CURLY '}'
     "#],
   );
