@@ -12,7 +12,7 @@ extern crate log;
 
 use std::{panic::UnwindSafe, sync::Arc};
 
-use completion::{Completion, CompletionsDatabase};
+use completion::Completion;
 use diagnostic::Diagnostic;
 
 use database::{LineIndexDatabase, RootDatabase};
@@ -91,7 +91,7 @@ impl ParallelDatabase for RootDatabase {
 
 impl Analysis {
   pub fn completions(&self, cursor: FileLocation) -> Cancellable<Vec<Completion>> {
-    self.with_db(|db| db.completions(cursor))
+    self.with_db(|db| completion::completions(db, cursor))
   }
 
   pub fn diagnostics(&self, file: FileId) -> Cancellable<Vec<Diagnostic>> {
