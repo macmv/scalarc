@@ -124,7 +124,7 @@ fn item(p: &mut Parser) {
     T![def] => fun_def(p, m),
     T![val] | T![var] => val_def(p, m),
 
-    T![class] | T![object] => class_def(p, m),
+    T![class] | T![trait] | T![object] => class_def(p, m),
     T![case] if matches!(p.peek(), T![class] | T![object]) => class_def(p, m),
 
     T![case] => case_item(p, m),
@@ -279,6 +279,7 @@ fn import_list(p: &mut Parser, m: Marker) {
 
 // test ok
 // class Foo() {}
+// trait Bar extends Blah {}
 fn class_def(p: &mut Parser, m: Marker) {
   // test ok
   // case class Foo() {}
@@ -300,6 +301,13 @@ fn class_def(p: &mut Parser, m: Marker) {
     T![class] => {
       p.eat(T![class]);
       CLASS_DEF
+    }
+
+    // test ok
+    // trait Bar
+    T![trait] => {
+      p.eat(T![trait]);
+      TRAIT_DEF
     }
 
     _ => {

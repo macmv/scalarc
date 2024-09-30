@@ -50,6 +50,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       "new" => T![new],
       "case" => T![case],
       "class" => T![class],
+      "trait" => T![trait],
       "object" => T![object],
       "extends" => T![extends],
       "implicit" => T![implicit],
