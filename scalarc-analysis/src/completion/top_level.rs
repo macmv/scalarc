@@ -1,5 +1,5 @@
 use super::{Completer, Completion};
-use scalarc_hir::{DefinitionKey, FileLocation, HirDatabase};
+use scalarc_hir::{DefinitionKey, DefinitionKind, FileLocation, HirDatabase};
 use scalarc_source::SourceDatabase;
 use std::collections::HashSet;
 
@@ -10,14 +10,19 @@ impl Completer<'_> {
 
     let mut definitions = vec![];
     for target in self.db.workspace().all_dependencies(target) {
-      definitions.extend(self.db.definitions_for_target(target).items);
+      definitions.extend(self.db.definitions_for_target(target).items.into_iter().filter(
+        |(_, def)| match def.kind {
+          DefinitionKind::Object(_) => true,
+          _ => false,
+        },
+      ));
     }
 
     let mut completions = definitions
       .into_iter()
       .map(|(key, def)| Completion {
         label: match key {
-          DefinitionKey::Class(mut p) => p.elems.pop().unwrap().into_string(),
+          DefinitionKey::Class(_) => unreachable!(),
           DefinitionKey::Object(mut p) => p.elems.pop().unwrap().into_string(),
         },
         kind:  def.kind,
