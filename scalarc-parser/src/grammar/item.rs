@@ -244,7 +244,17 @@ fn import_list(p: &mut Parser, m: Marker) {
     {
       let m = p.start();
       p.expect(T![ident]);
-      m.complete(p, IMPORT_SELECTOR_ID);
+
+      // test ok
+      // import foo.{ bar => baz }
+      if p.at(T![=>]) {
+        p.eat(T![=>]);
+        p.expect(T![ident]);
+
+        m.complete(p, IMPORT_SELECTOR_RENAME);
+      } else {
+        m.complete(p, IMPORT_SELECTOR_ID);
+      }
     }
     p.eat_newlines();
 
