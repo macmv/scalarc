@@ -188,7 +188,9 @@ fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap 
         path.elems.push(def.name.clone());
 
         match def.kind {
-          DefinitionKind::Class(_) => (DefinitionKey::Instance(path), def.clone()),
+          DefinitionKind::Class(_) | DefinitionKind::Trait(_) => {
+            (DefinitionKey::Instance(path), def.clone())
+          }
           DefinitionKind::Object(_) => (DefinitionKey::Object(path), def.clone()),
           _ => (DefinitionKey::Object(path), def.clone()),
         }
