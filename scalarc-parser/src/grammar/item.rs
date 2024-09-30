@@ -88,8 +88,9 @@ fn item(p: &mut Parser) {
   // test ok
   // final def foo = 3
   // private final def foo = 4
+  // private implicit def foo = 5
   match p.current() {
-    T![final] => {
+    T![final] | T![implicit] => {
       p.bump();
       p.eat_newlines();
     }
