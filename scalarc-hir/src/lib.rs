@@ -47,8 +47,11 @@ pub struct DefinitionMap {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DefinitionKey {
+  // A companion object.
   Object(Path),
-  Class(Path),
+
+  // An instance of a class or trait.
+  Instance(Path),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -185,7 +188,7 @@ fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap 
         path.elems.push(def.name.clone());
 
         match def.kind {
-          DefinitionKind::Class(_) => (DefinitionKey::Class(path), def.clone()),
+          DefinitionKind::Class(_) => (DefinitionKey::Instance(path), def.clone()),
           DefinitionKind::Object(_) => (DefinitionKey::Object(path), def.clone()),
           _ => (DefinitionKey::Object(path), def.clone()),
         }

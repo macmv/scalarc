@@ -7,7 +7,7 @@ impl Completer<'_> {
   pub fn field_completions(&self, target: TargetId, ty: Type) -> Vec<Completion> {
     let key = match ty {
       Type::Object(ref path) => DefinitionKey::Object(path.clone()),
-      Type::Instance(ref path) => DefinitionKey::Class(path.clone()),
+      Type::Instance(ref path) => DefinitionKey::Instance(path.clone()),
       _ => return vec![],
     };
 

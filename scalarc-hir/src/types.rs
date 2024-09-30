@@ -247,7 +247,7 @@ impl<'a> Infer<'a> {
     let lhs = self.type_expr(lhs)?;
     let key = match lhs {
       Type::Object(ref path) => DefinitionKey::Object(path.clone()),
-      Type::Instance(ref path) => DefinitionKey::Class(path.clone()),
+      Type::Instance(ref path) => DefinitionKey::Instance(path.clone()),
       _ => return None,
     };
 

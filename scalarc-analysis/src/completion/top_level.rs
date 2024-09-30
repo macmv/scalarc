@@ -22,7 +22,7 @@ impl Completer<'_> {
       .into_iter()
       .map(|(key, def)| Completion {
         label: match key {
-          DefinitionKey::Class(_) => unreachable!(),
+          DefinitionKey::Instance(_) => unreachable!(),
           DefinitionKey::Object(mut p) => p.elems.pop().unwrap().into_string(),
         },
         kind:  def.kind,
