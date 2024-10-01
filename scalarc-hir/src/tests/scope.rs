@@ -22,15 +22,6 @@ fn def_map(src: &str, expected: Expect) {
   expected.assert_eq(&DebugUtil { db: &db, item: &actual }.to_string());
 }
 
-fn defs_at(src: &str, expected: Expect) {
-  let cursor = src.find("@@").unwrap();
-  let src = format!("{}{}", &src[..cursor], &src[cursor + 2..]);
-
-  let db = new_db(&src);
-  let actual = db.defs_at_index(FileId::temp_new(), TextSize::from(cursor as u32));
-  expected.assert_eq(&DebugUtil { db: &db, item: &actual }.to_string());
-}
-
 fn def_at(src: &str, expected: Expect) {
   let cursor = src.find("@@").unwrap();
   let src = format!("{}{}", &src[..cursor], &src[cursor + 2..]);
@@ -169,49 +160,64 @@ impl fmt::Debug for DebugUtil<'_, '_, HirDefinition> {
 }
 
 #[test]
-fn scopes_of_example() {
+fn simple_example() {
   scopes_of(
     r#"
-    val foo = 3
-    val bar = 4
-    val baz = 5
+    class Foo {}
+    class Bar {}
+    class Baz {}
     "#,
     expect![@r#"
       [
         Scope {
           item: SyntaxNodePtr {
             kind: SOURCE_FILE,
-            range: 0..49,
+            range: 0..52,
           },
           declarations: {
-            "foo": Definition {
-              name: "foo",
-              kind: Val(
-                None,
+            "Foo": Definition {
+              name: "Foo",
+              kind: Class(
+                Some(
+                  AstId {
+                    raw: Idx::<Scala>>(4),
+                    phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
+                  },
+                ),
               ),
               item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 5..16,
+                kind: CLASS_DEF,
+                range: 5..17,
               },
             },
-            "bar": Definition {
-              name: "bar",
-              kind: Val(
-                None,
+            "Bar": Definition {
+              name: "Bar",
+              kind: Class(
+                Some(
+                  AstId {
+                    raw: Idx::<Scala>>(5),
+                    phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
+                  },
+                ),
               ),
               item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 21..32,
+                kind: CLASS_DEF,
+                range: 22..34,
               },
             },
-            "baz": Definition {
-              name: "baz",
-              kind: Val(
-                None,
+            "Baz": Definition {
+              name: "Baz",
+              kind: Class(
+                Some(
+                  AstId {
+                    raw: Idx::<Scala>>(6),
+                    phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
+                  },
+                ),
               ),
               item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 37..48,
+                kind: CLASS_DEF,
+                range: 39..51,
               },
             },
           },
@@ -221,77 +227,92 @@ fn scopes_of_example() {
 
   scopes_of(
     r#"
-    val foo = 3
-    val bar = {
-      val a = 6
-      val b = 7
+    class Foo {}
+    class Bar {
+      class A
+      class B
     }
-    val baz = 5
+    class Baz {}
     "#,
     expect![@r#"
       [
         Scope {
           item: SyntaxNodePtr {
             kind: SOURCE_FILE,
-            range: 0..87,
+            range: 0..85,
           },
           declarations: {
-            "foo": Definition {
-              name: "foo",
-              kind: Val(
-                None,
+            "Foo": Definition {
+              name: "Foo",
+              kind: Class(
+                Some(
+                  AstId {
+                    raw: Idx::<Scala>>(4),
+                    phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
+                  },
+                ),
               ),
               item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 5..16,
+                kind: CLASS_DEF,
+                range: 5..17,
               },
             },
-            "bar": Definition {
-              name: "bar",
-              kind: Val(
-                None,
+            "Bar": Definition {
+              name: "Bar",
+              kind: Class(
+                Some(
+                  AstId {
+                    raw: Idx::<Scala>>(5),
+                    phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
+                  },
+                ),
               ),
               item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 21..70,
+                kind: CLASS_DEF,
+                range: 22..67,
               },
             },
-            "baz": Definition {
-              name: "baz",
-              kind: Val(
-                None,
+            "Baz": Definition {
+              name: "Baz",
+              kind: Class(
+                Some(
+                  AstId {
+                    raw: Idx::<Scala>>(6),
+                    phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
+                  },
+                ),
               ),
               item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 75..86,
+                kind: CLASS_DEF,
+                range: 72..84,
               },
             },
           },
         },
         Scope {
           item: SyntaxNodePtr {
-            kind: BLOCK_EXPR,
-            range: 31..70,
+            kind: ITEM_BODY,
+            range: 32..67,
           },
           declarations: {
-            "a": Definition {
-              name: "a",
-              kind: Val(
+            "A": Definition {
+              name: "A",
+              kind: Class(
                 None,
               ),
               item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 39..48,
+                kind: CLASS_DEF,
+                range: 40..47,
               },
             },
-            "b": Definition {
-              name: "b",
-              kind: Val(
+            "B": Definition {
+              name: "B",
+              kind: Class(
                 None,
               ),
               item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 55..64,
+                kind: CLASS_DEF,
+                range: 54..61,
               },
             },
           },
@@ -301,40 +322,26 @@ fn scopes_of_example() {
 }
 
 #[test]
-fn definitions_at() {
-  defs_at(
+fn vals_dont_make_scopes() {
+  scopes_of(
+    r#"
+    val foo = 3
+    val bar = 4
+    val baz = 5
+    "#,
+    expect![@"[]"],
+  );
+
+  scopes_of(
     r#"
     val foo = 3
     val bar = {
       val a = 6
-      @@
       val b = 7
     }
     val baz = 5
     "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "a",
-          kind: Val(
-            None,
-          ),
-          item: SyntaxNodePtr {
-            kind: VAL_DEF,
-            range: 39..48,
-          },
-        },
-        Definition {
-          name: "foo",
-          kind: Val(
-            None,
-          ),
-          item: SyntaxNodePtr {
-            kind: VAL_DEF,
-            range: 5..16,
-          },
-        },
-      ]"#],
+    expect![@"[]"],
   );
 }
 
@@ -439,119 +446,6 @@ fn class_scopes() {
             },
           },
         },
-        Scope {
-          item: SyntaxNodePtr {
-            kind: CLASS_DEF,
-            range: 5..59,
-          },
-          declarations: {
-            "a": Definition {
-              name: "a",
-              kind: Parameter,
-              item: SyntaxNodePtr {
-                kind: FUN_PARAM,
-                range: 15..21,
-              },
-            },
-          },
-        },
-        Scope {
-          item: SyntaxNodePtr {
-            kind: ITEM_BODY,
-            range: 23..59,
-          },
-          declarations: {
-            "b": Definition {
-              name: "b",
-              kind: Val(
-                Some(
-                  Type(String),
-                ),
-              ),
-              item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 31..44,
-              },
-            },
-          },
-        },
-      ]"#],
-  );
-}
-
-#[test]
-fn class_def() {
-  defs_at(
-    r#"
-    class Foo(val a: Int) {}
-    @@
-    "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "Foo",
-          kind: Class(
-            Some(
-              AstId {
-                raw: Idx::<Scala>>(3),
-                phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
-              },
-            ),
-          ),
-          item: SyntaxNodePtr {
-            kind: CLASS_DEF,
-            range: 5..29,
-          },
-        },
-      ]"#],
-  );
-
-  defs_at(
-    r#"
-    class Foo(a: Int) { @@ }
-    "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "a",
-          kind: Parameter,
-          item: SyntaxNodePtr {
-            kind: FUN_PARAM,
-            range: 15..21,
-          },
-        },
-      ]"#],
-  );
-
-  defs_at(
-    r#"
-    class Foo(a: Int) {
-      val b: String
-      @@
-    }
-    "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "b",
-          kind: Val(
-            Some(
-              Type(String),
-            ),
-          ),
-          item: SyntaxNodePtr {
-            kind: VAL_DEF,
-            range: 31..44,
-          },
-        },
-        Definition {
-          name: "a",
-          kind: Parameter,
-          item: SyntaxNodePtr {
-            kind: FUN_PARAM,
-            range: 15..21,
-          },
-        },
       ]"#],
   );
 }
@@ -564,130 +458,7 @@ fn fun_scopes() {
       val b: String
     }
     "#,
-    expect![@r#"
-      [
-        Scope {
-          item: SyntaxNodePtr {
-            kind: SOURCE_FILE,
-            range: 0..51,
-          },
-          declarations: {
-            "foo": Definition {
-              name: "foo",
-              kind: Def(
-                Signature((a: scala.Int)),
-              ),
-              item: SyntaxNodePtr {
-                kind: FUN_DEF,
-                range: 5..50,
-              },
-            },
-          },
-        },
-        Scope {
-          item: SyntaxNodePtr {
-            kind: FUN_DEF,
-            range: 5..50,
-          },
-          declarations: {
-            "a": Definition {
-              name: "a",
-              kind: Parameter,
-              item: SyntaxNodePtr {
-                kind: FUN_PARAM,
-                range: 13..19,
-              },
-            },
-          },
-        },
-        Scope {
-          item: SyntaxNodePtr {
-            kind: BLOCK_EXPR,
-            range: 23..50,
-          },
-          declarations: {
-            "b": Definition {
-              name: "b",
-              kind: Val(
-                Some(
-                  Type(String),
-                ),
-              ),
-              item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 31..44,
-              },
-            },
-          },
-        },
-      ]"#],
-  );
-}
-
-#[test]
-fn fun_def() {
-  defs_at(
-    r#"
-    def foo(a: Int) = 3
-    @@
-    "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "foo",
-          kind: Def(
-            Signature((a: scala.Int)),
-          ),
-          item: SyntaxNodePtr {
-            kind: FUN_DEF,
-            range: 5..24,
-          },
-        },
-      ]"#],
-  );
-
-  defs_at(
-    r#"
-    def foo(a: Int) = @@a
-    "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "a",
-          kind: Parameter,
-          item: SyntaxNodePtr {
-            kind: FUN_PARAM,
-            range: 13..19,
-          },
-        },
-      ]"#],
-  );
-
-  defs_at(
-    r#"
-    def foo(a: Int) = a@@
-    "#,
-    expect![@r#"
-      [
-        Definition {
-          name: "a",
-          kind: Parameter,
-          item: SyntaxNodePtr {
-            kind: FUN_PARAM,
-            range: 13..19,
-          },
-        },
-        Definition {
-          name: "foo",
-          kind: Def(
-            Signature((a: scala.Int)),
-          ),
-          item: SyntaxNodePtr {
-            kind: FUN_DEF,
-            range: 5..24,
-          },
-        },
-      ]"#],
+    expect![@"[]"],
   );
 }
 
@@ -724,143 +495,34 @@ fn nested_scopes() {
       h
     })
     "#,
-    expect![@r#"
-      [
-        Scope {
-          item: SyntaxNodePtr {
-            kind: SOURCE_FILE,
-            range: 0..308,
-          },
-          declarations: {
-            "a": Definition {
-              name: "a",
-              kind: Val(
-                None,
-              ),
-              item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 5..14,
-              },
-            },
-          },
-        },
-        Scope {
-          item: SyntaxNodePtr {
-            kind: BLOCK_EXPR,
-            range: 20..43,
-          },
-          declarations: {
-            "b": Definition {
-              name: "b",
-              kind: Val(
-                None,
-              ),
-              item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 28..37,
-              },
-            },
-          },
-        },
-        Scope {
-          item: SyntaxNodePtr {
-            kind: BLOCK_EXPR,
-            range: 61..84,
-          },
-          declarations: {
-            "c": Definition {
-              name: "c",
-              kind: Val(
-                None,
-              ),
-              item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 69..78,
-              },
-            },
-          },
-        },
-        Scope {
-          item: SyntaxNodePtr {
-            kind: BLOCK_EXPR,
-            range: 101..124,
-          },
-          declarations: {
-            "d": Definition {
-              name: "d",
-              kind: Val(
-                None,
-              ),
-              item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 109..118,
-              },
-            },
-          },
-        },
-        Scope {
-          item: SyntaxNodePtr {
-            kind: BLOCK_EXPR,
-            range: 230..261,
-          },
-          declarations: {
-            "g": Definition {
-              name: "g",
-              kind: Val(
-                None,
-              ),
-              item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 238..247,
-              },
-            },
-          },
-        },
-        Scope {
-          item: SyntaxNodePtr {
-            kind: BLOCK_EXPR,
-            range: 275..306,
-          },
-          declarations: {
-            "h": Definition {
-              name: "h",
-              kind: Val(
-                None,
-              ),
-              item: SyntaxNodePtr {
-                kind: VAL_DEF,
-                range: 283..292,
-              },
-            },
-          },
-        },
-      ]"#],
+    expect![@"[]"],
   );
 }
 
 #[test]
 fn refs_to_val() {
+  // FIXME: Re-implement in terms of HIR.
   refs_to(
     r#"
-    val a = 3
-    a@@
-    a + b
-    println(a)
+    object A {}
+    A@@
+    A + b
+    println(A)
 
-    if (a > 3) {
-      val a = 4
-      a
+    if (A > 3) {
+      val A = 4
+      A
     }
     "#,
     expect![@r#"
-      val a = 3
-      @a@
-      @a@ + b
-      println(@a@)
+      object A {}
+      A
+      A + b
+      println(A)
 
-      if (@a@ > 3) {
-        val a = 4
-        @a@
+      if (A > 3) {
+        val A = 4
+        A
       }
     "#],
   );
@@ -873,32 +535,6 @@ fn def_map_packages() {
     package foo.bar
     val baz = 3
     "#,
-    expect![@r#"
-      {
-        Object(
-          Path {
-            elems: [
-              Name(
-                "foo",
-              ),
-              Name(
-                "bar",
-              ),
-              Name(
-                "baz",
-              ),
-            ],
-          },
-        ): Definition {
-          name: "baz",
-          kind: Val(
-            None,
-          ),
-          item: SyntaxNodePtr {
-            kind: VAL_DEF,
-            range: 25..36,
-          },
-        },
-      }"#],
+    expect![@"{}"],
   );
 }

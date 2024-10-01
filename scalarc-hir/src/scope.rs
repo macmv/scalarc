@@ -332,7 +332,10 @@ pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   let Some(def) = db.def_at_index(file_id, pos) else { return vec![] };
 
   // TODO:`file_scopes.scopes[def.parent_scope]`;
-  let scope = &file_scopes.scopes.iter().next().unwrap().1;
+  let Some(scope) = file_scopes.scopes.iter().next() else {
+    return vec![];
+  };
+  let scope = scope.1;
 
   let mut references = vec![];
 
