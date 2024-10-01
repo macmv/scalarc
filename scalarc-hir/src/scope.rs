@@ -184,6 +184,31 @@ fn import_definition(
 
         inst_def.or(obj_def)
       },
+      ast::ImportSelector(i) => {
+        let selectors = ast::ImportSelectors::cast(parent.parent()?)?;
+
+        let mut path = Path::new();
+        if let Some(p) = selectors.path() {
+          for id in p.ids() {
+            path.elems.push(Name::new(id.text().to_string()));
+          }
+        }
+
+        match i {
+          ast::ImportSelector::ImportSelectorId(s) => {
+            if let Some(id) = s.id_token() {
+              path.elems.push(Name::new(id.text().to_string()));
+            }
+          }
+          _ => {}
+        }
+
+        let target = db.file_target(file_id)?;
+        let inst_def = db.definition_for_key(target, DefinitionKey::Instance(path.clone()));
+        let obj_def = db.definition_for_key(target, DefinitionKey::Object(path));
+
+        inst_def.or(obj_def)
+      },
       _ => None,
     }
   }
