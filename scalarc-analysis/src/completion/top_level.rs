@@ -89,6 +89,9 @@ impl Completer<'_> {
           let node = source_map.stmt_syntax(*item).unwrap();
           // Recursive vals and defs exist, so we check if the start is greater than
           // the cursor.
+          //
+          // TODO: Defs on classes should be visible anywhere, but inline defs in
+          // functions should only be visible before the cursor.
           if node.to_node(&ast).text_range().start() > self.cursor.index {
             continue;
           }
