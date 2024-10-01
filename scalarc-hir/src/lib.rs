@@ -67,6 +67,12 @@ pub struct FileRange {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AnyDefinition {
+  Global(Definition),
+  Local(LocalDefinition),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Definition {
   pub name:    Name,
   pub file_id: FileId,
@@ -80,6 +86,22 @@ pub struct LocalDefinition {
   pub block_id: InFile<BlockId>,
   pub stmt_id:  StmtId,
   pub kind:     DefinitionKind,
+}
+
+impl AnyDefinition {
+  pub fn name(&self) -> &Name {
+    match self {
+      AnyDefinition::Global(d) => &d.name,
+      AnyDefinition::Local(d) => &d.name,
+    }
+  }
+
+  pub fn kind(&self) -> &DefinitionKind {
+    match self {
+      AnyDefinition::Global(d) => &d.kind,
+      AnyDefinition::Local(d) => &d.kind,
+    }
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -117,7 +139,7 @@ pub trait HirDatabase: SourceDatabase {
 
   // TODO: Replace with `def_for_expr`.
   #[salsa::invoke(scope::def_at_index)]
-  fn def_at_index(&self, file: FileId, index: TextSize) -> Option<LocalDefinition>;
+  fn def_at_index(&self, file: FileId, index: TextSize) -> Option<AnyDefinition>;
 
   #[salsa::invoke(hir::def_for_expr)]
   fn def_for_expr(&self, block: InFile<BlockId>, expr: hir::ExprId) -> Option<LocalDefinition>;

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{scope::Scope, Definition, DefinitionMap, HirDatabase, LocalDefinition};
+use crate::{scope::Scope, AnyDefinition, Definition, DefinitionMap, HirDatabase, LocalDefinition};
 use la_arena::Arena;
 use scalarc_source::FileId;
 use scalarc_syntax::TextSize;
@@ -127,6 +127,15 @@ where
     match self.item {
       Some(v) => write!(f, "{:#?}", &self.child(v)),
       None => writeln!(f, "None"),
+    }
+  }
+}
+
+impl fmt::Debug for DebugUtil<'_, '_, AnyDefinition> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    match self.item {
+      AnyDefinition::Global(d) => self.child(d).fmt(f),
+      AnyDefinition::Local(d) => self.child(d).fmt(f),
     }
   }
 }

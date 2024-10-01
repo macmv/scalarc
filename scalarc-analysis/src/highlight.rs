@@ -266,7 +266,7 @@ impl Highlightable for ast::Expr {
           if let Some(def) = def {
             h.highlight(
               id.text_range(),
-              match def.kind {
+              match def.kind() {
                 DefinitionKind::Val(_) => HighlightKind::Variable,
                 DefinitionKind::Var => HighlightKind::Variable,
                 DefinitionKind::Parameter => HighlightKind::Parameter,

@@ -11,8 +11,8 @@ use scalarc_syntax::{
 
 use crate::{
   hir::{AstId, ErasedAstId},
-  Definition, DefinitionKey, DefinitionKind, FileRange, HirDatabase, InFileExt, LocalDefinition,
-  Name, Path, Reference, Signature, Type,
+  AnyDefinition, Definition, DefinitionKey, DefinitionKind, FileRange, HirDatabase, InFileExt,
+  LocalDefinition, Name, Path, Reference, Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -88,11 +88,7 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   defs
 }
 
-pub fn def_at_index(
-  db: &dyn HirDatabase,
-  file_id: FileId,
-  pos: TextSize,
-) -> Option<LocalDefinition> {
+pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<AnyDefinition> {
   let ast = db.parse(file_id);
 
   let token = ast
@@ -113,8 +109,8 @@ pub fn def_at_index(
   loop {
     match_ast! {
       match n {
-        ast::Expr(e) => return expr_definition(db, file_id, &e),
-        // ast::Import(_) => return import_definition(db, file_id, node),
+        ast::Expr(e) => return Some(AnyDefinition::Local(expr_definition(db, file_id, &e)?)),
+        ast::Import(_) => return Some(AnyDefinition::Global(import_definition(db, file_id, token)?)),
         _ => n = n.parent()?,
       }
     }
@@ -386,7 +382,7 @@ pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
       for child in node.children() {
         match child.kind() {
           SyntaxKind::IDENT_EXPR => {
-            if child.text() == def.name.as_str() {
+            if child.text() == def.name().as_str() {
               references
                 .push(Reference { pos: FileRange { file: file_id, range: child.text_range() } });
             }
