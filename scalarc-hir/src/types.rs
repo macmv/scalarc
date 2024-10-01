@@ -278,7 +278,7 @@ impl<'a> Infer<'a> {
       _ => return None,
     };
 
-    let hir_ast = self.db.hir_ast_for_scope(block);
+    let hir_ast = self.db.hir_ast_for_block(block);
     let inferred = try_infer(self.db, block)?;
 
     // Find all the `def` and `val`s in the block.
@@ -314,7 +314,7 @@ impl<'a> Infer<'a> {
 }
 
 pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
-  let hir_ast = db.hir_ast_for_scope(block);
+  let hir_ast = db.hir_ast_for_block(block);
 
   let mut infer = Infer::new(db, block.file_id, &hir_ast);
 
@@ -402,7 +402,7 @@ pub fn type_of_expr(db: &dyn HirDatabase, block: InFile<BlockId>, expr: ExprId) 
 }
 
 pub fn type_of_block(db: &dyn HirDatabase, block: InFile<BlockId>) -> Option<Type> {
-  let hir_ast = db.hir_ast_for_scope(block);
+  let hir_ast = db.hir_ast_for_block(block);
 
   match hir_ast.stmts[*hir_ast.items.last()?] {
     Stmt::Expr(e) => db.type_of_expr(block, e),
@@ -433,7 +433,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
       if let Some(expr) = ast::Expr::cast(node.parent()?) {
         let block = db.block_for_node(SyntaxNodePtr::new(&node.parent()?).in_file(file_id));
 
-        let (_, source_map) = db.hir_ast_with_source_for_scope(block);
+        let (_, source_map) = db.hir_ast_with_source_for_block(block);
         let expr_id = source_map.expr(AstPtr::new(&expr))?;
 
         db.type_of_expr(block, expr_id)
@@ -443,7 +443,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
           let parent = val_def.syntax().parent()?;
           let block = db.block_for_node(SyntaxNodePtr::new(&parent).in_file(file_id));
 
-          let (hir_ast, source_map) = db.hir_ast_with_source_for_scope(block);
+          let (hir_ast, source_map) = db.hir_ast_with_source_for_block(block);
           let stmt_id = source_map.stmt(AstPtr::new(&val_def.into()))?;
           let stmt = &hir_ast.stmts[stmt_id];
 
@@ -466,7 +466,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
     SyntaxKind::OPEN_PAREN | SyntaxKind::CLOSE_PAREN => {
       let parent = node.parent()?;
       let block = db.block_for_node(SyntaxNodePtr::new(&parent).in_file(file_id));
-      let (_, source_map) = db.hir_ast_with_source_for_scope(block);
+      let (_, source_map) = db.hir_ast_with_source_for_block(block);
 
       if scalarc_syntax::ast::TupleExpr::can_cast(parent.kind()) {
         let tup = scalarc_syntax::ast::TupleExpr::cast(parent)?;

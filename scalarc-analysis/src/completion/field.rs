@@ -69,7 +69,7 @@ impl Completer<'_> {
       _ => return,
     };
 
-    let block = self.db.hir_ast_for_scope(block_id.in_file(def.file_id));
+    let block = self.db.hir_ast_for_block(block_id.in_file(def.file_id));
 
     let mut names = HashSet::new();
     for item in &block.items {

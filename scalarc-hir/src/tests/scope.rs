@@ -148,7 +148,7 @@ impl fmt::Debug for DebugUtil<'_, '_, GlobalDefinition> {
 
 impl fmt::Debug for DebugUtil<'_, '_, HirDefinition> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-    let source_map = self.db.hir_source_map_for_scope(self.item.block_id);
+    let source_map = self.db.hir_source_map_for_block(self.item.block_id);
     let item = source_map.stmt_syntax(self.item.stmt_id).unwrap();
 
     f.debug_struct("LocalDefinition")

@@ -6,7 +6,7 @@ pub fn def_for_expr(
   block: InFile<BlockId>,
   expr: ExprId,
 ) -> Option<HirDefinition> {
-  let ast = db.hir_ast_for_scope(block);
+  let ast = db.hir_ast_for_block(block);
 
   match ast.exprs[expr] {
     hir::Expr::Name(ref path) => {

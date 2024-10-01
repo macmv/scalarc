@@ -122,7 +122,7 @@ impl Analysis {
         scalarc_hir::AnyDefinition::Hir(ref d) => {
           let ast = db.parse(pos.file);
           let file = d.block_id.file_id;
-          let item_ptr = db.hir_source_map_for_scope(d.block_id).stmt_syntax(d.stmt_id).unwrap();
+          let item_ptr = db.hir_source_map_for_block(d.block_id).stmt_syntax(d.stmt_id).unwrap();
           let item = item_ptr.to_node(&ast);
           (def, FileRange { file, range: item.text_range() })
         }

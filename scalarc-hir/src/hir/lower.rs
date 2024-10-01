@@ -37,7 +37,7 @@ pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> InFil
   id.in_file(ptr.file_id)
 }
 
-pub fn hir_ast_with_source_for_scope(
+pub fn hir_ast_with_source_for_block(
   db: &dyn HirDatabase,
   block: InFile<BlockId>,
 ) -> (Arc<Block>, Arc<BlockSourceMap>) {
@@ -310,7 +310,7 @@ mod tests {
 
     let file_id = FileId::temp_new();
 
-    let (ast, _source_map) = db.hir_ast_with_source_for_scope(InFile {
+    let (ast, _source_map) = db.hir_ast_with_source_for_block(InFile {
       file_id,
       id: BlockId::Block(AstId {
         raw:     Idx::from_raw(RawIdx::from_u32(1)),

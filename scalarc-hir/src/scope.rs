@@ -129,7 +129,7 @@ fn expr_definition(
   let ptr = AstPtr::new(expr);
   let syntax_ptr = SyntaxNodePtr::new(&expr.syntax());
   let block = db.block_for_node(syntax_ptr.in_file(file_id));
-  let Some(expr_id) = db.hir_source_map_for_scope(block).expr(ptr) else {
+  let Some(expr_id) = db.hir_source_map_for_block(block).expr(ptr) else {
     // TODO: This shouldn't happen? Need to debug.
     return None;
   };

@@ -158,19 +158,19 @@ pub trait HirDatabase: SourceDatabase {
   fn type_at_item(&self, file: FileId, id: ErasedAstId) -> Option<Type>;
 
   // This query is unstable, because it contains syntax pointers in the returned
-  // source map result. Use `hir_ast_for_scope` for a stable result.
-  #[salsa::invoke(hir::hir_ast_with_source_for_scope)]
-  fn hir_ast_with_source_for_scope(
+  // source map result. Use `hir_ast_for_block` for a stable result.
+  #[salsa::invoke(hir::hir_ast_with_source_for_block)]
+  fn hir_ast_with_source_for_block(
     &self,
     block: InFile<BlockId>,
   ) -> (Arc<hir::Block>, Arc<hir::BlockSourceMap>);
 
   // This query is stable across reparses.
-  fn hir_ast_for_scope(&self, block: InFile<BlockId>) -> Arc<hir::Block>;
+  fn hir_ast_for_block(&self, block: InFile<BlockId>) -> Arc<hir::Block>;
 
   // This query is unstable across reparses.
   #[salsa::dependencies]
-  fn hir_source_map_for_scope(&self, block: InFile<BlockId>) -> Arc<hir::BlockSourceMap>;
+  fn hir_source_map_for_block(&self, block: InFile<BlockId>) -> Arc<hir::BlockSourceMap>;
 
   // This query returns a stable result across reparses, but depends on the CST
   // directly.
@@ -191,15 +191,15 @@ pub trait HirDatabase: SourceDatabase {
   fn infer(&self, block: InFile<BlockId>) -> Arc<Inference>;
 }
 
-fn hir_ast_for_scope(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<hir::Block> {
-  db.hir_ast_with_source_for_scope(block).0
+fn hir_ast_for_block(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<hir::Block> {
+  db.hir_ast_with_source_for_block(block).0
 }
 
-fn hir_source_map_for_scope(
+fn hir_source_map_for_block(
   db: &dyn HirDatabase,
   block: InFile<BlockId>,
 ) -> Arc<hir::BlockSourceMap> {
-  db.hir_ast_with_source_for_scope(block).1
+  db.hir_ast_with_source_for_block(block).1
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {
