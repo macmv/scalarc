@@ -20,9 +20,7 @@ use database::{LineIndexDatabase, RootDatabase};
 use highlight::Highlight;
 use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
-use scalarc_hir::{
-  AnyDefinition, FileLocation, FileRange, HirDatabase, HirDefinition, Reference, Type,
-};
+use scalarc_hir::{AnyDefinition, FileLocation, FileRange, HirDatabase, Reference, Type};
 use scalarc_source::{FileId, SourceDatabase, Workspace};
 
 pub struct AnalysisHost {

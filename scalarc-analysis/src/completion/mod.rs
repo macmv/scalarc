@@ -1,5 +1,5 @@
 use crate::{database::RootDatabase, FileLocation};
-use scalarc_hir::{DefinitionKind, HirDatabase};
+use scalarc_hir::{GlobalDefinitionKind, HirDatabase, HirDefinitionKind};
 use scalarc_parser::{SyntaxKind, T};
 use scalarc_source::SourceDatabase;
 use scalarc_syntax::{ast, ast::AstNode};
@@ -10,7 +10,13 @@ mod top_level;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Completion {
   pub label: String,
-  pub kind:  DefinitionKind,
+  pub kind:  CompletionKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CompletionKind {
+  Global(GlobalDefinitionKind),
+  Hir(HirDefinitionKind),
 }
 
 struct Completer<'a> {

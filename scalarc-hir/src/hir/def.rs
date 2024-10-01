@@ -1,5 +1,5 @@
 use super::{BlockId, ExprId};
-use crate::{hir, DefinitionKind, HirDatabase, HirDefinition, InFile, Name};
+use crate::{hir, HirDatabase, HirDefinition, HirDefinitionKind, InFile, Name};
 
 pub fn def_for_expr(
   db: &dyn HirDatabase,
@@ -21,7 +21,7 @@ pub fn def_for_expr(
               name:     Name::new(binding.name.clone()),
               stmt_id:  *item,
               block_id: block,
-              kind:     DefinitionKind::Val(None),
+              kind:     HirDefinitionKind::Val(None),
             });
           }
         }

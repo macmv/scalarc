@@ -1,5 +1,5 @@
-use super::{Completer, Completion};
-use scalarc_hir::{DefinitionKey, DefinitionKind, GlobalDefinition, HirDatabase, Type};
+use super::{Completer, Completion, CompletionKind};
+use scalarc_hir::{DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, Type};
 use scalarc_source::{SourceDatabase, TargetId};
 use std::collections::HashSet;
 
@@ -24,8 +24,8 @@ impl Completer<'_> {
 
   fn fields_of_def(&self, def: &GlobalDefinition) -> Option<Vec<Completion>> {
     let body = match def.kind {
-      DefinitionKind::Class(Some(body_id)) => body_id,
-      DefinitionKind::Object(Some(body_id)) => body_id,
+      GlobalDefinitionKind::Class(Some(body_id)) => body_id,
+      GlobalDefinitionKind::Object(Some(body_id)) => body_id,
       _ => return None,
     };
 
@@ -36,7 +36,10 @@ impl Completer<'_> {
     let mut names = HashSet::new();
     for (_, def) in &scope.declarations {
       if names.insert(def.name.clone()) {
-        completions.push(Completion { label: def.name.as_str().into(), kind: def.kind.clone() });
+        completions.push(Completion {
+          label: def.name.as_str().into(),
+          kind:  CompletionKind::Global(def.kind.clone()),
+        });
       }
     }
 

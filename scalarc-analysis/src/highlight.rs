@@ -1,4 +1,6 @@
-use scalarc_hir::{DefinitionKind, GlobalDefinition, HirDatabase, Path};
+use scalarc_hir::{
+  AnyDefinition, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinitionKind, Path,
+};
 use scalarc_source::{FileId, TargetId};
 use scalarc_syntax::{
   ast::{self, AstNode},
@@ -198,10 +200,9 @@ fn def_for_path(h: &Highlighter, path: &Path) -> Option<GlobalDefinition> {
 
 fn kind_for_def(def: &GlobalDefinition) -> Option<HighlightKind> {
   match def.kind {
-    DefinitionKind::Class(_) => Some(HighlightKind::Class),
-    DefinitionKind::Trait(_) => Some(HighlightKind::Trait),
-    DefinitionKind::Object(_) => Some(HighlightKind::Object),
-    _ => None,
+    GlobalDefinitionKind::Class(_) => Some(HighlightKind::Class),
+    GlobalDefinitionKind::Trait(_) => Some(HighlightKind::Trait),
+    GlobalDefinitionKind::Object(_) => Some(HighlightKind::Object),
   }
 }
 
@@ -266,14 +267,18 @@ impl Highlightable for ast::Expr {
           if let Some(def) = def {
             h.highlight(
               id.text_range(),
-              match def.kind() {
-                DefinitionKind::Val(_) => HighlightKind::Variable,
-                DefinitionKind::Var => HighlightKind::Variable,
-                DefinitionKind::Parameter => HighlightKind::Parameter,
-                DefinitionKind::Def(_) => HighlightKind::Function,
-                DefinitionKind::Class(_) => HighlightKind::Class,
-                DefinitionKind::Trait(_) => HighlightKind::Trait,
-                DefinitionKind::Object(_) => HighlightKind::Object,
+              match def {
+                AnyDefinition::Global(def) => match def.kind {
+                  GlobalDefinitionKind::Class(_) => HighlightKind::Class,
+                  GlobalDefinitionKind::Trait(_) => HighlightKind::Trait,
+                  GlobalDefinitionKind::Object(_) => HighlightKind::Object,
+                },
+                AnyDefinition::Hir(def) => match def.kind {
+                  HirDefinitionKind::Val(_) => HighlightKind::Variable,
+                  HirDefinitionKind::Var(_) => HighlightKind::Variable,
+                  HirDefinitionKind::Def(_) => HighlightKind::Function,
+                  HirDefinitionKind::Parameter => HighlightKind::Parameter,
+                },
               },
             );
           }

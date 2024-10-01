@@ -6,8 +6,8 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
   hir::{AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
-  DefinitionKey, DefinitionKind, GlobalDefinition, HirDatabase, InFile, InFileExt, InferQuery,
-  Name, Path,
+  DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, InFile, InFileExt,
+  InferQuery, Name, Path,
 };
 use salsa::{Query, QueryDb};
 use scalarc_source::FileId;
@@ -264,13 +264,13 @@ impl<'a> Infer<'a> {
 
   fn select_name_from_def(&self, def: &GlobalDefinition, name: &str) -> Option<Type> {
     let (block, body) = match def.kind {
-      DefinitionKind::Class(Some(body_id)) => {
+      GlobalDefinitionKind::Class(Some(body_id)) => {
         (BlockId::Class(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
       }
-      DefinitionKind::Trait(Some(body_id)) => {
+      GlobalDefinitionKind::Trait(Some(body_id)) => {
         (BlockId::Trait(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
       }
-      DefinitionKind::Object(Some(body_id)) => {
+      GlobalDefinitionKind::Object(Some(body_id)) => {
         (BlockId::Object(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
       }
       _ => return None,

@@ -11,8 +11,8 @@ use scalarc_syntax::{
 
 use crate::{
   hir::{AstId, ErasedAstId},
-  AnyDefinition, DefinitionKey, DefinitionKind, FileRange, GlobalDefinition, HirDatabase,
-  HirDefinition, InFileExt, Name, Path, Reference, Signature, Type,
+  AnyDefinition, DefinitionKey, FileRange, GlobalDefinition, GlobalDefinitionKind, HirDatabase,
+  HirDefinition, InFileExt, Name, Path, Reference,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -273,23 +273,6 @@ fn def_of_node(
   n: SyntaxNode,
 ) -> Option<GlobalDefinition> {
   match n.kind() {
-    SyntaxKind::VAL_DEF => {
-      let ast_id = db.ast_id_map(file_id).erased_ast_id(&n);
-
-      let v = scalarc_syntax::ast::ValDef::cast(n.clone()).unwrap();
-      let id = v.id_token()?;
-
-      let ty =
-        v.ty().map(|ty| Type::Instance(Path { elems: vec![Name(ty.syntax().text().into())] }));
-
-      Some(GlobalDefinition {
-        name: id.text().into(),
-        file_id,
-        ast_id,
-        kind: DefinitionKind::Val(ty),
-      })
-    }
-
     SyntaxKind::CLASS_DEF => {
       let ast_id_map = db.ast_id_map(file_id);
       let ast_id = ast_id_map.erased_ast_id(&n);
@@ -301,7 +284,7 @@ fn def_of_node(
         name: id.text().into(),
         file_id,
         ast_id,
-        kind: DefinitionKind::Class(c.body().map(|node| ast_id_map.ast_id(&node))),
+        kind: GlobalDefinitionKind::Class(c.body().map(|node| ast_id_map.ast_id(&node))),
       })
     }
 
@@ -316,7 +299,7 @@ fn def_of_node(
         name: id.text().into(),
         file_id,
         ast_id,
-        kind: DefinitionKind::Trait(c.body().map(|node| ast_id_map.ast_id(&node))),
+        kind: GlobalDefinitionKind::Trait(c.body().map(|node| ast_id_map.ast_id(&node))),
       })
     }
 
@@ -331,41 +314,7 @@ fn def_of_node(
         name: id.text().into(),
         file_id,
         ast_id,
-        kind: DefinitionKind::Object(c.body().map(|node| ast_id_map.ast_id(&node))),
-      })
-    }
-
-    SyntaxKind::FUN_DEF => {
-      let ast_id = db.ast_id_map(file_id).erased_ast_id(&n);
-
-      let f = scalarc_syntax::ast::FunDef::cast(n.clone()).unwrap();
-
-      let sig = f.fun_sig()?;
-      let hir_sig = Signature::from_ast(&sig);
-
-      let id = sig.id_token()?;
-
-      Some(GlobalDefinition {
-        name: id.text().into(),
-        file_id,
-        ast_id,
-        kind: DefinitionKind::Def(hir_sig),
-      })
-    }
-
-    // TODO: This is `FUN_PARAM` for both functions and classes right now. It should be updated
-    // to `CLASS_PARAM`, as those can define `val`s on the class.
-    SyntaxKind::FUN_PARAM => {
-      let ast_id = db.ast_id_map(file_id).erased_ast_id(&n);
-
-      let p = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
-
-      let id = p.id_token()?;
-      Some(GlobalDefinition {
-        name: id.text().into(),
-        file_id,
-        ast_id,
-        kind: DefinitionKind::Parameter,
+        kind: GlobalDefinitionKind::Object(c.body().map(|node| ast_id_map.ast_id(&node))),
       })
     }
 

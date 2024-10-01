@@ -82,7 +82,7 @@ pub struct GlobalDefinition {
   pub name:    Name,
   pub file_id: FileId,
   pub ast_id:  ErasedAstId,
-  pub kind:    DefinitionKind,
+  pub kind:    GlobalDefinitionKind,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,7 +90,7 @@ pub struct HirDefinition {
   pub name:     Name,
   pub block_id: InFile<BlockId>,
   pub stmt_id:  StmtId,
-  pub kind:     DefinitionKind,
+  pub kind:     HirDefinitionKind,
 }
 
 impl AnyDefinition {
@@ -98,13 +98,6 @@ impl AnyDefinition {
     match self {
       AnyDefinition::Global(d) => &d.name,
       AnyDefinition::Hir(d) => &d.name,
-    }
-  }
-
-  pub fn kind(&self) -> &DefinitionKind {
-    match self {
-      AnyDefinition::Global(d) => &d.kind,
-      AnyDefinition::Hir(d) => &d.kind,
     }
   }
 }
@@ -115,14 +108,18 @@ pub struct Reference {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DefinitionKind {
-  Val(Option<Type>),
-  Var,
-  Parameter,
-  Def(Signature),
+pub enum GlobalDefinitionKind {
   Class(Option<AstId<ItemBody>>),
   Trait(Option<AstId<ItemBody>>),
   Object(Option<AstId<ItemBody>>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HirDefinitionKind {
+  Val(Option<Type>),
+  Var(Option<Type>),
+  Parameter,
+  Def(Signature),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -240,11 +237,10 @@ fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap 
         path.elems.push(def.name.clone());
 
         match def.kind {
-          DefinitionKind::Class(_) | DefinitionKind::Trait(_) => {
+          GlobalDefinitionKind::Class(_) | GlobalDefinitionKind::Trait(_) => {
             (DefinitionKey::Instance(path), def.clone())
           }
-          DefinitionKind::Object(_) => (DefinitionKey::Object(path), def.clone()),
-          _ => (DefinitionKey::Object(path), def.clone()),
+          GlobalDefinitionKind::Object(_) => (DefinitionKey::Object(path), def.clone()),
         }
       })
       .collect(),

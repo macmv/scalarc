@@ -2,8 +2,11 @@ use std::{error::Error, path::Path, sync::Arc};
 
 use line_index::LineIndex;
 use lsp_types::{SemanticTokenModifier, SemanticTokenType};
-use scalarc_analysis::highlight::{Highlight, HighlightKind};
-use scalarc_hir::{DefinitionKind, FileLocation};
+use scalarc_analysis::{
+  completion::CompletionKind,
+  highlight::{Highlight, HighlightKind},
+};
+use scalarc_hir::{FileLocation, GlobalDefinitionKind, HirDefinitionKind};
 use scalarc_source::FileId;
 use scalarc_syntax::{TextRange, TextSize};
 
@@ -54,17 +57,27 @@ pub fn handle_completion(
         .into_iter()
         .map(|c| {
           let (kind, detail) = match c.kind {
-            DefinitionKind::Val(ty) => {
+            CompletionKind::Hir(HirDefinitionKind::Val(ty)) => {
               (lsp_types::CompletionItemKind::VARIABLE, ty.map(|t| t.to_string()))
             }
-            DefinitionKind::Var => (lsp_types::CompletionItemKind::VARIABLE, None),
-            DefinitionKind::Parameter => (lsp_types::CompletionItemKind::VARIABLE, None),
-            DefinitionKind::Def(sig) => {
+            CompletionKind::Hir(HirDefinitionKind::Var(_)) => {
+              (lsp_types::CompletionItemKind::VARIABLE, None)
+            }
+            CompletionKind::Hir(HirDefinitionKind::Parameter) => {
+              (lsp_types::CompletionItemKind::VARIABLE, None)
+            }
+            CompletionKind::Hir(HirDefinitionKind::Def(sig)) => {
               (lsp_types::CompletionItemKind::FUNCTION, Some(sig.to_string()))
             }
-            DefinitionKind::Class(_) => (lsp_types::CompletionItemKind::CLASS, None),
-            DefinitionKind::Trait(_) => (lsp_types::CompletionItemKind::INTERFACE, None),
-            DefinitionKind::Object(_) => (lsp_types::CompletionItemKind::CLASS, None),
+            CompletionKind::Global(GlobalDefinitionKind::Class(_)) => {
+              (lsp_types::CompletionItemKind::CLASS, None)
+            }
+            CompletionKind::Global(GlobalDefinitionKind::Trait(_)) => {
+              (lsp_types::CompletionItemKind::INTERFACE, None)
+            }
+            CompletionKind::Global(GlobalDefinitionKind::Object(_)) => {
+              (lsp_types::CompletionItemKind::CLASS, None)
+            }
           };
 
           lsp_types::CompletionItem {
