@@ -13,7 +13,7 @@ mod tests;
 #[macro_use]
 extern crate log;
 
-mod hir;
+pub mod hir;
 pub mod scope;
 pub mod types;
 

@@ -90,7 +90,7 @@ fn check_completions() {
 }
 
 #[test]
-fn dot_access() {
+fn lhs_of_dot_access() {
   completions_for(
     r#"
       object Foo {
@@ -101,7 +101,10 @@ fn dot_access() {
     "#,
     expect![@"[Foo, Int]"],
   );
+}
 
+#[test]
+fn dot_access() {
   completions_for(
     r#"
      object Foo {
@@ -110,7 +113,7 @@ fn dot_access() {
 
      Foo.|foo
    "#,
-    expect![@"[]"],
+    expect![@"[x]"],
   );
 }
 
@@ -124,7 +127,7 @@ fn dot_access_invalid_syntax() {
 
      Foo.|
    "#,
-    expect![@"[]"],
+    expect![@"[x]"],
   );
 }
 
