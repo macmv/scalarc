@@ -55,6 +55,10 @@ impl<T: AstNode> AstPtr<T> {
   pub fn new(node: &T) -> Self {
     AstPtr { ptr: SyntaxNodePtr::new(node.syntax()), _phantom: PhantomData }
   }
+
+  pub fn to_node(&self, root: &Parse<SourceFile>) -> SyntaxNode {
+    self.ptr.to_node(&root.syntax_node())
+  }
 }
 
 #[macro_export]

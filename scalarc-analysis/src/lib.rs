@@ -20,7 +20,7 @@ use database::{LineIndexDatabase, RootDatabase};
 use highlight::Highlight;
 use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
-use scalarc_hir::{Definition, FileLocation, FileRange, HirDatabase, Reference, Type};
+use scalarc_hir::{FileLocation, FileRange, HirDatabase, LocalDefinition, Reference, Type};
 use scalarc_source::{FileId, SourceDatabase, Workspace};
 
 pub struct AnalysisHost {
@@ -116,11 +116,13 @@ impl Analysis {
   pub fn definition_for_name(
     &self,
     pos: FileLocation,
-  ) -> Cancellable<Option<(Definition, FileRange)>> {
+  ) -> Cancellable<Option<(LocalDefinition, FileRange)>> {
     self.with_db(|db| {
       db.def_at_index(pos.file, pos.index).map(|def| {
-        let file = def.file_id;
-        let item = db.ast_id_map(file).get_erased(def.ast_id);
+        let ast = db.parse(pos.file);
+        let file = def.block_id.file_id;
+        let item_ptr = db.hir_source_map_for_scope(def.block_id).stmt_syntax(def.stmt_id).unwrap();
+        let item = item_ptr.to_node(&ast);
         (def, FileRange { file, range: item.text_range() })
       })
     })

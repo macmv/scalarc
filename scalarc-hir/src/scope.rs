@@ -110,16 +110,23 @@ pub fn def_at_index(
     .unwrap();
 
   let mut n = token.parent()?;
-  let expr = loop {
+  loop {
     match_ast! {
       match n {
-        ast::Expr(e) => break e,
+        ast::Expr(e) => return expr_definition(db, file_id, &e),
+        // ast::Import(_) => return import_definition(db, file_id, node),
         _ => n = n.parent()?,
       }
     }
-  };
+  }
+}
 
-  let ptr = AstPtr::new(&expr);
+fn expr_definition(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  expr: &ast::Expr,
+) -> Option<LocalDefinition> {
+  let ptr = AstPtr::new(expr);
   let syntax_ptr = SyntaxNodePtr::new(&expr.syntax());
   let block = db.block_for_node(syntax_ptr.in_file(file_id));
   let Some(expr_id) = db.hir_source_map_for_scope(block).expr(ptr) else {
@@ -128,47 +135,6 @@ pub fn def_at_index(
   };
 
   db.def_for_expr(block, expr_id)
-}
-
-fn expr_definition(
-  db: &dyn HirDatabase,
-  file_id: FileId,
-  pos: TextSize,
-  token: SyntaxToken,
-) -> Option<Definition> {
-  let defs = db.defs_at_index(file_id, pos);
-
-  match token.kind() {
-    T![ident] => {
-      let name = Name::new(token.text().to_string());
-
-      // Scopes are ordered innermost to outermost, so the first definition we find is
-      // the one we want.
-      if let Some(def) = defs.iter().find(|def| def.name.as_str() == name.as_str()) {
-        return Some(def.clone());
-      }
-
-      // FIXME: Need global name lookup.
-      //
-      /*
-      let hir = db.hir_ast(file_id);
-      match hir.imports.get(&name) {
-        Some(path) => path.clone(),
-      };
-      */
-      let _path = Path { elems: vec![name] };
-
-      let source_root = db.file_source_root(file_id)?;
-      let target = db.source_root_target(source_root);
-      let _definitions = db.definitions_for_target(target);
-
-      // FIXME: Re-implement.
-      // definitions.items.get(&path).cloned()
-      None
-    }
-
-    _ => None,
-  }
 }
 
 fn import_definition(
