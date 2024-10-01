@@ -1,4 +1,4 @@
-use scalarc_hir::{DefinitionKind, HirDatabase, Path};
+use scalarc_hir::{Definition, DefinitionKind, HirDatabase, Path};
 use scalarc_source::{FileId, TargetId};
 use scalarc_syntax::{
   ast::{self, AstNode},
@@ -185,6 +185,26 @@ impl Highlightable for ast::Item {
   }
 }
 
+fn def_for_path(h: &Highlighter, path: &Path) -> Option<Definition> {
+  if let Some(target) = h.target {
+    match h.db.definition_for_key(target, scalarc_hir::DefinitionKey::Instance(path.clone())) {
+      Some(def) => Some(def),
+      None => h.db.definition_for_key(target, scalarc_hir::DefinitionKey::Object(path.clone())),
+    }
+  } else {
+    None
+  }
+}
+
+fn kind_for_def(def: &Definition) -> Option<HighlightKind> {
+  match def.kind {
+    DefinitionKind::Class(_) => Some(HighlightKind::Class),
+    DefinitionKind::Trait(_) => Some(HighlightKind::Trait),
+    DefinitionKind::Object(_) => Some(HighlightKind::Object),
+    _ => None,
+  }
+}
+
 impl Highlightable for ast::ImportExpr {
   fn highlight(&self, h: &mut Highlighter) {
     match self {
@@ -195,36 +215,41 @@ impl Highlightable for ast::ImportExpr {
           path.elems.push(id.text().into());
         }
 
-        if let Some(target) = h.target {
-          let def = match h
-            .db
-            .definition_for_key(target, scalarc_hir::DefinitionKey::Instance(path.clone()))
-          {
-            Some(def) => def,
-            None => {
-              match h
-                .db
-                .definition_for_key(target, scalarc_hir::DefinitionKey::Object(path.clone()))
-              {
-                Some(def) => def,
-                None => return,
-              }
+        if let Some(def) = def_for_path(h, &path) {
+          if let Some(kind) = kind_for_def(&def) {
+            if let Some(id) = p.ids().last() {
+              h.highlight(id.text_range(), kind);
             }
-          };
-
-          let kind = match def.kind {
-            DefinitionKind::Class(_) => HighlightKind::Class,
-            DefinitionKind::Trait(_) => HighlightKind::Trait,
-            DefinitionKind::Object(_) => HighlightKind::Object,
-            _ => return,
-          };
-
-          if let Some(id) = p.ids().last() {
-            h.highlight(id.text_range(), kind);
           }
         }
       }
-      _ => {}
+      ast::ImportExpr::ImportSelectors(i) => {
+        let mut prefix = Path::new();
+
+        if let Some(p) = i.path() {
+          for id in p.ids() {
+            prefix.elems.push(id.text().into());
+          }
+        }
+
+        for sel in i.import_selectors() {
+          match sel {
+            ast::ImportSelector::ImportSelectorId(s) => {
+              if let Some(id) = s.id_token() {
+                let mut path = prefix.clone();
+                path.elems.push(s.id_token().unwrap().text().into());
+
+                if let Some(def) = def_for_path(h, &path) {
+                  if let Some(kind) = kind_for_def(&def) {
+                    h.highlight(id.text_range(), kind);
+                  }
+                }
+              }
+            }
+            _ => {}
+          }
+        }
+      }
     }
   }
 }
