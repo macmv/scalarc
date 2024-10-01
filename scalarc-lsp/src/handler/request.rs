@@ -176,7 +176,7 @@ pub fn semantic_tokens_legend() -> lsp_types::SemanticTokensLegend {
     match kind {
       HighlightKind::Class => SemanticTokenType::new("class"),
       HighlightKind::Trait => SemanticTokenType::new("interface"),
-      HighlightKind::Object => SemanticTokenType::new("object"),
+      HighlightKind::Object => SemanticTokenType::new("class"),
       HighlightKind::Function => SemanticTokenType::new("function"),
       HighlightKind::Keyword => SemanticTokenType::new("keyword"),
       HighlightKind::Number => SemanticTokenType::new("number"),

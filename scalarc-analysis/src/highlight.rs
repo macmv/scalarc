@@ -1,5 +1,5 @@
-use scalarc_hir::{DefinitionKind, HirDatabase};
-use scalarc_source::FileId;
+use scalarc_hir::{DefinitionKind, HirDatabase, Path};
+use scalarc_source::{FileId, TargetId};
 use scalarc_syntax::{
   ast::{self, AstNode},
   node::SyntaxToken,
@@ -54,8 +54,9 @@ pub enum HighlightKind {
 }
 
 struct Highlighter<'a> {
-  db:   &'a dyn HirDatabase,
-  file: FileId,
+  db:     &'a dyn HirDatabase,
+  file:   FileId,
+  target: Option<TargetId>,
 
   hl: Highlight,
 }
@@ -76,7 +77,7 @@ impl Highlight {
 
 impl<'a> Highlighter<'a> {
   pub fn new(db: &'a dyn HirDatabase, file: FileId) -> Self {
-    Highlighter { db, file, hl: Highlight { tokens: vec![] } }
+    Highlighter { db, file, target: db.file_target(file), hl: Highlight { tokens: vec![] } }
   }
 
   pub fn visit<T: Highlightable>(&mut self, node: T) { node.highlight(self); }
@@ -169,6 +170,59 @@ impl Highlightable for ast::Item {
         }
 
         h.visit(d.expr());
+      }
+
+      ast::Item::Import(i) => {
+        h.highlight_opt(i.import_token(), HighlightKind::Keyword);
+
+        for expr in i.import_exprs() {
+          h.visit(expr);
+        }
+      }
+
+      _ => {}
+    }
+  }
+}
+
+impl Highlightable for ast::ImportExpr {
+  fn highlight(&self, h: &mut Highlighter) {
+    match self {
+      ast::ImportExpr::Path(p) => {
+        let mut path = Path::new();
+
+        for id in p.ids() {
+          path.elems.push(id.text().into());
+        }
+
+        if let Some(target) = h.target {
+          let def = match h
+            .db
+            .definition_for_key(target, scalarc_hir::DefinitionKey::Instance(path.clone()))
+          {
+            Some(def) => def,
+            None => {
+              match h
+                .db
+                .definition_for_key(target, scalarc_hir::DefinitionKey::Object(path.clone()))
+              {
+                Some(def) => def,
+                None => return,
+              }
+            }
+          };
+
+          let kind = match def.kind {
+            DefinitionKind::Class(_) => HighlightKind::Class,
+            DefinitionKind::Trait(_) => HighlightKind::Trait,
+            DefinitionKind::Object(_) => HighlightKind::Object,
+            _ => return,
+          };
+
+          if let Some(id) = p.ids().last() {
+            h.highlight(id.text_range(), kind);
+          }
+        }
       }
       _ => {}
     }

@@ -103,6 +103,7 @@ pub trait HirDatabase: SourceDatabase {
 
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
   fn definitions_for_file(&self, file: FileId) -> DefinitionMap;
+  fn definition_for_key(&self, target: TargetId, key: DefinitionKey) -> Option<Definition>;
 
   #[salsa::invoke(scope::scopes_of)]
   fn scopes_of(&self, file: FileId) -> FileScopes;
@@ -197,6 +198,20 @@ fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap 
       })
       .collect(),
   }
+}
+
+fn definition_for_key(
+  db: &dyn HirDatabase,
+  target: TargetId,
+  key: DefinitionKey,
+) -> Option<Definition> {
+  for target in db.workspace().all_dependencies(target) {
+    if let Some(def) = db.definitions_for_target(target).items.get(&key) {
+      return Some(def.clone());
+    }
+  }
+
+  None
 }
 
 fn package_for_file(db: &dyn HirDatabase, file: FileId) -> Option<Path> {

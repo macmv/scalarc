@@ -225,7 +225,7 @@ SelfType = id (':' Type)? '=>'
 
 Package = 'package' Path
 
-Import     = 'import' (ImportExpr (',' ImportExpr)*)
+Import     = 'import' ImportExpr* ','*
 ImportExpr = Path | ImportSelectors
 
 ImportSelectors      = Path '.' '{' (ImportSelector (',' ImportSelector)*) '}'
