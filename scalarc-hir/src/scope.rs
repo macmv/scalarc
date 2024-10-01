@@ -3,14 +3,16 @@ use std::{collections::HashMap, mem};
 use la_arena::{Arena, Idx, RawIdx};
 use scalarc_source::FileId;
 use scalarc_syntax::{
-  ast::{AstNode, Item, ItemBody, SyntaxKind},
-  node::SyntaxNode,
+  ast::{self, AstNode, Item, ItemBody, SyntaxKind},
+  match_ast,
+  node::{SyntaxNode, SyntaxToken},
   TextSize, T,
 };
 
 use crate::{
   hir::{AstId, ErasedAstId},
-  Definition, DefinitionKind, FileRange, HirDatabase, Name, Path, Reference, Signature, Type,
+  Definition, DefinitionKey, DefinitionKind, FileRange, HirDatabase, Name, Path, Reference,
+  Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -87,8 +89,6 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
 }
 
 pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<Definition> {
-  let defs = db.defs_at_index(file_id, pos);
-
   let ast = db.parse(file_id);
 
   let node = ast
@@ -105,9 +105,31 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
     })
     .unwrap();
 
-  match node.kind() {
+  let mut n = node.parent()?;
+  loop {
+    match_ast! {
+      match n {
+        ast::Expr(_) => return expr_definition(db, file_id, pos, node),
+        ast::Import(_) => return import_definition(db, file_id, node),
+        _ => {}
+      }
+    }
+
+    n = n.parent()?;
+  }
+}
+
+fn expr_definition(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  pos: TextSize,
+  token: SyntaxToken,
+) -> Option<Definition> {
+  let defs = db.defs_at_index(file_id, pos);
+
+  match token.kind() {
     T![ident] => {
-      let name = Name::new(node.text().to_string());
+      let name = Name::new(token.text().to_string());
 
       // Scopes are ordered innermost to outermost, so the first definition we find is
       // the one we want.
@@ -135,6 +157,35 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
     }
 
     _ => None,
+  }
+}
+
+fn import_definition(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  token: SyntaxToken,
+) -> Option<Definition> {
+  let parent = token.parent()?;
+  info!("looking up import definition for {parent:#?}");
+  match_ast! {
+    match parent {
+      ast::Path(p) => {
+        let mut path = Path::new();
+
+        for id in p.ids() {
+          path.elems.push(Name::new(id.text().to_string()));
+        }
+
+        info!("looking up definition for import {:?}", path);
+
+        let target = db.file_target(file_id)?;
+        let inst_def = db.definition_for_key(target, DefinitionKey::Instance(path.clone()));
+        let obj_def = db.definition_for_key(target, DefinitionKey::Object(path));
+
+        inst_def.or(obj_def)
+      },
+      _ => None,
+    }
   }
 }
 
