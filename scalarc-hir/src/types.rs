@@ -5,7 +5,9 @@
 use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
-  hir::{AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId},
+  hir::{
+    self, AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId,
+  },
   DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, InFile, InFileExt,
   InferQuery, Name, Path,
 };
@@ -263,15 +265,15 @@ impl<'a> Infer<'a> {
   }
 
   fn select_name_from_def(&self, def: &GlobalDefinition, name: &str) -> Option<Type> {
-    let (block, body) = match def.kind {
-      GlobalDefinitionKind::Class(Some(body_id)) => {
-        (BlockId::Class(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
+    let block = match def.kind {
+      GlobalDefinitionKind::Class(Some(_)) => {
+        BlockId::Class(AstId::new(def.ast_id)).in_file(def.file_id)
       }
-      GlobalDefinitionKind::Trait(Some(body_id)) => {
-        (BlockId::Trait(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
+      GlobalDefinitionKind::Trait(Some(_)) => {
+        BlockId::Trait(AstId::new(def.ast_id)).in_file(def.file_id)
       }
-      GlobalDefinitionKind::Object(Some(body_id)) => {
-        (BlockId::Object(AstId::new(def.ast_id)).in_file(def.file_id), body_id)
+      GlobalDefinitionKind::Object(Some(_)) => {
+        BlockId::Object(AstId::new(def.ast_id)).in_file(def.file_id)
       }
       _ => return None,
     };
@@ -279,23 +281,32 @@ impl<'a> Infer<'a> {
     let hir_ast = self.db.hir_ast_for_scope(block);
     let inferred = try_infer(self.db, block)?;
 
-    let scopes = self.db.scopes_of(def.file_id);
-    let scope = scopes.get(body)?;
-
-    let decls: Vec<_> = scope.declarations.iter().filter(|(n, _)| n.as_str() == name).collect();
+    // Find all the `def` and `val`s in the block.
+    let decls: Vec<_> = hir_ast
+      .items
+      .iter()
+      .filter_map(|&it| match hir_ast.stmts[it] {
+        hir::Stmt::Binding(ref b) => match b.kind {
+          BindingKind::Def(_) | BindingKind::Val => {
+            if b.name == name {
+              Some(it)
+            } else {
+              None
+            }
+          }
+          _ => None,
+        },
+        _ => None,
+      })
+      .collect();
 
     match decls[..] {
       [] => None,
-      [(_, def)] => {
-        let stmt_id = hir_ast.stmt_map[&def.ast_id];
-
-        inferred.stmts.get(&stmt_id).cloned()
-      }
+      [stmt_id] => inferred.stmts.get(&stmt_id).cloned(),
       _ => {
         // TODO: Resolve overloads.
-        let (_, def) = decls.first().unwrap();
+        let stmt_id = decls.first().unwrap();
 
-        let stmt_id = hir_ast.stmt_map[&def.ast_id];
         inferred.stmts.get(&stmt_id).cloned()
       }
     }
