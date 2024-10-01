@@ -55,7 +55,6 @@ impl Completer<'_> {
 
     let Some(mut n) = token.parent() else { return completions };
     loop {
-      dbg!(&n);
       match_ast! {
         match n {
           ast::Expr(_) => {
