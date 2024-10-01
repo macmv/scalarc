@@ -16,10 +16,12 @@ use scalarc_syntax::{
 
 use crate::HirDatabase;
 
+mod def;
 mod expr;
 mod lower;
 mod source_map;
 
+pub use def::def_for_expr;
 pub use expr::*;
 pub use lower::{block_for_node, hir_ast_with_source_for_scope};
 pub use source_map::BlockSourceMap;

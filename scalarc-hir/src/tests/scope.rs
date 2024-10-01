@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{scope::Scope, Definition, DefinitionMap, HirDatabase};
+use crate::{scope::Scope, Definition, DefinitionMap, HirDatabase, LocalDefinition};
 use la_arena::Arena;
 use scalarc_source::FileId;
 use scalarc_syntax::TextSize;
@@ -137,6 +137,19 @@ impl fmt::Debug for DebugUtil<'_, '_, Definition> {
     let item = item_id_map.get_erased(self.item.ast_id);
 
     f.debug_struct("Definition")
+      .field("name", &self.item.name.as_str())
+      .field("kind", &self.item.kind)
+      .field("item", &item)
+      .finish()
+  }
+}
+
+impl fmt::Debug for DebugUtil<'_, '_, LocalDefinition> {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let source_map = self.db.hir_source_map_for_scope(self.item.block_id);
+    let item = source_map.stmt_syntax(self.item.stmt_id).unwrap();
+
+    f.debug_struct("LocalDefinition")
       .field("name", &self.item.name.as_str())
       .field("kind", &self.item.kind)
       .field("item", &item)
@@ -341,14 +354,17 @@ fn definition_at() {
     val baz = 5
     "#,
     expect![@r#"
-      Definition {
+      LocalDefinition {
         name: "a",
         kind: Val(
           None,
         ),
-        item: SyntaxNodePtr {
-          kind: VAL_DEF,
-          range: 39..48,
+        item: AstPtr {
+          ptr: SyntaxNodePtr {
+            kind: VAL_DEF,
+            range: 39..48,
+          },
+          _phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::Item>,
         },
       }"#],
   );
@@ -362,14 +378,17 @@ fn def_sigs() {
     foo@@
     "#,
     expect![@r#"
-      Definition {
+      LocalDefinition {
         name: "foo",
-        kind: Def(
-          Signature((a: scala.Int) => scala.String),
+        kind: Val(
+          None,
         ),
-        item: SyntaxNodePtr {
-          kind: FUN_DEF,
-          range: 5..35,
+        item: AstPtr {
+          ptr: SyntaxNodePtr {
+            kind: FUN_DEF,
+            range: 5..35,
+          },
+          _phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::Item>,
         },
       }"#],
   );

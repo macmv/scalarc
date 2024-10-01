@@ -6,13 +6,13 @@ use scalarc_syntax::{
   ast::{self, AstNode, Item, ItemBody, SyntaxKind},
   match_ast,
   node::{SyntaxNode, SyntaxToken},
-  TextSize, T,
+  AstPtr, SyntaxNodePtr, TextSize, T,
 };
 
 use crate::{
   hir::{AstId, ErasedAstId},
-  Definition, DefinitionKey, DefinitionKind, FileRange, HirDatabase, Name, Path, Reference,
-  Signature, Type,
+  Definition, DefinitionKey, DefinitionKind, FileRange, HirDatabase, InFileExt, LocalDefinition,
+  Name, Path, Reference, Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -88,10 +88,14 @@ pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
   defs
 }
 
-pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<Definition> {
+pub fn def_at_index(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  pos: TextSize,
+) -> Option<LocalDefinition> {
   let ast = db.parse(file_id);
 
-  let node = ast
+  let token = ast
     .syntax_node()
     .token_at_offset(pos)
     .max_by_key(|token| match token.kind() {
@@ -105,18 +109,25 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
     })
     .unwrap();
 
-  let mut n = node.parent()?;
-  loop {
+  let mut n = token.parent()?;
+  let expr = loop {
     match_ast! {
       match n {
-        ast::Expr(_) => return expr_definition(db, file_id, pos, node),
-        ast::Import(_) => return import_definition(db, file_id, node),
-        _ => {}
+        ast::Expr(e) => break e,
+        _ => n = n.parent()?,
       }
     }
+  };
 
-    n = n.parent()?;
-  }
+  let ptr = AstPtr::new(&expr);
+  let syntax_ptr = SyntaxNodePtr::new(&expr.syntax());
+  let block = db.block_for_node(syntax_ptr.in_file(file_id));
+  let Some(expr_id) = db.hir_source_map_for_scope(block).expr(ptr) else {
+    // TODO: This shouldn't happen? Need to debug.
+    return None;
+  };
+
+  db.def_for_expr(block, expr_id)
 }
 
 fn expr_definition(
@@ -305,13 +316,7 @@ fn def_of_node(
       let ty =
         v.ty().map(|ty| Type::Instance(Path { elems: vec![Name(ty.syntax().text().into())] }));
 
-      Some(Definition {
-        name: id.text().into(),
-        file_id,
-        parent_scope: scope,
-        ast_id,
-        kind: DefinitionKind::Val(ty),
-      })
+      Some(Definition { name: id.text().into(), file_id, ast_id, kind: DefinitionKind::Val(ty) })
     }
 
     SyntaxKind::CLASS_DEF => {
@@ -324,7 +329,6 @@ fn def_of_node(
       Some(Definition {
         name: id.text().into(),
         file_id,
-        parent_scope: scope,
         ast_id,
         kind: DefinitionKind::Class(c.body().map(|node| ast_id_map.ast_id(&node))),
       })
@@ -340,7 +344,6 @@ fn def_of_node(
       Some(Definition {
         name: id.text().into(),
         file_id,
-        parent_scope: scope,
         ast_id,
         kind: DefinitionKind::Trait(c.body().map(|node| ast_id_map.ast_id(&node))),
       })
@@ -356,7 +359,6 @@ fn def_of_node(
       Some(Definition {
         name: id.text().into(),
         file_id,
-        parent_scope: scope,
         ast_id,
         kind: DefinitionKind::Object(c.body().map(|node| ast_id_map.ast_id(&node))),
       })
@@ -375,7 +377,6 @@ fn def_of_node(
       Some(Definition {
         name: id.text().into(),
         file_id,
-        parent_scope: scope,
         ast_id,
         kind: DefinitionKind::Def(hir_sig),
       })
@@ -389,13 +390,7 @@ fn def_of_node(
       let p = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
 
       let id = p.id_token()?;
-      Some(Definition {
-        name: id.text().into(),
-        file_id,
-        parent_scope: scope,
-        ast_id,
-        kind: DefinitionKind::Parameter,
-      })
+      Some(Definition { name: id.text().into(), file_id, ast_id, kind: DefinitionKind::Parameter })
     }
 
     _ => None,
@@ -411,7 +406,8 @@ pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Ve
 
   let Some(def) = db.def_at_index(file_id, pos) else { return vec![] };
 
-  let scope = &file_scopes.scopes[def.parent_scope];
+  // TODO:`file_scopes.scopes[def.parent_scope]`;
+  let scope = &file_scopes.scopes.iter().next().unwrap().1;
 
   let mut references = vec![];
 

@@ -1,10 +1,10 @@
-use hir::{AstId, BlockId, ErasedAstId};
+use hir::{AstId, BlockId, ErasedAstId, StmtId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
   ast::{self, ItemBody},
   SyntaxNodePtr, TextRange, TextSize,
 };
-use scope::{FileScopes, ScopeId};
+use scope::FileScopes;
 use std::{collections::HashMap, sync::Arc};
 
 #[cfg(test)]
@@ -68,11 +68,18 @@ pub struct FileRange {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Definition {
-  pub name:         Name,
-  pub file_id:      FileId,
-  pub parent_scope: ScopeId,
-  pub ast_id:       ErasedAstId,
-  pub kind:         DefinitionKind,
+  pub name:    Name,
+  pub file_id: FileId,
+  pub ast_id:  ErasedAstId,
+  pub kind:    DefinitionKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalDefinition {
+  pub name:     Name,
+  pub block_id: InFile<BlockId>,
+  pub stmt_id:  StmtId,
+  pub kind:     DefinitionKind,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -107,8 +114,14 @@ pub trait HirDatabase: SourceDatabase {
 
   #[salsa::invoke(scope::scopes_of)]
   fn scopes_of(&self, file: FileId) -> FileScopes;
+
+  // TODO: Replace with `def_for_expr`.
   #[salsa::invoke(scope::def_at_index)]
-  fn def_at_index(&self, file: FileId, index: TextSize) -> Option<Definition>;
+  fn def_at_index(&self, file: FileId, index: TextSize) -> Option<LocalDefinition>;
+
+  #[salsa::invoke(hir::def_for_expr)]
+  fn def_for_expr(&self, block: InFile<BlockId>, expr: hir::ExprId) -> Option<LocalDefinition>;
+
   #[salsa::invoke(scope::defs_at_index)]
   fn defs_at_index(&self, file: FileId, index: TextSize) -> Vec<Definition>;
   #[salsa::invoke(scope::references_to)]
@@ -131,6 +144,10 @@ pub trait HirDatabase: SourceDatabase {
   // This query is stable across reparses.
   fn hir_ast_for_scope(&self, block: InFile<BlockId>) -> Arc<hir::Block>;
 
+  // This query is unstable across reparses.
+  #[salsa::dependencies]
+  fn hir_source_map_for_scope(&self, block: InFile<BlockId>) -> Arc<hir::BlockSourceMap>;
+
   // This query returns a stable result across reparses, but depends on the CST
   // directly.
   fn package_for_file(&self, file: FileId) -> Option<Path>;
@@ -152,6 +169,13 @@ pub trait HirDatabase: SourceDatabase {
 
 fn hir_ast_for_scope(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<hir::Block> {
   db.hir_ast_with_source_for_scope(block).0
+}
+
+fn hir_source_map_for_scope(
+  db: &dyn HirDatabase,
+  block: InFile<BlockId>,
+) -> Arc<hir::BlockSourceMap> {
+  db.hir_ast_with_source_for_scope(block).1
 }
 
 fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionMap {
