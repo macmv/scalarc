@@ -1,7 +1,7 @@
 use std::{error::Error, path::Path, sync::Arc};
 
 use line_index::LineIndex;
-use lsp_types::SemanticTokenType;
+use lsp_types::{SemanticTokenModifier, SemanticTokenType};
 use scalarc_analysis::highlight::{Highlight, HighlightKind};
 use scalarc_hir::{DefinitionKind, FileLocation};
 use scalarc_source::FileId;
@@ -171,6 +171,28 @@ pub fn handle_hover(
   }))
 }
 
+struct TokenModifier {
+  stat: bool,
+}
+
+impl TokenModifier {
+  pub fn all() -> Vec<SemanticTokenModifier> { vec![SemanticTokenModifier::new("static")] }
+
+  pub fn from_kind(kind: HighlightKind) -> Self {
+    Self { stat: matches!(kind, HighlightKind::Object) }
+  }
+
+  pub fn encode(&self) -> u32 {
+    let mut bits = 0;
+
+    if self.stat {
+      bits |= 1;
+    }
+
+    bits
+  }
+}
+
 pub fn semantic_tokens_legend() -> lsp_types::SemanticTokensLegend {
   fn token_type(kind: HighlightKind) -> SemanticTokenType {
     match kind {
@@ -189,7 +211,7 @@ pub fn semantic_tokens_legend() -> lsp_types::SemanticTokensLegend {
 
   lsp_types::SemanticTokensLegend {
     token_types:     HighlightKind::iter().map(token_type).collect(),
-    token_modifiers: vec![],
+    token_modifiers: TokenModifier::all(),
   }
 }
 
@@ -224,7 +246,7 @@ fn to_semantic_tokens(
       delta_start,
       length: (range.end() - range.start()).into(),
       token_type: h.kind as u32,
-      token_modifiers_bitset: 0,
+      token_modifiers_bitset: TokenModifier::from_kind(h.kind).encode(),
     });
   }
 
