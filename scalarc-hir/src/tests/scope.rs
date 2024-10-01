@@ -1,6 +1,8 @@
 use std::fmt;
 
-use crate::{scope::Scope, AnyDefinition, Definition, DefinitionMap, HirDatabase, LocalDefinition};
+use crate::{
+  scope::Scope, AnyDefinition, DefinitionMap, GlobalDefinition, HirDatabase, HirDefinition,
+};
 use la_arena::Arena;
 use scalarc_source::FileId;
 use scalarc_syntax::TextSize;
@@ -107,13 +109,13 @@ impl fmt::Debug for DebugUtil<'_, '_, DefinitionMap> {
   }
 }
 
-impl fmt::Debug for DebugUtil<'_, '_, Vec<(String, Definition)>> {
+impl fmt::Debug for DebugUtil<'_, '_, Vec<(String, GlobalDefinition)>> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.debug_map().entries(self.item.iter().map(|(k, v)| (k, self.child(v)))).finish()
   }
 }
 
-impl fmt::Debug for DebugUtil<'_, '_, Vec<Definition>> {
+impl fmt::Debug for DebugUtil<'_, '_, Vec<GlobalDefinition>> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     f.debug_list().entries(self.item.iter().map(|d| self.child(d))).finish()
   }
@@ -135,12 +137,12 @@ impl fmt::Debug for DebugUtil<'_, '_, AnyDefinition> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match self.item {
       AnyDefinition::Global(d) => self.child(d).fmt(f),
-      AnyDefinition::Local(d) => self.child(d).fmt(f),
+      AnyDefinition::Hir(d) => self.child(d).fmt(f),
     }
   }
 }
 
-impl fmt::Debug for DebugUtil<'_, '_, Definition> {
+impl fmt::Debug for DebugUtil<'_, '_, GlobalDefinition> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let item_id_map = self.db.ast_id_map(FileId::temp_new());
     let item = item_id_map.get_erased(self.item.ast_id);
@@ -153,7 +155,7 @@ impl fmt::Debug for DebugUtil<'_, '_, Definition> {
   }
 }
 
-impl fmt::Debug for DebugUtil<'_, '_, LocalDefinition> {
+impl fmt::Debug for DebugUtil<'_, '_, HirDefinition> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let source_map = self.db.hir_source_map_for_scope(self.item.block_id);
     let item = source_map.stmt_syntax(self.item.stmt_id).unwrap();

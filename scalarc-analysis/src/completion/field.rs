@@ -1,5 +1,5 @@
 use super::{Completer, Completion};
-use scalarc_hir::{Definition, DefinitionKey, DefinitionKind, HirDatabase, Type};
+use scalarc_hir::{DefinitionKey, DefinitionKind, GlobalDefinition, HirDatabase, Type};
 use scalarc_source::{SourceDatabase, TargetId};
 use std::collections::HashSet;
 
@@ -22,7 +22,7 @@ impl Completer<'_> {
     vec![]
   }
 
-  fn fields_of_def(&self, def: &Definition) -> Option<Vec<Completion>> {
+  fn fields_of_def(&self, def: &GlobalDefinition) -> Option<Vec<Completion>> {
     let body = match def.kind {
       DefinitionKind::Class(Some(body_id)) => body_id,
       DefinitionKind::Object(Some(body_id)) => body_id,

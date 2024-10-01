@@ -21,7 +21,7 @@ use highlight::Highlight;
 use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
 use scalarc_hir::{
-  AnyDefinition, FileLocation, FileRange, HirDatabase, LocalDefinition, Reference, Type,
+  AnyDefinition, FileLocation, FileRange, HirDatabase, HirDefinition, Reference, Type,
 };
 use scalarc_source::{FileId, SourceDatabase, Workspace};
 
@@ -121,7 +121,7 @@ impl Analysis {
   ) -> Cancellable<Option<(AnyDefinition, FileRange)>> {
     self.with_db(|db| {
       db.def_at_index(pos.file, pos.index).map(|def| match def {
-        scalarc_hir::AnyDefinition::Local(ref d) => {
+        scalarc_hir::AnyDefinition::Hir(ref d) => {
           let ast = db.parse(pos.file);
           let file = d.block_id.file_id;
           let item_ptr = db.hir_source_map_for_scope(d.block_id).stmt_syntax(d.stmt_id).unwrap();

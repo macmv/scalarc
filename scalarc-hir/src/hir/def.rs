@@ -1,11 +1,11 @@
 use super::{BlockId, ExprId};
-use crate::{hir, DefinitionKind, HirDatabase, InFile, LocalDefinition, Name};
+use crate::{hir, DefinitionKind, HirDatabase, HirDefinition, InFile, Name};
 
 pub fn def_for_expr(
   db: &dyn HirDatabase,
   block: InFile<BlockId>,
   expr: ExprId,
-) -> Option<LocalDefinition> {
+) -> Option<HirDefinition> {
   let ast = db.hir_ast_for_scope(block);
 
   match ast.exprs[expr] {
@@ -17,7 +17,7 @@ pub fn def_for_expr(
       for item in ast.items.iter() {
         if let hir::Stmt::Binding(ref binding) = ast.stmts[*item] {
           if binding.name == *name {
-            return Some(LocalDefinition {
+            return Some(HirDefinition {
               name:     Name::new(binding.name.clone()),
               stmt_id:  *item,
               block_id: block,

@@ -42,7 +42,7 @@ impl<T> InFileExt for T {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefinitionMap {
-  pub items: HashMap<DefinitionKey, Definition>,
+  pub items: HashMap<DefinitionKey, GlobalDefinition>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -66,14 +66,19 @@ pub struct FileRange {
   pub range: TextRange,
 }
 
+/// Definitions can either live in HIR (for things like local variables), or in
+/// the global scope.
+///
+/// The difference is needed because HIR definitions are tied to a specific
+/// block, while global definitions are more closely tied to files.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AnyDefinition {
-  Global(Definition),
-  Local(LocalDefinition),
+  Global(GlobalDefinition),
+  Hir(HirDefinition),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Definition {
+pub struct GlobalDefinition {
   pub name:    Name,
   pub file_id: FileId,
   pub ast_id:  ErasedAstId,
@@ -81,7 +86,7 @@ pub struct Definition {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LocalDefinition {
+pub struct HirDefinition {
   pub name:     Name,
   pub block_id: InFile<BlockId>,
   pub stmt_id:  StmtId,
@@ -92,14 +97,14 @@ impl AnyDefinition {
   pub fn name(&self) -> &Name {
     match self {
       AnyDefinition::Global(d) => &d.name,
-      AnyDefinition::Local(d) => &d.name,
+      AnyDefinition::Hir(d) => &d.name,
     }
   }
 
   pub fn kind(&self) -> &DefinitionKind {
     match self {
       AnyDefinition::Global(d) => &d.kind,
-      AnyDefinition::Local(d) => &d.kind,
+      AnyDefinition::Hir(d) => &d.kind,
     }
   }
 }
@@ -132,7 +137,7 @@ pub trait HirDatabase: SourceDatabase {
 
   fn definitions_for_target(&self, target: TargetId) -> DefinitionMap;
   fn definitions_for_file(&self, file: FileId) -> DefinitionMap;
-  fn definition_for_key(&self, target: TargetId, key: DefinitionKey) -> Option<Definition>;
+  fn definition_for_key(&self, target: TargetId, key: DefinitionKey) -> Option<GlobalDefinition>;
 
   #[salsa::invoke(scope::scopes_of)]
   fn scopes_of(&self, file: FileId) -> FileScopes;
@@ -142,10 +147,10 @@ pub trait HirDatabase: SourceDatabase {
   fn def_at_index(&self, file: FileId, index: TextSize) -> Option<AnyDefinition>;
 
   #[salsa::invoke(hir::def_for_expr)]
-  fn def_for_expr(&self, block: InFile<BlockId>, expr: hir::ExprId) -> Option<LocalDefinition>;
+  fn def_for_expr(&self, block: InFile<BlockId>, expr: hir::ExprId) -> Option<HirDefinition>;
 
   #[salsa::invoke(scope::defs_at_index)]
-  fn defs_at_index(&self, file: FileId, index: TextSize) -> Vec<Definition>;
+  fn defs_at_index(&self, file: FileId, index: TextSize) -> Vec<GlobalDefinition>;
   #[salsa::invoke(scope::references_to)]
   fn references_to(&self, file: FileId, index: TextSize) -> Vec<Reference>;
 
@@ -250,7 +255,7 @@ fn definition_for_key(
   db: &dyn HirDatabase,
   target: TargetId,
   key: DefinitionKey,
-) -> Option<Definition> {
+) -> Option<GlobalDefinition> {
   for target in db.workspace().all_dependencies(target) {
     if let Some(def) = db.definitions_for_target(target).items.get(&key) {
       return Some(def.clone());

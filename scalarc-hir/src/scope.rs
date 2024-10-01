@@ -11,8 +11,8 @@ use scalarc_syntax::{
 
 use crate::{
   hir::{AstId, ErasedAstId},
-  AnyDefinition, Definition, DefinitionKey, DefinitionKind, FileRange, HirDatabase, InFileExt,
-  LocalDefinition, Name, Path, Reference, Signature, Type,
+  AnyDefinition, DefinitionKey, DefinitionKind, FileRange, GlobalDefinition, HirDatabase,
+  HirDefinition, InFileExt, Name, Path, Reference, Signature, Type,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -26,7 +26,7 @@ pub struct Scope {
   pub ast_id: ErasedAstId,
 
   /// All the names declared by the scope.
-  pub declarations: Vec<(String, Definition)>,
+  pub declarations: Vec<(String, GlobalDefinition)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,7 +47,11 @@ impl FileScopes {
 
 /// Returns the definitions at the given scope. The innermost declarations (ie,
 /// closest to the cursor) show up first in the list.
-pub fn defs_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<Definition> {
+pub fn defs_at_index(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  pos: TextSize,
+) -> Vec<GlobalDefinition> {
   let file_scopes = db.scopes_of(file_id);
   let ast_id_map = db.ast_id_map(file_id);
 
@@ -109,7 +113,7 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
   loop {
     match_ast! {
       match n {
-        ast::Expr(e) => return Some(AnyDefinition::Local(expr_definition(db, file_id, &e)?)),
+        ast::Expr(e) => return Some(AnyDefinition::Hir(expr_definition(db, file_id, &e)?)),
         ast::Import(_) => return Some(AnyDefinition::Global(import_definition(db, file_id, token)?)),
         _ => n = n.parent()?,
       }
@@ -121,7 +125,7 @@ fn expr_definition(
   db: &dyn HirDatabase,
   file_id: FileId,
   expr: &ast::Expr,
-) -> Option<LocalDefinition> {
+) -> Option<HirDefinition> {
   let ptr = AstPtr::new(expr);
   let syntax_ptr = SyntaxNodePtr::new(&expr.syntax());
   let block = db.block_for_node(syntax_ptr.in_file(file_id));
@@ -137,7 +141,7 @@ fn import_definition(
   db: &dyn HirDatabase,
   file_id: FileId,
   token: SyntaxToken,
-) -> Option<Definition> {
+) -> Option<GlobalDefinition> {
   let parent = token.parent()?;
   info!("looking up import definition for {parent:#?}");
   match_ast! {
@@ -255,7 +259,7 @@ fn definitions_of<'a>(
   file_id: FileId,
   n: &SyntaxNode,
   scope: ScopeId,
-) -> impl Iterator<Item = (String, Definition)> + 'a {
+) -> impl Iterator<Item = (String, GlobalDefinition)> + 'a {
   n.children().filter_map(move |n| {
     let def = def_of_node(db, file_id, scope, n);
     def.map(|def| (def.name.as_str().into(), def))
@@ -267,7 +271,7 @@ fn def_of_node(
   file_id: FileId,
   scope: ScopeId,
   n: SyntaxNode,
-) -> Option<Definition> {
+) -> Option<GlobalDefinition> {
   match n.kind() {
     SyntaxKind::VAL_DEF => {
       let ast_id = db.ast_id_map(file_id).erased_ast_id(&n);
@@ -278,7 +282,12 @@ fn def_of_node(
       let ty =
         v.ty().map(|ty| Type::Instance(Path { elems: vec![Name(ty.syntax().text().into())] }));
 
-      Some(Definition { name: id.text().into(), file_id, ast_id, kind: DefinitionKind::Val(ty) })
+      Some(GlobalDefinition {
+        name: id.text().into(),
+        file_id,
+        ast_id,
+        kind: DefinitionKind::Val(ty),
+      })
     }
 
     SyntaxKind::CLASS_DEF => {
@@ -288,7 +297,7 @@ fn def_of_node(
       let c = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
 
-      Some(Definition {
+      Some(GlobalDefinition {
         name: id.text().into(),
         file_id,
         ast_id,
@@ -303,7 +312,7 @@ fn def_of_node(
       let c = scalarc_syntax::ast::TraitDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
 
-      Some(Definition {
+      Some(GlobalDefinition {
         name: id.text().into(),
         file_id,
         ast_id,
@@ -318,7 +327,7 @@ fn def_of_node(
       let c = scalarc_syntax::ast::ObjectDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
 
-      Some(Definition {
+      Some(GlobalDefinition {
         name: id.text().into(),
         file_id,
         ast_id,
@@ -336,7 +345,7 @@ fn def_of_node(
 
       let id = sig.id_token()?;
 
-      Some(Definition {
+      Some(GlobalDefinition {
         name: id.text().into(),
         file_id,
         ast_id,
@@ -352,7 +361,12 @@ fn def_of_node(
       let p = scalarc_syntax::ast::FunParam::cast(n.clone()).unwrap();
 
       let id = p.id_token()?;
-      Some(Definition { name: id.text().into(), file_id, ast_id, kind: DefinitionKind::Parameter })
+      Some(GlobalDefinition {
+        name: id.text().into(),
+        file_id,
+        ast_id,
+        kind: DefinitionKind::Parameter,
+      })
     }
 
     _ => None,

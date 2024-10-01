@@ -1,4 +1,4 @@
-use scalarc_hir::{Definition, DefinitionKind, HirDatabase, Path};
+use scalarc_hir::{DefinitionKind, GlobalDefinition, HirDatabase, Path};
 use scalarc_source::{FileId, TargetId};
 use scalarc_syntax::{
   ast::{self, AstNode},
@@ -185,7 +185,7 @@ impl Highlightable for ast::Item {
   }
 }
 
-fn def_for_path(h: &Highlighter, path: &Path) -> Option<Definition> {
+fn def_for_path(h: &Highlighter, path: &Path) -> Option<GlobalDefinition> {
   if let Some(target) = h.target {
     match h.db.definition_for_key(target, scalarc_hir::DefinitionKey::Instance(path.clone())) {
       Some(def) => Some(def),
@@ -196,7 +196,7 @@ fn def_for_path(h: &Highlighter, path: &Path) -> Option<Definition> {
   }
 }
 
-fn kind_for_def(def: &Definition) -> Option<HighlightKind> {
+fn kind_for_def(def: &GlobalDefinition) -> Option<HighlightKind> {
   match def.kind {
     DefinitionKind::Class(_) => Some(HighlightKind::Class),
     DefinitionKind::Trait(_) => Some(HighlightKind::Trait),
