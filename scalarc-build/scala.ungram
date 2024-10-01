@@ -135,7 +135,7 @@ Expr = IfExpr
      | CharacterLit
      | DoubleQuotedString
      | TrippleQuotedString
-     | Path
+     | PathExpr
      | UnderscoreExpr
      | TupleExpr
      | FieldExpr
@@ -164,6 +164,7 @@ IdentExpr      = id
 NewExpr = 'new' id? TypeParams? ParenArguments? BlockExpr?
 PostfixUnderscoreExpr = Expr '_'
 
+PathExpr       = Path
 UnderscoreExpr = '_'
 TupleExpr      = '(' (Expr (',' Expr)*)? ')'
 FieldExpr      = Expr '.' id
