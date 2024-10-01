@@ -107,16 +107,20 @@ pub fn handle_goto_definition(
   snap: GlobalStateSnapshot,
   params: lsp_types::GotoDefinitionParams,
 ) -> Result<Option<lsp_types::GotoDefinitionResponse>, Box<dyn Error>> {
-  let (pos, converter) = LspConverter::from_pos(&snap, params.text_document_position_params)?;
-  let definition = snap.analysis.definition_for_name(pos)?;
+  let (cursor_pos, _) = LspConverter::from_pos(&snap, params.text_document_position_params)?;
+  let definition = snap.analysis.definition_for_name(cursor_pos)?;
 
-  if let Some((_, pos)) = definition {
+  if let Some((_, def_pos)) = definition {
+    let converter = LspConverter::new(&snap, def_pos.file)?;
     let files = snap.files.read();
 
     Ok(Some(lsp_types::GotoDefinitionResponse::Scalar(lsp_types::Location::new(
-      lsp_types::Url::parse(&format!("file://{}", files.id_to_absolute_path(pos.file).display()))
-        .unwrap(),
-      converter.range(pos.range),
+      lsp_types::Url::parse(&format!(
+        "file://{}",
+        files.id_to_absolute_path(def_pos.file).display()
+      ))
+      .unwrap(),
+      converter.range(def_pos.range),
     ))))
   } else {
     Ok(None)
@@ -127,17 +131,18 @@ pub fn handle_document_highlight(
   snap: GlobalStateSnapshot,
   params: lsp_types::DocumentHighlightParams,
 ) -> Result<Option<Vec<lsp_types::DocumentHighlight>>, Box<dyn Error>> {
-  let (pos, converter) = LspConverter::from_pos(&snap, params.text_document_position_params)?;
-  let definition = snap.analysis.definition_for_name(pos)?;
-  let refs = snap.analysis.references_for_name(pos)?;
+  let (cursor_pos, converter) =
+    LspConverter::from_pos(&snap, params.text_document_position_params)?;
+  let definition = snap.analysis.definition_for_name(cursor_pos)?;
+  let refs = snap.analysis.references_for_name(cursor_pos)?;
 
-  if let Some((_, pos)) = definition {
-    if pos.file != pos.file {
+  if let Some((_, def_pos)) = definition {
+    if cursor_pos.file != def_pos.file {
       return Ok(None);
     }
 
     let def_highlight = lsp_types::DocumentHighlight {
-      range: converter.range(pos.range),
+      range: converter.range(def_pos.range),
       kind:  Some(lsp_types::DocumentHighlightKind::WRITE),
     };
 

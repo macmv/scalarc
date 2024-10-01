@@ -119,8 +119,9 @@ impl Analysis {
   ) -> Cancellable<Option<(Definition, FileRange)>> {
     self.with_db(|db| {
       db.def_at_index(pos.file, pos.index).map(|def| {
-        let item = db.ast_id_map(pos.file).get_erased(def.ast_id);
-        (def, FileRange { file: pos.file, range: item.text_range() })
+        let file = def.file_id;
+        let item = db.ast_id_map(file).get_erased(def.ast_id);
+        (def, FileRange { file, range: item.text_range() })
       })
     })
   }
