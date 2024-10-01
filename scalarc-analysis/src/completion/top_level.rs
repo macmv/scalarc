@@ -1,6 +1,15 @@
+use std::collections::HashSet;
+
 use super::{Completer, Completion, CompletionKind};
-use scalarc_hir::{DefinitionKey, FileLocation, GlobalDefinitionKind, HirDatabase};
+use scalarc_hir::{hir, DefinitionKey, FileLocation, GlobalDefinitionKind, HirDatabase, InFileExt};
+use scalarc_parser::{SyntaxKind, T};
 use scalarc_source::SourceDatabase;
+use scalarc_syntax::{
+  ast::{self, AstNode},
+  match_ast,
+  node::SyntaxNode,
+  SyntaxNodePtr,
+};
 
 impl Completer<'_> {
   pub fn top_level_completions(&self, pos: FileLocation) -> Vec<Completion> {
@@ -17,7 +26,7 @@ impl Completer<'_> {
       ));
     }
 
-    let completions = definitions
+    let mut completions = definitions
       .into_iter()
       .map(|(key, def)| Completion {
         label: match key {
@@ -28,6 +37,77 @@ impl Completer<'_> {
       })
       .collect::<Vec<_>>();
 
+    let ast = self.db.parse(pos.file);
+
+    let token = ast
+      .syntax_node()
+      .token_at_offset(pos.index)
+      .max_by_key(|token| match token.kind() {
+        T![ident] => 10,
+        SyntaxKind::INT_LIT_KW => 9,
+
+        // Whitespace is always lowest priority.
+        T![nl] => 0,
+
+        _ => 1,
+      })
+      .unwrap();
+
+    let Some(mut n) = token.parent() else { return completions };
+    loop {
+      dbg!(&n);
+      match_ast! {
+        match n {
+          ast::Expr(_) => {
+            self.collect_block_completions(pos, &n, &mut completions);
+            break;
+          },
+          ast::ItemBody(_) => {
+            self.collect_block_completions(pos, &n, &mut completions);
+            break;
+          },
+          _ => n = match n.parent() {
+            Some(p) => p,
+            None => break,
+          },
+        }
+      }
+    }
+
     completions
+  }
+
+  fn collect_block_completions(
+    &self,
+    pos: FileLocation,
+    node: &SyntaxNode,
+    completions: &mut Vec<Completion>,
+  ) {
+    let ast = self.db.parse(pos.file);
+
+    let block_id = self.db.block_for_node(SyntaxNodePtr::new(node).in_file(pos.file));
+    let (block, source_map) = self.db.hir_ast_with_source_for_block(block_id);
+
+    let mut names = HashSet::new();
+    for item in &block.items {
+      match block.stmts[*item] {
+        hir::Stmt::Binding(ref binding) => {
+          let node = source_map.stmt_syntax(*item).unwrap();
+          // Recursive vals and defs exist, so we check if the start is greater than
+          // the cursor.
+          if node.to_node(&ast).text_range().start() > pos.index {
+            continue;
+          }
+
+          if names.insert(binding.name.clone()) {
+            completions.push(Completion {
+              label: binding.name.as_str().into(),
+              kind:  CompletionKind::Hir(scalarc_hir::HirDefinitionKind::Val(None)),
+            });
+          }
+        }
+        _ => {}
+      }
+    }
   }
 }

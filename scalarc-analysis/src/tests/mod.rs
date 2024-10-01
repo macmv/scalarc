@@ -62,7 +62,7 @@ fn check_completions() {
         |
       }
     "#,
-    expect![@"[Foo, Int]"],
+    expect![@"[Foo, Int, x, y, z]"],
   );
 
   completions_for(
@@ -74,7 +74,7 @@ fn check_completions() {
         val z = 3 + 4
       }
     "#,
-    expect![@"[Foo, Int]"],
+    expect![@"[Foo, Int, x, y]"],
   );
 
   completions_for(
@@ -85,7 +85,7 @@ fn check_completions() {
         val z = |3 + 4
       }
     "#,
-    expect![@"[Foo, Int]"],
+    expect![@"[Foo, Int, x, y, z]"],
   );
 }
 
@@ -140,7 +140,7 @@ fn complete_def() {
        def b = |
      }
    "#,
-    expect![@"[Foo, Int]"],
+    expect![@"[Foo, Int, a, b]"],
   );
 }
 
