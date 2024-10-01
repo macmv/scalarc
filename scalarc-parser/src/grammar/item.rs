@@ -74,47 +74,24 @@ fn items(p: &mut Parser, terminator: BlockTerminator) {
 fn item(p: &mut Parser) {
   let m = p.start();
 
-  // test ok
-  // private def foo = 3
-  // protected val bar = 3
-  match p.current() {
-    T![private] | T![protected] => {
-      p.bump();
-      p.eat_newlines();
+  // Scala doesn't define an order to these, so we just parse all of them.
+  loop {
+    // test ok
+    // private def foo = 3
+    // protected val bar = 3
+    // final def foo = 3
+    // private final def foo = 4
+    // implicit private def foo = 5
+    // private implicit def foo = 5
+    // final abstract class Int extends AnyVal {}
+    // override def foo() = {}
+    match p.current() {
+      T![private] | T![protected] | T![final] | T![implicit] | T![abstract] | T![override] => {
+        p.bump();
+        p.eat_newlines();
+      }
+      _ => break,
     }
-    _ => {}
-  }
-
-  // test ok
-  // final def foo = 3
-  // private final def foo = 4
-  // private implicit def foo = 5
-  match p.current() {
-    T![final] | T![implicit] => {
-      p.bump();
-      p.eat_newlines();
-    }
-    _ => {}
-  }
-
-  // test ok
-  // override def foo() = {}
-  match p.current() {
-    T![override] => {
-      p.bump();
-      p.eat_newlines();
-    }
-    _ => {}
-  }
-
-  // test ok
-  // final abstract class Int extends AnyVal {}
-  match p.current() {
-    T![abstract] => {
-      p.bump();
-      p.eat_newlines();
-    }
-    _ => {}
   }
 
   match p.current() {
