@@ -20,21 +20,23 @@ pub enum CompletionKind {
 }
 
 struct Completer<'a> {
-  db: &'a RootDatabase,
+  db:     &'a RootDatabase,
+  cursor: FileLocation,
 }
 
-pub fn completions(db: &RootDatabase, pos: FileLocation) -> Vec<Completion> {
-  let completer = Completer { db };
+pub fn completions(db: &RootDatabase, cursor: FileLocation) -> Vec<Completion> {
+  let completer = Completer { db, cursor };
 
-  completer.completions(pos)
+  completer.completions()
 }
 
 impl Completer<'_> {
-  fn completions(&self, pos: FileLocation) -> Vec<Completion> {
-    let ast = self.db.parse(pos.file);
+  fn completions(&self) -> Vec<Completion> {
+    let ast = self.db.parse(self.cursor.file);
+
     let node = ast
       .syntax_node()
-      .token_at_offset(pos.index)
+      .token_at_offset(self.cursor.index)
       .max_by_key(|token| match token.kind() {
         T![ident] => 10,
         SyntaxKind::INT_LIT_KW => 9,
@@ -52,12 +54,12 @@ impl Completer<'_> {
         ast::FieldExpr(f) => {
           let Some(lhs) = f.expr() else  { return vec![] };
           // TODO: This is a bit dumb, but not all that dumb.
-          let Some(ty) = self.db.type_at(pos.file, lhs.syntax().text_range().end()) else { return vec![] };
+          let Some(ty) = self.db.type_at(self.cursor.file, lhs.syntax().text_range().end()) else { return vec![] };
 
-          let target = self.db.file_target(pos.file).unwrap();
+          let target = self.db.file_target(self.cursor.file).unwrap();
           self.field_completions(target, ty)
         },
-        _ => self.top_level_completions(pos)
+        _ => self.top_level_completions()
       }
     }
   }

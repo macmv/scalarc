@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use super::{Completer, Completion, CompletionKind};
-use scalarc_hir::{hir, DefinitionKey, FileLocation, GlobalDefinitionKind, HirDatabase, InFileExt};
+use scalarc_hir::{hir, DefinitionKey, GlobalDefinitionKind, HirDatabase, InFileExt};
 use scalarc_parser::{SyntaxKind, T};
 use scalarc_source::SourceDatabase;
 use scalarc_syntax::{
@@ -12,8 +12,8 @@ use scalarc_syntax::{
 };
 
 impl Completer<'_> {
-  pub fn top_level_completions(&self, pos: FileLocation) -> Vec<Completion> {
-    let Some(source_root) = self.db.file_source_root(pos.file) else { return vec![] };
+  pub fn top_level_completions(&self) -> Vec<Completion> {
+    let Some(source_root) = self.db.file_source_root(self.cursor.file) else { return vec![] };
     let target = self.db.source_root_target(source_root);
 
     let mut definitions = vec![];
@@ -37,11 +37,11 @@ impl Completer<'_> {
       })
       .collect::<Vec<_>>();
 
-    let ast = self.db.parse(pos.file);
+    let ast = self.db.parse(self.cursor.file);
 
     let token = ast
       .syntax_node()
-      .token_at_offset(pos.index)
+      .token_at_offset(self.cursor.index)
       .max_by_key(|token| match token.kind() {
         T![ident] => 10,
         SyntaxKind::INT_LIT_KW => 9,
@@ -59,11 +59,11 @@ impl Completer<'_> {
       match_ast! {
         match n {
           ast::Expr(_) => {
-            self.collect_block_completions(pos, &n, &mut completions);
+            self.collect_block_completions(&n, &mut completions);
             break;
           },
           ast::ItemBody(_) => {
-            self.collect_block_completions(pos, &n, &mut completions);
+            self.collect_block_completions( &n, &mut completions);
             break;
           },
           _ => n = match n.parent() {
@@ -77,15 +77,10 @@ impl Completer<'_> {
     completions
   }
 
-  fn collect_block_completions(
-    &self,
-    pos: FileLocation,
-    node: &SyntaxNode,
-    completions: &mut Vec<Completion>,
-  ) {
-    let ast = self.db.parse(pos.file);
+  fn collect_block_completions(&self, node: &SyntaxNode, completions: &mut Vec<Completion>) {
+    let ast = self.db.parse(self.cursor.file);
 
-    let block_id = self.db.block_for_node(SyntaxNodePtr::new(node).in_file(pos.file));
+    let block_id = self.db.block_for_node(SyntaxNodePtr::new(node).in_file(self.cursor.file));
     let (block, source_map) = self.db.hir_ast_with_source_for_block(block_id);
 
     let mut names = HashSet::new();
@@ -95,7 +90,7 @@ impl Completer<'_> {
           let node = source_map.stmt_syntax(*item).unwrap();
           // Recursive vals and defs exist, so we check if the start is greater than
           // the cursor.
-          if node.to_node(&ast).text_range().start() > pos.index {
+          if node.to_node(&ast).text_range().start() > self.cursor.index {
             continue;
           }
 
