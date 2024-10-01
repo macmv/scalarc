@@ -7,6 +7,7 @@ mod database;
 #[cfg(test)]
 mod tests;
 
+#[allow(unused_imports)]
 #[macro_use]
 extern crate log;
 
