@@ -28,22 +28,6 @@ impl Completer<'_> {
       })
       .collect::<Vec<_>>();
 
-    /*
-    let definitions = self.db.defs_at_index(pos.file, pos.index);
-
-    let mut names = HashSet::new();
-    for def in definitions {
-      match def.kind {
-        HirDefinitionKind::Val(_) | DefinitionKind::Def(_) | DefinitionKind::Parameter => {
-          if names.insert(def.name.clone()) {
-            completions.push(Completion { label: def.name.as_str().into(), kind: def.kind });
-          }
-        }
-        _ => continue,
-      }
-    }
-    */
-
     completions
   }
 }
