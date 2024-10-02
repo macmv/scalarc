@@ -330,7 +330,13 @@ impl<'a> Lexer<'a> {
         loop {
           match self.tok.peek()? {
             Some(InnerToken::Digit) => {}
-            Some(InnerToken::Delimiter(Delimiter::Dot)) if !is_float => is_float = true,
+            Some(InnerToken::Delimiter(Delimiter::Dot)) => {
+              if !is_float && self.tok.peek2() == Ok(Some(InnerToken::Digit)) {
+                is_float = true;
+              } else {
+                break;
+              }
+            }
             Some(_) | None => break,
           }
           self.tok.eat().unwrap();
@@ -502,6 +508,19 @@ mod tests {
     let mut lexer = Lexer::new("2.345");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
     assert_eq!(lexer.slice(), "2.345");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+  }
+
+  #[test]
+  fn int_dot() {
+    // This requires a bit of peaking ahead shenanigins.
+    let mut lexer = Lexer::new("2.foo");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "2");
+    assert_eq!(lexer.next(), Ok(Token::Delimiter(Delimiter::Dot)));
+    assert_eq!(lexer.slice(), ".");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "foo");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 

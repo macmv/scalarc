@@ -64,6 +64,20 @@ fn literals() {
 }
 
 #[test]
+fn int_field_expr() {
+  check_expr(
+    "1.second",
+    expect![@r#"
+      FIELD_EXPR
+        LIT_EXPR
+          INT_LIT_KW '1'
+        DOT '.'
+        IDENT 'second'
+    "#],
+  );
+}
+
+#[test]
 fn whitespace() {
   check_expr(
     "2   +  56",
