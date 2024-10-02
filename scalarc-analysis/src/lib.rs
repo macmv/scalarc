@@ -21,8 +21,8 @@ use highlight::Highlight;
 use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
 use scalarc_hir::{
-  AnyDefinition, DefinitionKey, FileLocation, FileRange, GlobalDefinition, GlobalDefinitionKind,
-  HirDatabase, HirDefinitionId, Reference, Type,
+  AnyDefinition, ClassKind, DefinitionKey, FileLocation, FileRange, GlobalDefinition,
+  GlobalDefinitionKind, HirDatabase, HirDefinitionId, Reference, Type,
 };
 use scalarc_parser::{SyntaxKind, T};
 use scalarc_source::{FileId, SourceDatabase, TargetId, Workspace};
@@ -223,12 +223,9 @@ fn prioritize_definitions(
           };
 
           match class.kind {
-            GlobalDefinitionKind::Class(_, is_case) => {
-              if is_case {
-                return Some(class);
-              } else {
-                return db.definition_for_key(target, DefinitionKey::Object(path.clone()));
-              }
+            GlobalDefinitionKind::Class(_, ClassKind::Case) => Some(class),
+            GlobalDefinitionKind::Class(_, _) => {
+              db.definition_for_key(target, DefinitionKey::Object(path.clone()))
             }
             _ => None,
           }

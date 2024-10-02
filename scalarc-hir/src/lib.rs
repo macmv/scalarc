@@ -116,9 +116,15 @@ pub struct Reference {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GlobalDefinitionKind {
-  Class(Option<AstId<ItemBody>>, bool),
+  Class(Option<AstId<ItemBody>>, ClassKind),
   Trait(Option<AstId<ItemBody>>),
   Object(Option<AstId<ItemBody>>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ClassKind {
+  Normal,
+  Case,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

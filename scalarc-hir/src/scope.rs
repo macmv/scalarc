@@ -11,8 +11,9 @@ use scalarc_syntax::{
 
 use crate::{
   hir::{self, AstId, BlockId, ErasedAstId},
-  AnyDefinition, DefinitionKey, FileRange, GlobalDefinition, GlobalDefinitionKind, HirDatabase,
-  HirDefinition, HirDefinitionId, HirDefinitionKind, InFile, InFileExt, Name, Path, Reference,
+  AnyDefinition, ClassKind, DefinitionKey, FileRange, GlobalDefinition, GlobalDefinitionKind,
+  HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile, InFileExt, Name, Path,
+  Reference,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -308,7 +309,7 @@ fn def_of_node(
         ast_id,
         kind: GlobalDefinitionKind::Class(
           c.body().map(|node| ast_id_map.ast_id(&node)),
-          c.case_token().is_some(),
+          if c.case_token().is_some() { ClassKind::Case } else { ClassKind::Normal },
         ),
       })
     }
