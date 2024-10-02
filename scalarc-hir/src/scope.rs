@@ -1,4 +1,4 @@
-use std::{collections::HashMap, mem};
+use std::collections::HashMap;
 
 use la_arena::{Arena, Idx, RawIdx};
 use scalarc_source::FileId;
@@ -10,9 +10,9 @@ use scalarc_syntax::{
 };
 
 use crate::{
-  hir::{AstId, ErasedAstId},
+  hir::{self, AstId, BlockId, ErasedAstId},
   AnyDefinition, DefinitionKey, FileRange, GlobalDefinition, GlobalDefinitionKind, HirDatabase,
-  HirDefinition, InFileExt, Name, Path, Reference,
+  HirDefinition, InFile, InFileExt, Name, Path, Reference,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -323,52 +323,52 @@ fn def_of_node(
 }
 
 pub fn references_to(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Vec<Reference> {
-  let ast = db.parse(file_id);
-  let ast_id_map = db.ast_id_map(file_id);
-  let tree = ast.tree();
-
-  let file_scopes = db.scopes_of(file_id);
-
   let Some(def) = db.def_at_index(file_id, pos) else { return vec![] };
 
-  // TODO:`file_scopes.scopes[def.parent_scope]`;
-  let Some(scope) = file_scopes.scopes.iter().next() else {
-    return vec![];
-  };
-  let scope = scope.1;
+  match def {
+    AnyDefinition::Hir(def) => {
+      let mut refs = vec![];
 
-  let mut references = vec![];
+      walk_references(db, &def, def.block_id, &mut refs);
 
-  let item = ast_id_map.get_erased(scope.ast_id);
-  let mut this_pass: Vec<_> = vec![item.to_node(tree.syntax())];
-  let mut next_pass = vec![];
+      refs
+    }
 
-  while !this_pass.is_empty() {
-    for node in this_pass.drain(..) {
-      for child in node.children() {
-        match child.kind() {
-          SyntaxKind::IDENT_EXPR => {
-            if child.text() == def.name().as_str() {
-              references
-                .push(Reference { pos: FileRange { file: file_id, range: child.text_range() } });
-            }
-          }
+    AnyDefinition::Global(_) => {
+      return vec![];
+    }
+  }
+}
 
-          SyntaxKind::BLOCK_EXPR
-          | SyntaxKind::EXPR_ITEM
-          | SyntaxKind::INFIX_EXPR
-          | SyntaxKind::CALL_EXPR
-          | SyntaxKind::PAREN_ARGUMENTS
-          | SyntaxKind::IF_EXPR => {
-            next_pass.push(child);
-          }
-
-          _ => {}
+fn walk_references(
+  db: &dyn HirDatabase,
+  def: &HirDefinition,
+  block: InFile<BlockId>,
+  refs: &mut Vec<Reference>,
+) {
+  for (expr_id, expr) in db.hir_ast_for_block(block).exprs.iter() {
+    match &expr {
+      hir::Expr::Name(ref path) => {
+        if path.segments.last().unwrap() == def.name.as_str() {
+          refs.push(Reference {
+            pos: FileRange {
+              file:  block.file_id,
+              range: db
+                .hir_source_map_for_block(block)
+                .expr_syntax(expr_id)
+                .unwrap()
+                .to_node(&db.parse(block.file_id))
+                .text_range(),
+            },
+          });
         }
       }
-    }
-    mem::swap(&mut this_pass, &mut next_pass);
-  }
 
-  references
+      hir::Expr::Block(b) => {
+        walk_references(db, def, (*b).in_file(block.file_id), refs);
+      }
+
+      _ => {}
+    }
+  }
 }

@@ -505,7 +505,34 @@ fn nested_scopes() {
 
 #[test]
 fn refs_to_val() {
-  // FIXME: Re-implement in terms of HIR.
+  refs_to(
+    r#"
+    val a = 3
+    a@@
+    a + b
+    println(a)
+
+    if (a > 3) {
+      val a = 4
+      a
+    }
+    "#,
+    expect![@r#"
+      val a = 3
+      @a@
+      @a@ + b
+      println(@a@)
+
+      if (a > 3) {
+        val a = 4
+        a
+      }
+    "#],
+  );
+}
+
+#[test]
+fn refs_to_object() {
   refs_to(
     r#"
     object A {}
