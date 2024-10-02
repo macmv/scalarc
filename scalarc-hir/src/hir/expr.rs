@@ -6,6 +6,7 @@ use scalarc_syntax::ast;
 
 pub type StmtId = Idx<Stmt>;
 pub type ExprId = Idx<Expr>;
+pub type ParamId = Idx<Binding>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Block {
@@ -16,6 +17,10 @@ pub struct Block {
   // it to a statement. This map is used for that.
   pub stmt_map: HashMap<ErasedAstId, StmtId>,
 
+  // Parameters of this block. This will be set if this block is for a function or class body.
+  pub params: Arena<Binding>,
+
+  // Items in the block.
   pub items: Vec<StmtId>,
 }
 

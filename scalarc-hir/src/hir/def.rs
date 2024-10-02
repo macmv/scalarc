@@ -1,7 +1,9 @@
 use scalarc_syntax::{ast::AstNode, SyntaxNodePtr};
 
 use super::{BlockId, ExprId};
-use crate::{hir, HirDatabase, HirDefinition, HirDefinitionKind, InFile, InFileExt, Name};
+use crate::{
+  hir, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile, InFileExt, Name,
+};
 
 pub fn def_for_expr(
   db: &dyn HirDatabase,
@@ -35,11 +37,22 @@ fn lookup_name_in_block(
       if binding.name == *name {
         return Some(HirDefinition {
           name:     Name::new(binding.name.clone()),
-          stmt_id:  *item,
+          id:       HirDefinitionId::Stmt(*item),
           block_id: block,
           kind:     HirDefinitionKind::Val(None),
         });
       }
+    }
+  }
+
+  for (param, binding) in ast.params.iter() {
+    if binding.name == *name {
+      return Some(HirDefinition {
+        name:     Name::new(binding.name.clone()),
+        id:       HirDefinitionId::Param(param),
+        block_id: block,
+        kind:     HirDefinitionKind::Val(None),
+      });
     }
   }
 

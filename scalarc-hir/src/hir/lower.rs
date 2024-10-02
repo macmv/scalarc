@@ -12,7 +12,7 @@ use hashbrown::HashMap;
 use la_arena::Arena;
 use scalarc_syntax::{
   ast::{self, AstNode},
-  AstPtr, SyntaxNodePtr,
+  match_ast, AstPtr, SyntaxNodePtr,
 };
 
 pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> InFile<BlockId> {
@@ -48,7 +48,17 @@ pub fn hir_ast_with_source_for_block(
     BlockId::Block(block) => {
       let block = item_id_map.get(&ast, block);
 
-      ast_for_block(&item_id_map, block.items())
+      let mut ast = ast_for_block(&item_id_map, block.items());
+
+      let parent = block.syntax().parent().unwrap();
+      match_ast! {
+        match parent {
+          ast::FunDef(d) => add_params(&mut ast, d),
+          _ => {}
+        }
+      }
+
+      ast
     }
 
     BlockId::Class(class) => {
@@ -91,12 +101,33 @@ pub fn hir_ast_with_source_for_block(
   (Arc::new(block), Arc::new(source_map))
 }
 
+fn add_params(block: &mut (Block, BlockSourceMap), def: ast::FunDef) {
+  if let Some(sig) = def.fun_sig() {
+    for params in sig.fun_paramss() {
+      for param in params.fun_params() {
+        let name = param.id_token().unwrap().text().to_string();
+
+        let param_id = block.0.params.alloc(Binding {
+          implicit: false,
+          kind: BindingKind::Val,
+          name,
+          ty: None,
+          expr: None,
+        });
+        block.1.param.insert(AstPtr::new(&param), param_id);
+        block.1.param_back.insert(param_id, AstPtr::new(&param));
+      }
+    }
+  }
+}
+
 impl Block {
   pub fn empty() -> Self {
     Block {
       stmts:    Arena::new(),
       exprs:    Arena::new(),
       stmt_map: HashMap::new(),
+      params:   Arena::new(),
       items:    vec![],
     }
   }
@@ -466,6 +497,10 @@ mod tests {
               raw: Idx::<Scala>>(2),
             }: Idx::<Stmt>(2),
           },
+          params: Arena {
+            len: 0,
+            data: [],
+          },
           items: [
             Idx::<Stmt>(0),
             Idx::<Stmt>(1),
@@ -534,6 +569,10 @@ mod tests {
             ErasedAstId {
               raw: Idx::<Scala>>(2),
             }: Idx::<Stmt>(0),
+          },
+          params: Arena {
+            len: 0,
+            data: [],
           },
           items: [
             Idx::<Stmt>(0),

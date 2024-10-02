@@ -1,7 +1,7 @@
 use scalarc_source::{FileId, SourceDatabase};
 use scalarc_test::{expect, Expect};
 
-use crate::HirDatabase;
+use crate::{HirDatabase, HirDefinitionId};
 
 fn def_at(src: &str, expect: Expect) {
   let src = src
@@ -22,8 +22,11 @@ fn def_at(src: &str, expect: Expect) {
   let span = match def {
     crate::AnyDefinition::Hir(ref d) => {
       let ast = db.parse(file);
-      let item_ptr = db.hir_source_map_for_block(d.block_id).stmt_syntax(d.stmt_id).unwrap();
-      let item = item_ptr.to_node(&ast);
+      let source_map = db.hir_source_map_for_block(d.block_id);
+      let item = match d.id {
+        HirDefinitionId::Stmt(s) => source_map.stmt_syntax(s).unwrap().to_node(&ast),
+        HirDefinitionId::Param(s) => source_map.param_syntax(s).unwrap().to_node(&ast),
+      };
       item.text_range()
     }
     crate::AnyDefinition::Global(ref d) => {
@@ -79,6 +82,26 @@ fn nested_blocks_work() {
         @def x = 3@
         def y = {
           x()
+        }
+      }
+    "#],
+  );
+}
+
+#[test]
+fn params_work() {
+  def_at(
+    r#"
+    class Foo {
+      def x(foo: Int) = {
+        foo|
+      }
+    }
+    "#,
+    expect![@r#"
+      class Foo {
+        def x(@foo: Int@) = {
+          foo
         }
       }
     "#],

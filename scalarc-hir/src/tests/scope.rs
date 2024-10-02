@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::{
   scope::Scope, AnyDefinition, DefinitionMap, GlobalDefinition, HirDatabase, HirDefinition,
+  HirDefinitionId,
 };
 use la_arena::Arena;
 use scalarc_source::FileId;
@@ -149,7 +150,10 @@ impl fmt::Debug for DebugUtil<'_, '_, GlobalDefinition> {
 impl fmt::Debug for DebugUtil<'_, '_, HirDefinition> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let source_map = self.db.hir_source_map_for_block(self.item.block_id);
-    let item = source_map.stmt_syntax(self.item.stmt_id).unwrap();
+    let item = match self.item.id {
+      HirDefinitionId::Stmt(s) => source_map.stmt_syntax(s).unwrap(),
+      HirDefinitionId::Param(_) => unreachable!(),
+    };
 
     f.debug_struct("LocalDefinition")
       .field("name", &self.item.name.as_str())

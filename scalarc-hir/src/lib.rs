@@ -1,4 +1,4 @@
-use hir::{AstId, BlockId, ErasedAstId, StmtId};
+use hir::{AstId, BlockId, ErasedAstId, ParamId, StmtId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
   ast::{self, ItemBody},
@@ -89,8 +89,14 @@ pub struct GlobalDefinition {
 pub struct HirDefinition {
   pub name:     Name,
   pub block_id: InFile<BlockId>,
-  pub stmt_id:  StmtId,
+  pub id:       HirDefinitionId,
   pub kind:     HirDefinitionKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HirDefinitionId {
+  Stmt(StmtId),
+  Param(ParamId),
 }
 
 impl AnyDefinition {

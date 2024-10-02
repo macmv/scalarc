@@ -1,6 +1,6 @@
 //! Maps HIR exprs in a Block back to source.
 
-use super::{ExprId, StmtId};
+use super::{ExprId, ParamId, StmtId};
 use hashbrown::HashMap;
 use scalarc_syntax::{ast, AstPtr};
 
@@ -12,15 +12,20 @@ pub struct BlockSourceMap {
 
   pub(super) stmt:      HashMap<AstPtr<ast::Item>, StmtId>,
   pub(super) stmt_back: HashMap<StmtId, AstPtr<ast::Item>>,
+
+  pub(super) param:      HashMap<AstPtr<ast::FunParam>, ParamId>,
+  pub(super) param_back: HashMap<ParamId, AstPtr<ast::FunParam>>,
 }
 
 impl BlockSourceMap {
   pub fn empty() -> BlockSourceMap {
     BlockSourceMap {
-      expr:      HashMap::new(),
-      expr_back: HashMap::new(),
-      stmt:      HashMap::new(),
-      stmt_back: HashMap::new(),
+      expr:       HashMap::new(),
+      expr_back:  HashMap::new(),
+      stmt:       HashMap::new(),
+      stmt_back:  HashMap::new(),
+      param:      HashMap::new(),
+      param_back: HashMap::new(),
     }
   }
 
@@ -32,5 +37,12 @@ impl BlockSourceMap {
   pub fn stmt(&self, stmt: AstPtr<ast::Item>) -> Option<StmtId> { self.stmt.get(&stmt).copied() }
   pub fn stmt_syntax(&self, id: StmtId) -> Option<AstPtr<ast::Item>> {
     self.stmt_back.get(&id).copied()
+  }
+
+  pub fn param(&self, param: AstPtr<ast::FunParam>) -> Option<ParamId> {
+    self.param.get(&param).copied()
+  }
+  pub fn param_syntax(&self, id: ParamId) -> Option<AstPtr<ast::FunParam>> {
+    self.param_back.get(&id).copied()
   }
 }
