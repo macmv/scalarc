@@ -12,7 +12,7 @@ use hashbrown::HashMap;
 use la_arena::Arena;
 use scalarc_syntax::{
   ast::{self, AstNode},
-  match_ast, AstPtr, SyntaxNodePtr,
+  AstPtr, SyntaxNodePtr,
 };
 
 pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> InFile<BlockId> {
@@ -25,6 +25,7 @@ pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> InFil
     scalarc_syntax::match_ast! {
       match node {
         ast::BlockExpr(it) => break BlockId::Block(ast_id_map.ast_id(&it)),
+        ast::FunDef(it) => break BlockId::Def(ast_id_map.ast_id(&it)),
         ast::ClassDef(it) => break BlockId::Class(ast_id_map.ast_id(&it)),
         ast::TraitDef(it) => break BlockId::Trait(ast_id_map.ast_id(&it)),
         ast::ObjectDef(it) => break BlockId::Object(ast_id_map.ast_id(&it)),
@@ -48,15 +49,14 @@ pub fn hir_ast_with_source_for_block(
     BlockId::Block(block) => {
       let block = item_id_map.get(&ast, block);
 
-      let mut ast = ast_for_block(&item_id_map, block.items());
+      ast_for_block(&item_id_map, block.items())
+    }
 
-      let parent = block.syntax().parent().unwrap();
-      match_ast! {
-        match parent {
-          ast::FunDef(d) => add_params(&mut ast, d),
-          _ => {}
-        }
-      }
+    BlockId::Def(def) => {
+      let def = item_id_map.get(&ast, def);
+
+      let mut ast = (Block::empty(), BlockSourceMap::empty());
+      add_params(&mut ast, def);
 
       ast
     }

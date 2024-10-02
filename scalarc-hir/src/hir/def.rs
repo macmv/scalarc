@@ -1,4 +1,4 @@
-use scalarc_syntax::{ast::AstNode, SyntaxNodePtr};
+use scalarc_syntax::SyntaxNodePtr;
 
 use super::{BlockId, ExprId};
 use crate::{
@@ -56,22 +56,20 @@ fn lookup_name_in_block(
     }
   }
 
-  match block.id {
-    BlockId::Block(ast_id) => {
-      // FIXME: Do all this without depending on the CST directly.
-      let ast = db.parse(block.file_id);
-      let ast_id_map = db.ast_id_map(block.file_id);
-      let mut node = ast_id_map.get(&ast, ast_id).syntax().clone();
+  // FIXME: Do all this without depending on the CST directly.
+  let ast_id = block.id.erased();
+  let ast = db.parse(block.file_id);
+  let ast_id_map = db.ast_id_map(block.file_id);
+  let mut ptr = ast_id_map.get_erased(ast_id).clone();
 
-      loop {
-        let outer_block = db.block_for_node(SyntaxNodePtr::new(&node).in_file(block.file_id));
-        if outer_block != block {
-          return lookup_name_in_block(db, outer_block, name);
-        }
-
-        node = node.parent()?;
-      }
+  loop {
+    let outer_block = db.block_for_node(ptr.in_file(block.file_id));
+    if outer_block != block {
+      return lookup_name_in_block(db, outer_block, name);
     }
-    _ => None,
+
+    let node = ptr.to_node(&ast.syntax_node());
+    let parent = node.parent()?;
+    ptr = SyntaxNodePtr::new(&parent);
   }
 }

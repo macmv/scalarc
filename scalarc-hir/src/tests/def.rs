@@ -3,6 +3,7 @@ use scalarc_test::{expect, Expect};
 
 use crate::{HirDatabase, HirDefinitionId};
 
+#[track_caller]
 fn def_at(src: &str, expect: Expect) {
   let src = src
     .trim_start_matches(|c| c == '\n')
