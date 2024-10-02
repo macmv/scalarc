@@ -168,7 +168,7 @@ PathExpr       = Path
 UnderscoreExpr = '_'
 TupleExpr      = '(' (Expr (',' Expr)*)? ')'
 FieldExpr      = Expr '.' id
-TypedExpr      = Expr TypeParams
+TypedExpr      = Expr TypeArgs
 CallExpr       = Expr Arguments
 
 Arguments       = ParenArguments | SpreadArguments | BlockExpr

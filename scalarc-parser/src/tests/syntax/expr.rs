@@ -394,6 +394,30 @@ fn call_op() {
 }
 
 #[test]
+fn typed_expr() {
+  check_expr(
+    "Map.empty[String, Int]",
+    expect![@r#"
+      TYPED_EXPR
+        FIELD_EXPR
+          IDENT_EXPR
+            IDENT 'Map'
+          DOT '.'
+          IDENT 'empty'
+        TYPE_ARGS
+          OPEN_BRACKET '['
+          SIMPLE_TYPE
+            IDENT 'String'
+          COMMA ','
+          WHITESPACE ' '
+          SIMPLE_TYPE
+            IDENT 'Int'
+          CLOSE_BRACKET ']'
+    "#],
+  );
+}
+
+#[test]
 fn dot_exprs() {
   check_expr(
     "foo.bar",

@@ -69,6 +69,35 @@ pub fn type_param(p: &mut Parser) {
   }
 }
 
+pub fn type_args(p: &mut Parser) {
+  let m = p.start();
+  p.eat(T!['[']);
+
+  p.eat_newlines();
+  loop {
+    type_expr(p);
+    p.eat_newlines();
+
+    // test ok
+    // Seq.empty[Int, String]
+    if p.current() == T![,] {
+      p.eat(T![,]);
+
+      // test ok
+      // Seq.empty[
+      //   Int
+      //   ,
+      //   Int
+      // ]
+      p.eat_newlines();
+    } else {
+      p.expect(T![']']);
+      m.complete(p, TYPE_ARGS);
+      break;
+    }
+  }
+}
+
 pub fn type_params(p: &mut Parser) {
   let m = p.start();
   p.eat(T!['[']);

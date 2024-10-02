@@ -139,6 +139,15 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
         call.complete(p, CALL_EXPR)
       }
       // test ok
+      // hi[Int]
+      T!['['] => {
+        let te = lhs.precede(p);
+
+        type_expr::type_args(p);
+
+        te.complete(p, TYPED_EXPR)
+      }
+      // test ok
       // hi { 3 }
       T!['{'] => {
         let m = lhs.precede(p);
