@@ -116,6 +116,7 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
       match n {
         ast::Expr(e) => return Some(AnyDefinition::Hir(expr_definition(db, file_id, &e)?)),
         ast::Item(it) => return Some(AnyDefinition::Hir(item_definition(db, file_id, &it, pos)?)),
+        ast::FunParam(p) => return Some(AnyDefinition::Hir(param_definition(db, file_id, &p, pos)?)),
         ast::Import(_) => return Some(AnyDefinition::Global(import_definition(db, file_id, token)?)),
         _ => n = n.parent()?,
       }
@@ -153,11 +154,6 @@ fn item_definition(
             return item_definition_real(db, file_id, stmt);
           }
         }
-      }
-
-      if let Some(p) = d.fun_sig() {
-        // TODO: Parameter defs.
-        for _ in p.fun_paramss() {}
       }
     }
     ast::Item::ValDef(d) => {
@@ -197,6 +193,49 @@ fn item_definition_real(
     }),
     _ => None,
   }
+}
+
+fn param_definition(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  param: &ast::FunParam,
+  pos: TextSize,
+) -> Option<HirDefinition> {
+  if let Some(id) = param.id_token() {
+    if id.text_range().contains_inclusive(pos) {
+      return param_definition_real(db, file_id, param);
+    }
+  }
+
+  None
+}
+
+fn param_definition_real(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  param: &ast::FunParam,
+) -> Option<HirDefinition> {
+  // Params are nested in `FUN_PARAMS` and then `FUN_SIG`.
+  let def = param.syntax().parent()?.parent()?;
+
+  let syntax_ptr = SyntaxNodePtr::new(&def);
+  let block = db.block_for_node(syntax_ptr.in_file(file_id));
+
+  let ptr = AstPtr::new(param);
+  let binding_id = db.hir_source_map_for_block(block).param(ptr)?;
+
+  let binding = &db.hir_ast_for_block(block).params[binding_id];
+
+  Some(HirDefinition {
+    name:     Name::new(binding.name.clone()),
+    id:       HirDefinitionId::Param(binding_id),
+    block_id: block,
+    kind:     match binding.kind {
+      BindingKind::Val => HirDefinitionKind::Val(None),
+      BindingKind::Var => HirDefinitionKind::Val(None),
+      BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
+    },
+  })
 }
 
 fn import_definition(
