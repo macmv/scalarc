@@ -231,12 +231,18 @@ impl BlockLower<'_> {
               for sel in p.import_selectors() {
                 let mut path = path.clone();
                 match sel {
+                  ast::ImportSelector::ImportSelectorId(sel) => {
+                    let id = sel.id_token()?.text().to_string();
+                    path.elems.push(Name::new(id));
+                    self.block.imports.alloc(Import { path, rename: None });
+                  }
                   ast::ImportSelector::ImportSelectorRename(sel) => {
                     let from = sel.from()?.text().to_string();
                     let to = sel.to()?.text().to_string();
                     path.elems.push(Name::new(from));
                     self.block.imports.alloc(Import { path, rename: Some(Name::new(to)) });
                   }
+                  // FIXME: Import all in package is hard.
                   _ => {}
                 }
               }

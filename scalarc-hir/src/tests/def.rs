@@ -179,6 +179,35 @@ fn imports_work() {
       }
     "#],
   );
+
+  def_at(
+    r#"
+    package foo.bar
+
+    class Bar {
+      def x = 3
+    }
+
+    class Foo {
+      import foo.bar.{ Bar }
+
+      Bar|
+    }
+    "#,
+    expect![@r#"
+      package foo.bar
+
+      @class Bar {
+        def x = 3
+      }@
+
+      class Foo {
+        import foo.bar.{ Bar }
+
+        Bar
+      }
+    "#],
+  );
 }
 
 #[test]
