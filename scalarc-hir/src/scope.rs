@@ -10,10 +10,10 @@ use scalarc_syntax::{
 };
 
 use crate::{
-  hir::{self, AstId, BlockId, ErasedAstId},
+  hir::{self, AstId, BindingKind, BlockId, ErasedAstId},
   AnyDefinition, ClassKind, DefinitionKey, FileRange, GlobalDefinition, GlobalDefinitionKind,
   HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile, InFileExt, Name, Path,
-  Reference,
+  Reference, Signature,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -151,11 +151,15 @@ fn item_definition(
   let item_id = db.hir_source_map_for_block(block).stmt(ptr)?;
 
   match db.hir_ast_for_block(block).stmts[item_id] {
-    hir::Stmt::Binding(ref b) => Some(HirDefinition {
-      name:     Name::new(b.name.clone()),
+    hir::Stmt::Binding(ref binding) => Some(HirDefinition {
+      name:     Name::new(binding.name.clone()),
       id:       HirDefinitionId::Stmt(item_id),
       block_id: block,
-      kind:     HirDefinitionKind::Val(None),
+      kind:     match binding.kind {
+        BindingKind::Val => HirDefinitionKind::Val(None),
+        BindingKind::Var => HirDefinitionKind::Val(None),
+        BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
+      },
     }),
     _ => None,
   }

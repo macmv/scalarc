@@ -40,6 +40,8 @@ pub struct Params {
 }
 
 impl Signature {
+  pub fn empty() -> Self { Signature { params: vec![], ret: None } }
+
   pub fn from_ast(sig: &ast::FunSig) -> Self {
     Signature {
       params: sig

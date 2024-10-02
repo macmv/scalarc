@@ -1,8 +1,9 @@
 use scalarc_syntax::SyntaxNodePtr;
 
-use super::{BlockId, ExprId};
+use super::{BindingKind, BlockId, ExprId};
 use crate::{
   hir, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile, InFileExt, Name,
+  Signature,
 };
 
 pub fn def_for_expr(
@@ -50,7 +51,11 @@ fn lookup_name_in_block(
           name:     Name::new(binding.name.clone()),
           id:       HirDefinitionId::Stmt(*item),
           block_id: block,
-          kind:     HirDefinitionKind::Val(None),
+          kind:     match binding.kind {
+            BindingKind::Val => HirDefinitionKind::Val(None),
+            BindingKind::Var => HirDefinitionKind::Val(None),
+            BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
+          },
         });
       }
     }
@@ -62,7 +67,11 @@ fn lookup_name_in_block(
         name:     Name::new(binding.name.clone()),
         id:       HirDefinitionId::Param(param),
         block_id: block,
-        kind:     HirDefinitionKind::Val(None),
+        kind:     match binding.kind {
+          BindingKind::Val => HirDefinitionKind::Val(None),
+          BindingKind::Var => HirDefinitionKind::Val(None),
+          BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
+        },
       });
     }
   }
