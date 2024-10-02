@@ -121,7 +121,8 @@ impl Analysis {
     pos: FileLocation,
   ) -> Cancellable<Option<(AnyDefinition, FileRange)>> {
     self.with_db(|db| {
-      db.def_at_index(pos.file, pos.index).map(|def| match def {
+      let def = db.def_at_index(pos.file, pos.index)?;
+      match def {
         scalarc_hir::AnyDefinition::Hir(ref d) => {
           let ast = db.parse(pos.file);
           let file = d.block_id.file_id;
@@ -129,32 +130,31 @@ impl Analysis {
           match d.id {
             HirDefinitionId::Stmt(s) => {
               let item = source_map.stmt_syntax(s).unwrap().to_node(&ast);
-              (def, FileRange { file, range: item.text_range() })
+              Some((def, FileRange { file, range: item.text_range() }))
             }
             HirDefinitionId::Param(s) => {
               let item = source_map.param_syntax(s).unwrap().to_node(&ast);
-              (def, FileRange { file, range: item.text_range() })
+              Some((def, FileRange { file, range: item.text_range() }))
             }
             HirDefinitionId::Import(id) => {
               let import = &db.hir_ast_for_block(d.block_id).imports[id];
               let target = db.file_target(file).unwrap();
-              let def = db
-                .definition_for_key(target, DefinitionKey::Instance(import.path.clone()))
-                .unwrap();
+              let def =
+                db.definition_for_key(target, DefinitionKey::Instance(import.path.clone()))?;
 
               let file = def.file_id;
               let item = db.ast_id_map(def.file_id).get_erased(def.ast_id);
 
-              (AnyDefinition::Global(def), FileRange { file, range: item.text_range() })
+              Some((AnyDefinition::Global(def), FileRange { file, range: item.text_range() }))
             }
           }
         }
         scalarc_hir::AnyDefinition::Global(ref d) => {
           let file = d.file_id;
           let item = db.ast_id_map(d.file_id).get_erased(d.ast_id);
-          (def, FileRange { file, range: item.text_range() })
+          Some((def, FileRange { file, range: item.text_range() }))
         }
-      })
+      }
     })
   }
 
