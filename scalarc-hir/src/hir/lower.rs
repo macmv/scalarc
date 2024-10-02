@@ -45,40 +45,34 @@ pub fn hir_ast_with_source_for_block(
   let ast = db.parse(block.file_id);
   let item_id_map = db.ast_id_map(block.file_id);
 
-  let (block, source_map) = match block.id {
+  let block_id = block.id;
+
+  let mut block = Block::empty();
+  let mut source_map = BlockSourceMap::empty();
+  let mut lower =
+    BlockLower { id_map: &item_id_map, block: &mut block, source_map: &mut source_map };
+
+  match block_id {
     BlockId::Block(block) => {
       let block = item_id_map.get(&ast, block);
-
-      ast_for_block(&item_id_map, block.items())
+      lower.walk_items(block.items());
     }
 
     BlockId::Def(def) => {
       let def = item_id_map.get(&ast, def);
-
-      let mut block = Block::empty();
-      let mut source_map = BlockSourceMap::empty();
-      let mut lower = BlockLower {
-        id_map:     &item_id_map,
-        block:      &mut block,
-        source_map: &mut source_map,
-      };
 
       // Defs are a bit special: they only contain a single expression, but we still
       // need to track it, to go from the CST to the HIR expr. Additionally,
       // defs are the only block with params, so we walk those here.
       lower.walk_expr(&def.expr().unwrap());
       lower.walk_params(def);
-
-      (block, source_map)
     }
 
     BlockId::Class(class) => {
       let def = item_id_map.get(&ast, class);
 
       if let Some(body) = def.body() {
-        ast_for_block(&item_id_map, body.items())
-      } else {
-        (Block::empty(), BlockSourceMap::empty())
+        lower.walk_items(body.items());
       }
     }
 
@@ -86,9 +80,7 @@ pub fn hir_ast_with_source_for_block(
       let def = item_id_map.get(&ast, class);
 
       if let Some(body) = def.body() {
-        ast_for_block(&item_id_map, body.items())
-      } else {
-        (Block::empty(), BlockSourceMap::empty())
+        lower.walk_items(body.items());
       }
     }
 
@@ -96,18 +88,16 @@ pub fn hir_ast_with_source_for_block(
       let def = item_id_map.get(&ast, class);
 
       if let Some(body) = def.body() {
-        ast_for_block(&item_id_map, body.items())
-      } else {
-        (Block::empty(), BlockSourceMap::empty())
+        lower.walk_items(body.items());
       }
     }
 
     BlockId::Source(source) => {
       let item = item_id_map.get(&ast, source);
 
-      ast_for_block(&item_id_map, item.items())
+      lower.walk_items(item.items());
     }
-  };
+  }
 
   (Arc::new(block), Arc::new(source_map))
 }
@@ -137,18 +127,6 @@ struct BlockLower<'a> {
   source_map: &'a mut BlockSourceMap,
 
   id_map: &'a AstIdMap,
-}
-
-fn ast_for_block(
-  id_map: &AstIdMap,
-  items: impl Iterator<Item = ast::Item>,
-) -> (Block, BlockSourceMap) {
-  let mut block = Block::empty();
-  let mut source_map = BlockSourceMap::empty();
-
-  BlockLower { id_map, block: &mut block, source_map: &mut source_map }.walk_items(items);
-
-  (block, source_map)
 }
 
 impl BlockLower<'_> {
