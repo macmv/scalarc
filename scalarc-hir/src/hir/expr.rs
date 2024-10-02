@@ -1,6 +1,5 @@
 use super::{AstId, ErasedAstId};
 use crate::Signature;
-use hashbrown::HashMap;
 use la_arena::{Arena, Idx};
 use scalarc_syntax::ast;
 
@@ -12,10 +11,6 @@ pub type ParamId = Idx<Binding>;
 pub struct Block {
   pub stmts: Arena<Stmt>,
   pub exprs: Arena<Expr>,
-
-  // After parsing to a `Block`, we need a way to lookup an AST item under the cursor, and convert
-  // it to a statement. This map is used for that.
-  pub stmt_map: HashMap<ErasedAstId, StmtId>,
 
   // Parameters of this block. This will be set if this block is for a function or class body.
   pub params: Arena<Binding>,

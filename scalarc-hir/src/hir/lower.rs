@@ -4,11 +4,10 @@
 use std::sync::Arc;
 
 use super::{
-  AstIdMap, Binding, BindingKind, Block, BlockId, BlockSourceMap, ErasedAstId, Expr, ExprId,
-  Literal, Stmt, StmtId, UnresolvedPath,
+  AstIdMap, Binding, BindingKind, Block, BlockId, BlockSourceMap, Expr, ExprId, Literal, Stmt,
+  StmtId, UnresolvedPath,
 };
 use crate::{HirDatabase, InFile, InFileExt, Signature};
-use hashbrown::HashMap;
 use la_arena::Arena;
 use scalarc_syntax::{
   ast::{self, AstNode},
@@ -111,20 +110,7 @@ pub fn hir_ast_with_source_for_block(
 
 impl Block {
   pub fn empty() -> Self {
-    Block {
-      stmts:    Arena::new(),
-      exprs:    Arena::new(),
-      stmt_map: HashMap::new(),
-      params:   Arena::new(),
-      items:    vec![],
-    }
-  }
-
-  pub fn item_id_for_ast_id(&self, id: ErasedAstId) -> Option<StmtId> {
-    self.stmt_map.get(&id).copied()
-  }
-  pub fn item_for_ast_id(&self, id: ErasedAstId) -> Option<&Stmt> {
-    Some(&self.stmts[self.item_id_for_ast_id(id)?])
+    Block { stmts: Arena::new(), exprs: Arena::new(), params: Arena::new(), items: vec![] }
   }
 }
 
@@ -191,7 +177,6 @@ impl BlockLower<'_> {
           item,
         );
 
-        self.block.stmt_map.insert(self.id_map.ast_id(def).erased(), stmt_id);
         Some(stmt_id)
       }
 
@@ -213,7 +198,6 @@ impl BlockLower<'_> {
           item,
         );
 
-        self.block.stmt_map.insert(self.id_map.ast_id(def).erased(), stmt_id);
         Some(stmt_id)
       }
 
@@ -489,14 +473,6 @@ mod tests {
               ),
             ],
           },
-          stmt_map: {
-            ErasedAstId {
-              raw: Idx::<Scala>>(3),
-            }: Idx::<Stmt>(3),
-            ErasedAstId {
-              raw: Idx::<Scala>>(2),
-            }: Idx::<Stmt>(2),
-          },
           params: Arena {
             len: 0,
             data: [],
@@ -564,11 +540,6 @@ mod tests {
                 ],
               ),
             ],
-          },
-          stmt_map: {
-            ErasedAstId {
-              raw: Idx::<Scala>>(2),
-            }: Idx::<Stmt>(0),
           },
           params: Arena {
             len: 0,
