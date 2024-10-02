@@ -21,11 +21,11 @@ use highlight::Highlight;
 use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
 use scalarc_hir::{
-  AnyDefinition, DefinitionKey, FileLocation, FileRange, HirDatabase, HirDefinitionId, Reference,
-  Type,
+  AnyDefinition, DefinitionKey, FileLocation, FileRange, GlobalDefinition, GlobalDefinitionKind,
+  HirDatabase, HirDefinitionId, Reference, Type,
 };
 use scalarc_parser::{SyntaxKind, T};
-use scalarc_source::{FileId, SourceDatabase, Workspace};
+use scalarc_source::{FileId, SourceDatabase, TargetId, Workspace};
 
 pub struct AnalysisHost {
   db: RootDatabase,
@@ -140,20 +140,12 @@ impl Analysis {
             HirDefinitionId::Import(id) => {
               let import = &db.hir_ast_for_block(d.block_id).imports[id];
               let target = db.file_target(file).unwrap();
-              let keys = prioritize_definition_keys(&db, pos, &import.path);
+              let def = prioritize_definitions(&db, pos, target, &import.path)?;
 
-              for key in keys {
-                let Some(def) = db.definition_for_key(target, key) else { continue };
+              let file = def.file_id;
+              let item = db.ast_id_map(def.file_id).get_erased(def.ast_id);
 
-                let file = def.file_id;
-                let item = db.ast_id_map(def.file_id).get_erased(def.ast_id);
-
-                return Some((
-                  AnyDefinition::Global(def),
-                  FileRange { file, range: item.text_range() },
-                ));
-              }
-              None
+              Some((AnyDefinition::Global(def), FileRange { file, range: item.text_range() }))
             }
           }
         }
@@ -196,11 +188,12 @@ impl Analysis {
 //     don't match).
 // - If the current name is anything else, jump to the object first.
 // - If the object does not resolve, jump to the instance instead.
-fn prioritize_definition_keys(
+fn prioritize_definitions(
   db: &RootDatabase,
   cursor: FileLocation,
+  target: TargetId,
   path: &scalarc_hir::Path,
-) -> Vec<DefinitionKey> {
+) -> Option<GlobalDefinition> {
   let ast = db.parse(cursor.file);
 
   let token = ast
@@ -218,15 +211,34 @@ fn prioritize_definition_keys(
     .unwrap();
 
   let parent = token.parent().unwrap();
-  let parent2 = parent.parent().unwrap();
-  match parent2.kind() {
-    // FIXME: This needs to search upwards more (namely it should handle field exprs, like
-    // `collection.Seq|()`
+  match parent.kind() {
+    SyntaxKind::IDENT_EXPR => {
+      let parent2 = parent.parent().unwrap();
+      match parent2.kind() {
+        // TODO: Handle field exprs.
+        SyntaxKind::CALL_EXPR => {
+          let Some(class) = db.definition_for_key(target, DefinitionKey::Instance(path.clone()))
+          else {
+            return db.definition_for_key(target, DefinitionKey::Object(path.clone()));
+          };
 
-    // TODO: Handle field exprs.
-    SyntaxKind::CALL_EXPR => {
-      vec![DefinitionKey::Object(path.clone()), DefinitionKey::Instance(path.clone())]
+          match class.kind {
+            GlobalDefinitionKind::Class(_, is_case) => {
+              if is_case {
+                return Some(class);
+              } else {
+                return db.definition_for_key(target, DefinitionKey::Object(path.clone()));
+              }
+            }
+            _ => None,
+          }
+        }
+        _ => None,
+      }
     }
-    _ => vec![DefinitionKey::Instance(path.clone()), DefinitionKey::Object(path.clone())],
+
+    SyntaxKind::NEW_EXPR => db.definition_for_key(target, DefinitionKey::Instance(path.clone())),
+
+    _ => db.definition_for_key(target, DefinitionKey::Object(path.clone())),
   }
 }

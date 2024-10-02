@@ -43,7 +43,7 @@ impl Completer<'_> {
 
   fn collect_scope_fields_of_def(&self, def: &GlobalDefinition, completions: &mut Vec<Completion>) {
     let body = match def.kind {
-      GlobalDefinitionKind::Class(Some(body_id)) => body_id,
+      GlobalDefinitionKind::Class(Some(body_id), _) => body_id,
       GlobalDefinitionKind::Object(Some(body_id)) => body_id,
       _ => return,
     };
@@ -64,7 +64,7 @@ impl Completer<'_> {
 
   fn collect_block_fields_of_def(&self, def: &GlobalDefinition, completions: &mut Vec<Completion>) {
     let block_id = match def.kind {
-      GlobalDefinitionKind::Class(Some(_)) => BlockId::Class(AstId::new(def.ast_id)),
+      GlobalDefinitionKind::Class(Some(_), _) => BlockId::Class(AstId::new(def.ast_id)),
       GlobalDefinitionKind::Object(Some(_)) => BlockId::Object(AstId::new(def.ast_id)),
       _ => return,
     };

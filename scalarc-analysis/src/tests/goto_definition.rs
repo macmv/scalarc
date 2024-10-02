@@ -91,3 +91,27 @@ fn goto_constructor() {
     "#],
   );
 }
+
+#[test]
+fn goto_case_constructor() {
+  goto_definition(
+    r#"
+    object Foo {}
+    case class Foo()
+
+    class Foo {
+      import Foo
+      Foo|()
+    }
+    "#,
+    expect![@r#"
+      object Foo {}
+      @case class Foo()@
+
+      class Foo {
+        import Foo
+        Foo()
+      }
+    "#],
+  );
+}

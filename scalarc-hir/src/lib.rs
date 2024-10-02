@@ -116,7 +116,7 @@ pub struct Reference {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GlobalDefinitionKind {
-  Class(Option<AstId<ItemBody>>),
+  Class(Option<AstId<ItemBody>>, bool),
   Trait(Option<AstId<ItemBody>>),
   Object(Option<AstId<ItemBody>>),
 }
@@ -245,7 +245,7 @@ fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap 
         path.elems.push(def.name.clone());
 
         match def.kind {
-          GlobalDefinitionKind::Class(_) | GlobalDefinitionKind::Trait(_) => {
+          GlobalDefinitionKind::Class(_, _) | GlobalDefinitionKind::Trait(_) => {
             (DefinitionKey::Instance(path), def.clone())
           }
           GlobalDefinitionKind::Object(_) => (DefinitionKey::Object(path), def.clone()),

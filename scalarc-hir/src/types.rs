@@ -264,7 +264,7 @@ impl<'a> Infer<'a> {
 
   fn select_name_from_def(&self, def: &GlobalDefinition, name: &str) -> Option<Type> {
     let block = match def.kind {
-      GlobalDefinitionKind::Class(Some(_)) => {
+      GlobalDefinitionKind::Class(Some(_), _) => {
         BlockId::Class(AstId::new(def.ast_id)).in_file(def.file_id)
       }
       GlobalDefinitionKind::Trait(Some(_)) => {

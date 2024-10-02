@@ -284,7 +284,10 @@ fn def_of_node(
         name: id.text().into(),
         file_id,
         ast_id,
-        kind: GlobalDefinitionKind::Class(c.body().map(|node| ast_id_map.ast_id(&node))),
+        kind: GlobalDefinitionKind::Class(
+          c.body().map(|node| ast_id_map.ast_id(&node)),
+          c.case_token().is_some(),
+        ),
       })
     }
 

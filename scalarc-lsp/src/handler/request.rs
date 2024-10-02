@@ -73,7 +73,7 @@ pub fn handle_completion(
               // TODO
               unreachable!()
             }
-            CompletionKind::Global(GlobalDefinitionKind::Class(_)) => {
+            CompletionKind::Global(GlobalDefinitionKind::Class(_, _)) => {
               (lsp_types::CompletionItemKind::CLASS, None)
             }
             CompletionKind::Global(GlobalDefinitionKind::Trait(_)) => {

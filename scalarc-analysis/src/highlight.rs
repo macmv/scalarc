@@ -224,7 +224,7 @@ fn def_for_path(h: &Highlighter, path: &Path) -> Option<GlobalDefinition> {
 
 fn kind_for_def(def: &GlobalDefinition) -> Option<HighlightKind> {
   match def.kind {
-    GlobalDefinitionKind::Class(_) => Some(HighlightKind::Class),
+    GlobalDefinitionKind::Class(_, _) => Some(HighlightKind::Class),
     GlobalDefinitionKind::Trait(_) => Some(HighlightKind::Trait),
     GlobalDefinitionKind::Object(_) => Some(HighlightKind::Object),
   }
@@ -293,7 +293,7 @@ impl Highlightable for ast::Expr {
               id.text_range(),
               match def {
                 AnyDefinition::Global(def) => match def.kind {
-                  GlobalDefinitionKind::Class(_) => HighlightKind::Class,
+                  GlobalDefinitionKind::Class(_, _) => HighlightKind::Class,
                   GlobalDefinitionKind::Trait(_) => HighlightKind::Trait,
                   GlobalDefinitionKind::Object(_) => HighlightKind::Object,
                 },
