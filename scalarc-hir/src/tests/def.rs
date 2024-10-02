@@ -30,8 +30,11 @@ fn def_at(src: &str, expect: Expect) {
         HirDefinitionId::Import(id) => {
           let import = &db.hir_ast_for_block(d.block_id).imports[id];
           let target = db.file_target(file).unwrap();
-          let def =
-            db.definition_for_key(target, DefinitionKey::Instance(import.path.clone())).unwrap();
+          let def = db
+            .definition_for_key(target, DefinitionKey::Instance(import.path.clone()))
+            .expect("no definition found for imported path");
+
+          assert_eq!(def.file_id, file, "import points to a different file");
 
           db.ast_id_map(def.file_id).get_erased(def.ast_id).to_node(&ast.syntax_node())
         }
@@ -141,6 +144,38 @@ fn class_params_work() {
     expect![@r#"
       class Foo(@x: Int@) {
         x()
+      }
+    "#],
+  );
+}
+
+#[test]
+fn imports_work() {
+  def_at(
+    r#"
+    package foo.bar
+
+    class Bar {
+      def x = 3
+    }
+
+    class Foo {
+      import foo.bar.Bar
+
+      Bar|
+    }
+    "#,
+    expect![@r#"
+      package foo.bar
+
+      @class Bar {
+        def x = 3
+      }@
+
+      class Foo {
+        import foo.bar.Bar
+
+        Bar
       }
     "#],
   );
