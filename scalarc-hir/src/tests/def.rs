@@ -1,7 +1,7 @@
 use scalarc_source::{FileId, SourceDatabase};
 use scalarc_test::{expect, Expect};
 
-use crate::{HirDatabase, HirDefinitionId};
+use crate::{DefinitionKey, HirDatabase, HirDefinitionId};
 
 #[track_caller]
 fn def_at(src: &str, expect: Expect) {
@@ -27,6 +27,14 @@ fn def_at(src: &str, expect: Expect) {
       let item = match d.id {
         HirDefinitionId::Stmt(s) => source_map.stmt_syntax(s).unwrap().to_node(&ast),
         HirDefinitionId::Param(s) => source_map.param_syntax(s).unwrap().to_node(&ast),
+        HirDefinitionId::Import(id) => {
+          let import = &db.hir_ast_for_block(d.block_id).imports[id];
+          let target = db.file_target(file).unwrap();
+          let def =
+            db.definition_for_key(target, DefinitionKey::Instance(import.path.clone())).unwrap();
+
+          db.ast_id_map(def.file_id).get_erased(def.ast_id).to_node(&ast.syntax_node())
+        }
       };
       item.text_range()
     }

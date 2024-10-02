@@ -1,4 +1,4 @@
-use hir::{AstId, BlockId, ErasedAstId, ParamId, StmtId};
+use hir::{AstId, BlockId, ErasedAstId, ImportId, ParamId, StmtId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
   ast::{self, ItemBody},
@@ -97,6 +97,7 @@ pub struct HirDefinition {
 pub enum HirDefinitionId {
   Stmt(StmtId),
   Param(ParamId),
+  Import(ImportId),
 }
 
 impl AnyDefinition {
@@ -126,6 +127,7 @@ pub enum HirDefinitionKind {
   Var(Option<Type>),
   Parameter,
   Def(Signature),
+  Import,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

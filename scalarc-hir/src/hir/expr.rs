@@ -1,11 +1,12 @@
 use super::{AstId, ErasedAstId};
-use crate::Signature;
+use crate::{Path, Signature};
 use la_arena::{Arena, Idx};
 use scalarc_syntax::ast;
 
 pub type StmtId = Idx<Stmt>;
 pub type ExprId = Idx<Expr>;
 pub type ParamId = Idx<Binding>;
+pub type ImportId = Idx<Import>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Block {
@@ -14,6 +15,9 @@ pub struct Block {
 
   // Parameters of this block. This will be set if this block is for a function or class body.
   pub params: Arena<Binding>,
+
+  // Items this block imports.
+  pub imports: Arena<Import>,
 
   // Items in the block.
   pub items: Vec<StmtId>,
@@ -57,6 +61,11 @@ pub struct Binding {
   pub ty:       Option<Type>,
   pub name:     String,
   pub expr:     Option<ExprId>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Import {
+  pub path: Path,
 }
 
 #[derive(Debug, PartialEq, Eq)]

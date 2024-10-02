@@ -21,7 +21,8 @@ use highlight::Highlight;
 use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
 use scalarc_hir::{
-  AnyDefinition, FileLocation, FileRange, HirDatabase, HirDefinitionId, Reference, Type,
+  AnyDefinition, DefinitionKey, FileLocation, FileRange, HirDatabase, HirDefinitionId, Reference,
+  Type,
 };
 use scalarc_source::{FileId, SourceDatabase, Workspace};
 
@@ -125,11 +126,28 @@ impl Analysis {
           let ast = db.parse(pos.file);
           let file = d.block_id.file_id;
           let source_map = db.hir_source_map_for_block(d.block_id);
-          let item = match d.id {
-            HirDefinitionId::Stmt(s) => source_map.stmt_syntax(s).unwrap().to_node(&ast),
-            HirDefinitionId::Param(s) => source_map.param_syntax(s).unwrap().to_node(&ast),
-          };
-          (def, FileRange { file, range: item.text_range() })
+          match d.id {
+            HirDefinitionId::Stmt(s) => {
+              let item = source_map.stmt_syntax(s).unwrap().to_node(&ast);
+              (def, FileRange { file, range: item.text_range() })
+            }
+            HirDefinitionId::Param(s) => {
+              let item = source_map.param_syntax(s).unwrap().to_node(&ast);
+              (def, FileRange { file, range: item.text_range() })
+            }
+            HirDefinitionId::Import(id) => {
+              let import = &db.hir_ast_for_block(d.block_id).imports[id];
+              let target = db.file_target(file).unwrap();
+              let def = db
+                .definition_for_key(target, DefinitionKey::Instance(import.path.clone()))
+                .unwrap();
+
+              let file = def.file_id;
+              let item = db.ast_id_map(def.file_id).get_erased(def.ast_id);
+
+              (AnyDefinition::Global(def), FileRange { file, range: item.text_range() })
+            }
+          }
         }
         scalarc_hir::AnyDefinition::Global(ref d) => {
           let file = d.file_id;

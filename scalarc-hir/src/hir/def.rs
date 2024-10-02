@@ -56,6 +56,17 @@ fn lookup_name_in_block(
     }
   }
 
+  for (import_id, import) in ast.imports.iter() {
+    if import.path.elems.last().unwrap().as_str() == name {
+      return Some(HirDefinition {
+        name:     import.path.elems.last().unwrap().clone(),
+        id:       HirDefinitionId::Import(import_id),
+        block_id: block,
+        kind:     HirDefinitionKind::Import,
+      });
+    }
+  }
+
   // FIXME: Do all this without depending on the CST directly.
   let ast_id = block.id.erased();
   let ast = db.parse(block.file_id);

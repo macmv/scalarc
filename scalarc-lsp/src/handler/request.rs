@@ -69,6 +69,10 @@ pub fn handle_completion(
             CompletionKind::Hir(HirDefinitionKind::Def(sig)) => {
               (lsp_types::CompletionItemKind::FUNCTION, Some(sig.to_string()))
             }
+            CompletionKind::Hir(HirDefinitionKind::Import) => {
+              // TODO
+              unreachable!()
+            }
             CompletionKind::Global(GlobalDefinitionKind::Class(_)) => {
               (lsp_types::CompletionItemKind::CLASS, None)
             }

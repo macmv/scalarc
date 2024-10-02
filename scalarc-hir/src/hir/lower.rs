@@ -4,10 +4,10 @@
 use std::sync::Arc;
 
 use super::{
-  AstIdMap, Binding, BindingKind, Block, BlockId, BlockSourceMap, Expr, ExprId, Literal, Stmt,
-  StmtId, UnresolvedPath,
+  AstIdMap, Binding, BindingKind, Block, BlockId, BlockSourceMap, Expr, ExprId, Import, Literal,
+  Stmt, StmtId, UnresolvedPath,
 };
-use crate::{HirDatabase, InFile, InFileExt, Signature};
+use crate::{HirDatabase, InFile, InFileExt, Name, Path, Signature};
 use la_arena::Arena;
 use scalarc_syntax::{
   ast::{self, AstNode},
@@ -110,7 +110,13 @@ pub fn hir_ast_with_source_for_block(
 
 impl Block {
   pub fn empty() -> Self {
-    Block { stmts: Arena::new(), exprs: Arena::new(), params: Arena::new(), items: vec![] }
+    Block {
+      stmts:   Arena::new(),
+      exprs:   Arena::new(),
+      params:  Arena::new(),
+      imports: Arena::new(),
+      items:   vec![],
+    }
   }
 }
 
@@ -199,6 +205,27 @@ impl BlockLower<'_> {
         );
 
         Some(stmt_id)
+      }
+
+      ast::Item::Import(i) => {
+        for import_expr in i.import_exprs() {
+          match import_expr {
+            ast::ImportExpr::Path(p) => {
+              let mut path = Path::new();
+
+              for id in p.ids() {
+                path.elems.push(Name::new(id.text().to_string()));
+              }
+
+              self.block.imports.alloc(Import { path });
+            }
+            ast::ImportExpr::ImportSelectors(_) => {
+              // TODO
+            }
+          }
+        }
+
+        None
       }
 
       _ => {
@@ -477,6 +504,10 @@ mod tests {
             len: 0,
             data: [],
           },
+          imports: Arena {
+            len: 0,
+            data: [],
+          },
           items: [
             Idx::<Stmt>(0),
             Idx::<Stmt>(1),
@@ -542,6 +573,10 @@ mod tests {
             ],
           },
           params: Arena {
+            len: 0,
+            data: [],
+          },
+          imports: Arena {
             len: 0,
             data: [],
           },
