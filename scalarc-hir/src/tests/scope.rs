@@ -533,6 +533,22 @@ fn refs_to_val() {
 }
 
 #[test]
+fn refs_hovering_on_val() {
+  refs_to(
+    r#"
+    val a@@ = 3
+    a
+    a + b
+    "#,
+    expect![@r#"
+      val a = 3
+      @a@
+      @a@ + b
+    "#],
+  );
+}
+
+#[test]
 fn refs_to_object() {
   refs_to(
     r#"
