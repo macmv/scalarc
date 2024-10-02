@@ -150,12 +150,19 @@ impl Highlightable for ast::Item {
 
         h.visit(o.body());
       }
+      ast::Item::ObjectDef(o) => {
+        h.highlight_opt(o.case_token(), HighlightKind::Keyword);
+        h.highlight_opt(o.object_token(), HighlightKind::Keyword);
+        h.highlight_opt(o.id_token(), HighlightKind::Object);
+
+        h.visit(o.body());
+      }
       ast::Item::TraitDef(t) => {
         for modifier in t.modifiers() {
           h.highlight_opt(modifier.sealed_token(), HighlightKind::Keyword);
         }
         h.highlight_opt(t.trait_token(), HighlightKind::Keyword);
-        h.highlight_opt(t.id_token(), HighlightKind::Class);
+        h.highlight_opt(t.id_token(), HighlightKind::Trait);
 
         h.visit(t.body());
       }
