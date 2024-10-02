@@ -1,21 +1,21 @@
 use crate::{completion, database::RootDatabase};
 use la_arena::Arena;
+use salsa::ParallelDatabase;
 use scalarc_source::{FileId, SourceDatabase, SourceRoot, TargetData};
 use scalarc_test::{expect, Expect};
 use std::{path::PathBuf, sync::Arc};
+
+mod goto_definition;
 
 fn simple_completions(db: &RootDatabase, cursor: crate::FileLocation) -> Vec<String> {
   let completions = completion::completions(db, cursor);
   completions.into_iter().map(|c| c.label).collect()
 }
 
-fn completions_for(src: &str, expect: Expect) {
-  let cursor = src.find('|').unwrap() as u32;
-  let real_src = src[..cursor as usize].to_string() + &src[cursor as usize + 1..];
-
+fn setup_db(src: &str) -> RootDatabase {
   let mut db = RootDatabase::default();
   let file = FileId::temp_new();
-  db.set_file_text(file, real_src.into());
+  db.set_file_text(file, src.into());
 
   let std = FileId::new_raw(1);
   db.set_file_text(std, include_str!("../../../scalarc-hir/src/tests/ministd.scala").into());
@@ -45,8 +45,52 @@ fn completions_for(src: &str, expect: Expect) {
   let workspace = scalarc_source::Workspace { root: Default::default(), targets, source_roots };
   db.set_workspace(Arc::new(workspace));
 
+  db
+}
+
+fn completions_for(src: &str, expect: Expect) {
+  let cursor = src.find('|').unwrap() as u32;
+  let real_src = src[..cursor as usize].to_string() + &src[cursor as usize + 1..];
+
+  let file = FileId::temp_new();
+  let db = setup_db(&real_src);
+
   let completions = simple_completions(&db, crate::FileLocation { file, index: cursor.into() });
   let expected = format!("[{}]", completions.join(", "));
+
+  expect.assert_eq(&expected);
+}
+
+fn goto_definition(src: &str, expect: Expect) {
+  let src = src
+    .trim_start_matches(|c| c == '\n')
+    .lines()
+    .map(|l| l.strip_prefix("    ").unwrap_or(l))
+    .collect::<Vec<_>>()
+    .join("\n");
+
+  let cursor = src.find('|').unwrap();
+  let real_src = src[..cursor as usize].to_string() + &src[cursor as usize + 1..];
+
+  let file = FileId::temp_new();
+  let db = setup_db(&real_src);
+
+  let analysis = crate::Analysis { db: db.snapshot() };
+
+  let (_, range) = analysis
+    .definition_for_name(crate::FileLocation { file, index: (cursor as u32).into() })
+    .expect("cancelled?")
+    .expect("no definition found");
+
+  let actual_start = u32::from(range.range.start()) as usize;
+  let actual_end = u32::from(range.range.end()) as usize;
+
+  let expected = format!(
+    "{}@{}@{}",
+    &real_src[..actual_start],
+    &real_src[actual_start..actual_end],
+    &real_src[actual_end..],
+  );
 
   expect.assert_eq(&expected);
 }
