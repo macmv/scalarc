@@ -569,6 +569,20 @@ fn refs_hovering_on_val() {
 }
 
 #[test]
+fn refs_to_def() {
+  refs_to(
+    r#"
+    def a@@ = 3
+    a
+    "#,
+    expect![@r#"
+      def a = 3
+      @a@
+    "#],
+  );
+}
+
+#[test]
 fn refs_to_object() {
   refs_to(
     r#"

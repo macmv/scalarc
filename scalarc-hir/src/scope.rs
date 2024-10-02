@@ -144,11 +144,12 @@ fn item_definition(
   file_id: FileId,
   stmt: &ast::Item,
 ) -> Option<HirDefinition> {
-  let ptr = AstPtr::new(stmt);
-  let syntax_ptr = SyntaxNodePtr::new(&stmt.syntax());
+  let syntax_ptr = SyntaxNodePtr::new(&stmt.syntax().parent()?);
   let block = db.block_for_node(syntax_ptr.in_file(file_id));
 
+  let ptr = AstPtr::new(stmt);
   let item_id = db.hir_source_map_for_block(block).stmt(ptr)?;
+
   match db.hir_ast_for_block(block).stmts[item_id] {
     hir::Stmt::Binding(ref b) => Some(HirDefinition {
       name:     Name::new(b.name.clone()),
