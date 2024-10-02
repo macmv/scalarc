@@ -6,6 +6,7 @@ use std::{
   sync::{Arc, Mutex},
 };
 
+mod def;
 mod incremental;
 mod scope;
 mod types;

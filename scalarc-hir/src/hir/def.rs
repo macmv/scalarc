@@ -14,22 +14,32 @@ pub fn def_for_expr(
       // pull that out.
       let name = path.segments.last().unwrap();
 
-      for item in ast.items.iter() {
-        if let hir::Stmt::Binding(ref binding) = ast.stmts[*item] {
-          if binding.name == *name {
-            return Some(HirDefinition {
-              name:     Name::new(binding.name.clone()),
-              stmt_id:  *item,
-              block_id: block,
-              kind:     HirDefinitionKind::Val(None),
-            });
-          }
-        }
-      }
-
-      None
+      lookup_name_in_block(db, block, name)
     }
 
     _ => None,
   }
+}
+
+fn lookup_name_in_block(
+  db: &dyn HirDatabase,
+  block: InFile<BlockId>,
+  name: &str,
+) -> Option<HirDefinition> {
+  let ast = db.hir_ast_for_block(block);
+
+  for item in ast.items.iter() {
+    if let hir::Stmt::Binding(ref binding) = ast.stmts[*item] {
+      if binding.name == *name {
+        return Some(HirDefinition {
+          name:     Name::new(binding.name.clone()),
+          stmt_id:  *item,
+          block_id: block,
+          kind:     HirDefinitionKind::Val(None),
+        });
+      }
+    }
+  }
+
+  None
 }
