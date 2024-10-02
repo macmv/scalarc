@@ -55,10 +55,21 @@ pub fn hir_ast_with_source_for_block(
     BlockId::Def(def) => {
       let def = item_id_map.get(&ast, def);
 
-      let mut ast = (Block::empty(), BlockSourceMap::empty());
-      add_params(&mut ast, def);
+      let mut block = Block::empty();
+      let mut source_map = BlockSourceMap::empty();
+      let mut lower = BlockLower {
+        id_map:     &item_id_map,
+        block:      &mut block,
+        source_map: &mut source_map,
+      };
 
-      ast
+      // Defs are a bit special: they only contain a single expression, but we still
+      // need to track it, to go from the CST to the HIR expr. Additionally,
+      // defs are the only block with params, so we walk those here.
+      lower.walk_expr(&def.expr().unwrap());
+      lower.walk_params(def);
+
+      (block, source_map)
     }
 
     BlockId::Class(class) => {
@@ -99,26 +110,6 @@ pub fn hir_ast_with_source_for_block(
   };
 
   (Arc::new(block), Arc::new(source_map))
-}
-
-fn add_params(block: &mut (Block, BlockSourceMap), def: ast::FunDef) {
-  if let Some(sig) = def.fun_sig() {
-    for params in sig.fun_paramss() {
-      for param in params.fun_params() {
-        let name = param.id_token().unwrap().text().to_string();
-
-        let param_id = block.0.params.alloc(Binding {
-          implicit: false,
-          kind: BindingKind::Val,
-          name,
-          ty: None,
-          expr: None,
-        });
-        block.1.param.insert(AstPtr::new(&param), param_id);
-        block.1.param_back.insert(param_id, AstPtr::new(&param));
-      }
-    }
-  }
 }
 
 impl Block {
@@ -340,6 +331,26 @@ impl BlockLower<'_> {
       _ => {
         warn!("Unhandled expr: {expr:#?}");
         None
+      }
+    }
+  }
+
+  fn walk_params(&mut self, def: ast::FunDef) {
+    if let Some(sig) = def.fun_sig() {
+      for params in sig.fun_paramss() {
+        for param in params.fun_params() {
+          let name = param.id_token().unwrap().text().to_string();
+
+          let param_id = self.block.params.alloc(Binding {
+            implicit: false,
+            kind: BindingKind::Val,
+            name,
+            ty: None,
+            expr: None,
+          });
+          self.source_map.param.insert(AstPtr::new(&param), param_id);
+          self.source_map.param_back.insert(param_id, AstPtr::new(&param));
+        }
       }
     }
   }

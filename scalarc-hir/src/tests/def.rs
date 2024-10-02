@@ -94,6 +94,19 @@ fn params_work() {
   def_at(
     r#"
     class Foo {
+      def x(foo: Int) = foo|
+    }
+    "#,
+    expect![@r#"
+      class Foo {
+        def x(@foo: Int@) = foo
+      }
+    "#],
+  );
+
+  def_at(
+    r#"
+    class Foo {
       def x(foo: Int) = {
         foo|
       }
