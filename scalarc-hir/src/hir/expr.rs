@@ -72,6 +72,8 @@ pub enum Expr {
   Call(ExprId, Vec<ExprId>),
 
   New(UnresolvedPath, Vec<ExprId>),
+
+  If(ExprId, ExprId, Option<ExprId>),
 }
 
 #[derive(Debug, PartialEq, Eq)]

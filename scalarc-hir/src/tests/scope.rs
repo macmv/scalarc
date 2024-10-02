@@ -523,9 +523,9 @@ fn refs_to_val() {
       @a@ + b
       println(@a@)
 
-      if (a > 3) {
+      if (@a@ > 3) {
         val a = 4
-        a
+        @a@
       }
     "#],
   );

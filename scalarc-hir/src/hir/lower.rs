@@ -313,6 +313,14 @@ impl BlockLower<'_> {
         Some(self.alloc_expr(Expr::New(name, args), expr))
       }
 
+      ast::Expr::IfExpr(if_expr) => {
+        let cond = self.walk_expr(&if_expr.cond()?)?;
+        let then = self.walk_expr(&if_expr.then()?)?;
+        let els = if let Some(e) = if_expr.els() { Some(self.walk_expr(&e)?) } else { None };
+
+        Some(self.alloc_expr(Expr::If(cond, then, els), expr))
+      }
+
       _ => {
         warn!("Unhandled expr: {expr:#?}");
         None
