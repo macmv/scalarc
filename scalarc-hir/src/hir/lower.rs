@@ -240,7 +240,10 @@ impl BlockLower<'_> {
         let name = infix.id_token()?.text().to_string();
         let rhs = self.walk_expr(&infix.rhs()?)?;
 
-        Some(self.alloc_expr(Expr::Call(lhs, name, vec![rhs]), expr))
+        // FIXME: This shouldn't be in the source map? Need to think through if this is
+        // allowed.
+        let lhs_wrapped = self.alloc_expr(Expr::FieldAccess(lhs, name.clone()), expr);
+        Some(self.alloc_expr(Expr::Call(lhs_wrapped, vec![rhs]), expr))
       }
 
       ast::Expr::FieldExpr(field) => {
@@ -253,6 +256,22 @@ impl BlockLower<'_> {
         };
 
         Some(self.alloc_expr(Expr::FieldAccess(lhs, name), expr))
+      }
+
+      ast::Expr::CallExpr(call) => {
+        let lhs = self.walk_expr(&call.expr()?)?;
+
+        let mut res = vec![];
+        match call.arguments()? {
+          ast::Arguments::ParenArguments(a) => {
+            for arg in a.exprs() {
+              res.push(self.walk_expr(&arg)?);
+            }
+          }
+          _ => {}
+        }
+
+        Some(self.alloc_expr(Expr::Call(lhs, res), expr))
       }
 
       ast::Expr::TupleExpr(tup) => {
@@ -345,7 +364,7 @@ mod tests {
                 Idx::<Expr>(0),
               ),
               Expr(
-                Idx::<Expr>(3),
+                Idx::<Expr>(4),
               ),
               Binding(
                 Binding {
@@ -354,7 +373,7 @@ mod tests {
                   ty: None,
                   name: "foo",
                   expr: Some(
-                    Idx::<Expr>(6),
+                    Idx::<Expr>(8),
                   ),
                 },
               ),
@@ -365,17 +384,17 @@ mod tests {
                   ty: None,
                   name: "bar",
                   expr: Some(
-                    Idx::<Expr>(7),
+                    Idx::<Expr>(9),
                   ),
                 },
               ),
               Expr(
-                Idx::<Expr>(8),
+                Idx::<Expr>(10),
               ),
             ],
           },
           exprs: Arena {
-            len: 9,
+            len: 11,
             data: [
               Literal(
                 Int(
@@ -392,9 +411,12 @@ mod tests {
                   3,
                 ),
               ),
-              Call(
+              FieldAccess(
                 Idx::<Expr>(1),
                 "+",
+              ),
+              Call(
+                Idx::<Expr>(3),
                 [
                   Idx::<Expr>(2),
                 ],
@@ -409,11 +431,14 @@ mod tests {
                   5,
                 ),
               ),
-              Call(
-                Idx::<Expr>(4),
+              FieldAccess(
+                Idx::<Expr>(5),
                 "+",
+              ),
+              Call(
+                Idx::<Expr>(7),
                 [
-                  Idx::<Expr>(5),
+                  Idx::<Expr>(6),
                 ],
               ),
               Block(

@@ -190,10 +190,8 @@ impl<'a> Infer<'a> {
       Expr::Block(block) => self.db.type_of_block(block.in_file(self.file_id)),
 
       Expr::FieldAccess(lhs, ref name) => self.type_access(lhs, name),
-      Expr::Call(lhs, ref name, ref args) => {
-        let lhs = self.type_access(lhs, name)?;
-
-        if let Type::Lambda(params, ret) = lhs {
+      Expr::Call(lhs, ref args) => {
+        if let Type::Lambda(params, ret) = self.type_expr(lhs)? {
           if params.len() != args.len() {
             return None;
           }

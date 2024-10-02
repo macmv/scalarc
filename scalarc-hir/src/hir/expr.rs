@@ -64,7 +64,7 @@ pub enum Expr {
   Tuple(Vec<ExprId>),
 
   FieldAccess(ExprId, String),
-  Call(ExprId, String, Vec<ExprId>),
+  Call(ExprId, Vec<ExprId>),
 
   New(UnresolvedPath, Vec<ExprId>),
 }

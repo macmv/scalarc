@@ -10,7 +10,7 @@ fn it_works() {
       def x = 3
       x|
     }
-   "#,
+    "#,
     expect![@r#"
       class Foo {
         @def x = 3@
@@ -28,11 +28,11 @@ fn calls_work() {
       def x = 3
       x|()
     }
-   "#,
+    "#,
     expect![@r#"
       class Foo {
         @def x = 3@
-        x
+        x()
       }
    "#],
   );
