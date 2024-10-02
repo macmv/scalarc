@@ -1,5 +1,7 @@
+use scalarc_syntax::{ast::AstNode, SyntaxNodePtr};
+
 use super::{BlockId, ExprId};
-use crate::{hir, HirDatabase, HirDefinition, HirDefinitionKind, InFile, Name};
+use crate::{hir, HirDatabase, HirDefinition, HirDefinitionKind, InFile, InFileExt, Name};
 
 pub fn def_for_expr(
   db: &dyn HirDatabase,
@@ -41,5 +43,22 @@ fn lookup_name_in_block(
     }
   }
 
-  None
+  match block.id {
+    BlockId::Block(ast_id) => {
+      // FIXME: Do all this without depending on the CST directly.
+      let ast = db.parse(block.file_id);
+      let ast_id_map = db.ast_id_map(block.file_id);
+      let mut node = ast_id_map.get(&ast, ast_id).syntax().clone();
+
+      loop {
+        let outer_block = db.block_for_node(SyntaxNodePtr::new(&node).in_file(block.file_id));
+        if outer_block != block {
+          return lookup_name_in_block(db, outer_block, name);
+        }
+
+        node = node.parent()?;
+      }
+    }
+    _ => None,
+  }
 }

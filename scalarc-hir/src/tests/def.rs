@@ -51,14 +51,36 @@ fn it_works() {
     r#"
     class Foo {
       def x = 3
-      x|
+      x|()
     }
     "#,
     expect![@r#"
       class Foo {
         @def x = 3@
-        x
+        x()
       }
-   "#],
+    "#],
+  );
+}
+
+#[test]
+fn nested_blocks_work() {
+  goto_definition(
+    r#"
+    class Foo {
+      def x = 3
+      def y = {
+        x|()
+      }
+    }
+    "#,
+    expect![@r#"
+      class Foo {
+        @def x = 3@
+        def y = {
+          x()
+        }
+      }
+    "#],
   );
 }
