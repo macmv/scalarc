@@ -20,7 +20,9 @@ use database::{LineIndexDatabase, RootDatabase};
 use highlight::Highlight;
 use line_index::LineIndex;
 use salsa::{Cancelled, ParallelDatabase};
-use scalarc_hir::{AnyDefinition, FileLocation, FileRange, HirDatabase, Reference, Type};
+use scalarc_hir::{
+  AnyDefinition, FileLocation, FileRange, HirDatabase, HirDefinitionId, Reference, Type,
+};
 use scalarc_source::{FileId, SourceDatabase, Workspace};
 
 pub struct AnalysisHost {
@@ -122,8 +124,11 @@ impl Analysis {
         scalarc_hir::AnyDefinition::Hir(ref d) => {
           let ast = db.parse(pos.file);
           let file = d.block_id.file_id;
-          let item_ptr = db.hir_source_map_for_block(d.block_id).stmt_syntax(d.stmt_id).unwrap();
-          let item = item_ptr.to_node(&ast);
+          let source_map = db.hir_source_map_for_block(d.block_id);
+          let item = match d.id {
+            HirDefinitionId::Stmt(s) => source_map.stmt_syntax(s).unwrap().to_node(&ast),
+            HirDefinitionId::Param(s) => source_map.param_syntax(s).unwrap().to_node(&ast),
+          };
           (def, FileRange { file, range: item.text_range() })
         }
         scalarc_hir::AnyDefinition::Global(ref d) => {
