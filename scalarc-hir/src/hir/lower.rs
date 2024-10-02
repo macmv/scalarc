@@ -65,7 +65,11 @@ pub fn hir_ast_with_source_for_block(
       // need to track it, to go from the CST to the HIR expr. Additionally,
       // defs are the only block with params, so we walk those here.
       lower.walk_expr(&def.expr().unwrap());
-      lower.walk_params(def);
+      if let Some(sig) = def.fun_sig() {
+        for params in sig.fun_paramss() {
+          lower.walk_params(params);
+        }
+      }
     }
 
     BlockId::Class(class) => {
@@ -73,6 +77,9 @@ pub fn hir_ast_with_source_for_block(
 
       if let Some(body) = def.body() {
         lower.walk_items(body.items());
+      }
+      if let Some(params) = def.fun_params() {
+        lower.walk_params(params);
       }
     }
 
@@ -313,23 +320,19 @@ impl BlockLower<'_> {
     }
   }
 
-  fn walk_params(&mut self, def: ast::FunDef) {
-    if let Some(sig) = def.fun_sig() {
-      for params in sig.fun_paramss() {
-        for param in params.fun_params() {
-          let name = param.id_token().unwrap().text().to_string();
+  fn walk_params(&mut self, params: ast::FunParams) {
+    for param in params.fun_params() {
+      let name = param.id_token().unwrap().text().to_string();
 
-          let param_id = self.block.params.alloc(Binding {
-            implicit: false,
-            kind: BindingKind::Val,
-            name,
-            ty: None,
-            expr: None,
-          });
-          self.source_map.param.insert(AstPtr::new(&param), param_id);
-          self.source_map.param_back.insert(param_id, AstPtr::new(&param));
-        }
-      }
+      let param_id = self.block.params.alloc(Binding {
+        implicit: false,
+        kind: BindingKind::Val,
+        name,
+        ty: None,
+        expr: None,
+      });
+      self.source_map.param.insert(AstPtr::new(&param), param_id);
+      self.source_map.param_back.insert(param_id, AstPtr::new(&param));
     }
   }
 }

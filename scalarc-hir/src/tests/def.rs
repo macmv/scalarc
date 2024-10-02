@@ -121,3 +121,19 @@ fn params_work() {
     "#],
   );
 }
+
+#[test]
+fn class_params_work() {
+  def_at(
+    r#"
+    class Foo(x: Int) {
+      x|()
+    }
+    "#,
+    expect![@r#"
+      class Foo(@x: Int@) {
+        x()
+      }
+    "#],
+  );
+}
