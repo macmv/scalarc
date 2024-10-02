@@ -3,7 +3,7 @@ use scalarc_test::{expect, Expect};
 
 use crate::HirDatabase;
 
-fn goto_definition(src: &str, expect: Expect) {
+fn def_at(src: &str, expect: Expect) {
   let src = src
     .trim_start_matches(|c| c == '\n')
     .lines()
@@ -47,7 +47,7 @@ fn goto_definition(src: &str, expect: Expect) {
 
 #[test]
 fn it_works() {
-  goto_definition(
+  def_at(
     r#"
     class Foo {
       def x = 3
@@ -65,7 +65,7 @@ fn it_works() {
 
 #[test]
 fn nested_blocks_work() {
-  goto_definition(
+  def_at(
     r#"
     class Foo {
       def x = 3
