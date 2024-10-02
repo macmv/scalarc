@@ -365,7 +365,15 @@ fn walk_references(
       }
 
       hir::Expr::Block(b) => {
-        walk_references(db, def, (*b).in_file(block.file_id), refs);
+        let inner_block = db.hir_ast_for_block((*b).in_file(block.file_id));
+
+        // This might seem wrong, but scala doesn't allow redeclaring values in the same
+        // block. So this actually handles all the cases we care about.
+        let redeclared = inner_block.bindings().any(|b| b.name == def.name.as_str());
+
+        if !redeclared {
+          walk_references(db, def, (*b).in_file(block.file_id), refs);
+        }
       }
 
       _ => {}

@@ -24,6 +24,19 @@ pub struct Block {
   pub items: Vec<StmtId>,
 }
 
+impl Block {
+  pub fn bindings(&self) -> impl Iterator<Item = &Binding> {
+    self
+      .items
+      .iter()
+      .filter_map(|&it| match self.stmts[it] {
+        Stmt::Binding(ref b) => Some(b),
+        _ => None,
+      })
+      .chain(self.params.values())
+  }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Type {
   Named(UnresolvedPath),
