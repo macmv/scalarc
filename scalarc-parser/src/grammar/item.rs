@@ -309,9 +309,13 @@ fn class_def(p: &mut Parser, m: Marker) {
 
   // test ok
   // class Foo private {}
-  if p.at(T![private]) {
-    p.bump();
-    p.eat_newlines();
+  // class Bar protected {}
+  match p.current() {
+    T![private] | T![protected] => {
+      p.bump();
+      p.eat_newlines();
+    }
+    _ => {}
   }
 
   // test ok
