@@ -10,10 +10,9 @@ use scalarc_syntax::{
 };
 
 use crate::{
-  hir::{self, AstId, BindingKind, BlockId, ErasedAstId},
+  hir::{self, AstId, BlockId, ErasedAstId},
   AnyDefinition, ClassKind, DefinitionKey, FileRange, GlobalDefinition, GlobalDefinitionKind,
-  HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile, InFileExt, Name, Path,
-  Reference, Signature,
+  HirDatabase, HirDefinition, HirDefinitionId, InFile, InFileExt, Name, Path, Reference,
 };
 
 pub type ScopeId = Idx<Scope>;
@@ -181,16 +180,9 @@ fn item_definition_real(
   let item_id = db.hir_source_map_for_block(block).stmt(ptr)?;
 
   match db.hir_ast_for_block(block).stmts[item_id] {
-    hir::Stmt::Binding(ref binding) => Some(HirDefinition {
-      name:     Name::new(binding.name.clone()),
-      id:       HirDefinitionId::Stmt(item_id),
-      block_id: block,
-      kind:     match binding.kind {
-        BindingKind::Val => HirDefinitionKind::Val(None),
-        BindingKind::Var => HirDefinitionKind::Val(None),
-        BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
-      },
-    }),
+    hir::Stmt::Binding(ref binding) => {
+      Some(HirDefinition::from_binding(binding, block, HirDefinitionId::Stmt(item_id)))
+    }
     _ => None,
   }
 }
@@ -226,16 +218,7 @@ fn param_definition_real(
 
   let binding = &db.hir_ast_for_block(block).params[binding_id];
 
-  Some(HirDefinition {
-    name:     Name::new(binding.name.clone()),
-    id:       HirDefinitionId::Param(binding_id),
-    block_id: block,
-    kind:     match binding.kind {
-      BindingKind::Val => HirDefinitionKind::Val(None),
-      BindingKind::Var => HirDefinitionKind::Val(None),
-      BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
-    },
-  })
+  Some(HirDefinition::from_binding(binding, block, HirDefinitionId::Param(binding_id)))
 }
 
 fn import_definition(

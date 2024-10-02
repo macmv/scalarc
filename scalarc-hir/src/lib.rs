@@ -1,4 +1,4 @@
-use hir::{AstId, BlockId, ErasedAstId, ImportId, ParamId, StmtId};
+use hir::{AstId, Binding, BindingKind, BlockId, ErasedAstId, ImportId, ParamId, StmtId};
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
   ast::{self, ItemBody},
@@ -91,6 +91,21 @@ pub struct HirDefinition {
   pub block_id: InFile<BlockId>,
   pub id:       HirDefinitionId,
   pub kind:     HirDefinitionKind,
+}
+
+impl HirDefinition {
+  pub fn from_binding(binding: &Binding, block_id: InFile<BlockId>, id: HirDefinitionId) -> Self {
+    HirDefinition {
+      name: Name::new(binding.name.clone()),
+      id,
+      block_id,
+      kind: match binding.kind {
+        BindingKind::Val => HirDefinitionKind::Val(None),
+        BindingKind::Var => HirDefinitionKind::Val(None),
+        BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
+      },
+    }
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

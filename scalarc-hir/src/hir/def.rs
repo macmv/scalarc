@@ -47,32 +47,14 @@ fn lookup_name_in_block(
   for item in ast.items.iter() {
     if let hir::Stmt::Binding(ref binding) = ast.stmts[*item] {
       if binding.name == *name {
-        return Some(HirDefinition {
-          name:     Name::new(binding.name.clone()),
-          id:       HirDefinitionId::Stmt(*item),
-          block_id: block,
-          kind:     match binding.kind {
-            BindingKind::Val => HirDefinitionKind::Val(None),
-            BindingKind::Var => HirDefinitionKind::Val(None),
-            BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
-          },
-        });
+        return Some(HirDefinition::from_binding(binding, block, HirDefinitionId::Stmt(*item)));
       }
     }
   }
 
   for (param, binding) in ast.params.iter() {
     if binding.name == *name {
-      return Some(HirDefinition {
-        name:     Name::new(binding.name.clone()),
-        id:       HirDefinitionId::Param(param),
-        block_id: block,
-        kind:     match binding.kind {
-          BindingKind::Val => HirDefinitionKind::Val(None),
-          BindingKind::Var => HirDefinitionKind::Val(None),
-          BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
-        },
-      });
+      return Some(HirDefinition::from_binding(binding, block, HirDefinitionId::Param(param)));
     }
   }
 
