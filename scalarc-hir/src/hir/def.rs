@@ -57,7 +57,12 @@ fn lookup_name_in_block(
   }
 
   for (import_id, import) in ast.imports.iter() {
-    if import.path.elems.last().unwrap().as_str() == name {
+    let matches = match import.rename {
+      Some(ref n) => n.as_str() == name,
+      None => import.path.elems.last().unwrap().as_str() == name,
+    };
+
+    if matches {
       return Some(HirDefinition {
         name:     import.path.elems.last().unwrap().clone(),
         id:       HirDefinitionId::Import(import_id),

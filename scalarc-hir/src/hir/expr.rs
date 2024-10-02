@@ -1,5 +1,5 @@
 use super::{AstId, ErasedAstId};
-use crate::{Path, Signature};
+use crate::{Name, Path, Signature};
 use la_arena::{Arena, Idx};
 use scalarc_syntax::ast;
 
@@ -65,7 +65,8 @@ pub struct Binding {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Import {
-  pub path: Path,
+  pub path:   Path,
+  pub rename: Option<Name>,
 }
 
 #[derive(Debug, PartialEq, Eq)]

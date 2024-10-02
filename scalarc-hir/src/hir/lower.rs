@@ -217,10 +217,29 @@ impl BlockLower<'_> {
                 path.elems.push(Name::new(id.text().to_string()));
               }
 
-              self.block.imports.alloc(Import { path });
+              self.block.imports.alloc(Import { path, rename: None });
             }
-            ast::ImportExpr::ImportSelectors(_) => {
-              // TODO
+            ast::ImportExpr::ImportSelectors(p) => {
+              let mut path = Path::new();
+
+              if let Some(p) = p.path() {
+                for id in p.ids() {
+                  path.elems.push(Name::new(id.text().to_string()));
+                }
+              }
+
+              for sel in p.import_selectors() {
+                let mut path = path.clone();
+                match sel {
+                  ast::ImportSelector::ImportSelectorRename(sel) => {
+                    let from = sel.from()?.text().to_string();
+                    let to = sel.to()?.text().to_string();
+                    path.elems.push(Name::new(from));
+                    self.block.imports.alloc(Import { path, rename: Some(Name::new(to)) });
+                  }
+                  _ => {}
+                }
+              }
             }
           }
         }
