@@ -12,8 +12,19 @@ pub fn def_for_expr(
 ) -> Option<HirDefinition> {
   let ast = db.hir_ast_for_block(block);
 
+  // TODO: Maybe return some info about object vs class, based on what HIR
+  // expression we're in.
+
   match ast.exprs[expr] {
     hir::Expr::Name(ref path) => {
+      // TODO: Fix this? Most of the time there's just one segment, so we're going to
+      // pull that out.
+      let name = path.segments.last().unwrap();
+
+      lookup_name_in_block(db, block, name)
+    }
+
+    hir::Expr::New(ref path, _) => {
       // TODO: Fix this? Most of the time there's just one segment, so we're going to
       // pull that out.
       let name = path.segments.last().unwrap();

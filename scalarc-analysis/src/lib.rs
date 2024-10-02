@@ -24,6 +24,7 @@ use scalarc_hir::{
   AnyDefinition, DefinitionKey, FileLocation, FileRange, HirDatabase, HirDefinitionId, Reference,
   Type,
 };
+use scalarc_parser::{SyntaxKind, T};
 use scalarc_source::{FileId, SourceDatabase, Workspace};
 
 pub struct AnalysisHost {
@@ -139,13 +140,20 @@ impl Analysis {
             HirDefinitionId::Import(id) => {
               let import = &db.hir_ast_for_block(d.block_id).imports[id];
               let target = db.file_target(file).unwrap();
-              let def =
-                db.definition_for_key(target, DefinitionKey::Instance(import.path.clone()))?;
+              let keys = prioritize_definition_keys(&db, pos, &import.path);
 
-              let file = def.file_id;
-              let item = db.ast_id_map(def.file_id).get_erased(def.ast_id);
+              for key in keys {
+                let Some(def) = db.definition_for_key(target, key) else { continue };
 
-              Some((AnyDefinition::Global(def), FileRange { file, range: item.text_range() }))
+                let file = def.file_id;
+                let item = db.ast_id_map(def.file_id).get_erased(def.ast_id);
+
+                return Some((
+                  AnyDefinition::Global(def),
+                  FileRange { file, range: item.text_range() },
+                ));
+              }
+              None
             }
           }
         }
@@ -172,5 +180,53 @@ impl Analysis {
 
   fn with_db<T>(&self, f: impl FnOnce(&RootDatabase) -> T + UnwindSafe) -> Cancellable<T> {
     Cancelled::catch(|| f(&self.db))
+  }
+}
+
+// Picking the definition is a bit tricky, and metals in particular doesn't do
+// this very well. So, I've decided the following priority order:
+// - If the current name is part of a call (`Seq|()`), then jump to the apply
+//   impl.
+//   - If there is a specific apply impl, jump there.
+//   - If none of the apply impls match for a case class, jump to the definition
+//     of the case class.
+//   - If none of the apply impls match for a normal class, jump to the object
+//     definition.
+//   - Otherwise, jump to the definition of the case class (even if the params
+//     don't match).
+// - If the current name is anything else, jump to the object first.
+// - If the object does not resolve, jump to the instance instead.
+fn prioritize_definition_keys(
+  db: &RootDatabase,
+  cursor: FileLocation,
+  path: &scalarc_hir::Path,
+) -> Vec<DefinitionKey> {
+  let ast = db.parse(cursor.file);
+
+  let token = ast
+    .syntax_node()
+    .token_at_offset(cursor.index)
+    .max_by_key(|token| match token.kind() {
+      T![ident] => 10,
+      SyntaxKind::INT_LIT_KW => 9,
+
+      // Whitespace is always lowest priority.
+      T![nl] => 0,
+
+      _ => 1,
+    })
+    .unwrap();
+
+  let parent = token.parent().unwrap();
+  let parent2 = parent.parent().unwrap();
+  match parent2.kind() {
+    // FIXME: This needs to search upwards more (namely it should handle field exprs, like
+    // `collection.Seq|()`
+
+    // TODO: Handle field exprs.
+    SyntaxKind::CALL_EXPR => {
+      vec![DefinitionKey::Object(path.clone()), DefinitionKey::Instance(path.clone())]
+    }
+    _ => vec![DefinitionKey::Instance(path.clone()), DefinitionKey::Object(path.clone())],
   }
 }

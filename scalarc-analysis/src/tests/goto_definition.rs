@@ -37,3 +37,57 @@ fn calls_work() {
    "#],
   );
 }
+
+#[test]
+fn goto_constructor() {
+  goto_definition(
+    r#"
+    object Foo {
+      def apply() = new Foo()
+    }
+    class Foo()
+
+    class Foo {
+      import Foo
+      Foo|()
+    }
+    "#,
+    expect![@r#"
+      @object Foo {
+        def apply() = new Foo()
+      }@
+      class Foo()
+
+      class Foo {
+        import Foo
+        Foo()
+      }
+    "#],
+  );
+
+  println!("======");
+  goto_definition(
+    r#"
+    object Foo {
+      def apply() = new Foo()
+    }
+    class Foo()
+
+    class Foo {
+      import Foo
+      new Foo|()
+    }
+    "#,
+    expect![@r#"
+      object Foo {
+        def apply() = new Foo()
+      }
+      @class Foo()@
+
+      class Foo {
+        import Foo
+        new Foo()
+      }
+    "#],
+  );
+}
