@@ -189,6 +189,7 @@ fn simple_example() {
                     phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
                   },
                 ),
+                Normal,
               ),
               item: SyntaxNodePtr {
                 kind: CLASS_DEF,
@@ -204,6 +205,7 @@ fn simple_example() {
                     phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
                   },
                 ),
+                Normal,
               ),
               item: SyntaxNodePtr {
                 kind: CLASS_DEF,
@@ -219,6 +221,7 @@ fn simple_example() {
                     phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
                   },
                 ),
+                Normal,
               ),
               item: SyntaxNodePtr {
                 kind: CLASS_DEF,
@@ -256,6 +259,7 @@ fn simple_example() {
                     phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
                   },
                 ),
+                Normal,
               ),
               item: SyntaxNodePtr {
                 kind: CLASS_DEF,
@@ -271,6 +275,7 @@ fn simple_example() {
                     phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
                   },
                 ),
+                Normal,
               ),
               item: SyntaxNodePtr {
                 kind: CLASS_DEF,
@@ -286,6 +291,7 @@ fn simple_example() {
                     phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
                   },
                 ),
+                Normal,
               ),
               item: SyntaxNodePtr {
                 kind: CLASS_DEF,
@@ -304,6 +310,7 @@ fn simple_example() {
               name: "A",
               kind: Class(
                 None,
+                Normal,
               ),
               item: SyntaxNodePtr {
                 kind: CLASS_DEF,
@@ -314,6 +321,7 @@ fn simple_example() {
               name: "B",
               kind: Class(
                 None,
+                Normal,
               ),
               item: SyntaxNodePtr {
                 kind: CLASS_DEF,
@@ -362,8 +370,19 @@ fn definition_at() {
     val baz = 5
     "#,
     expect![@r#"
-      None
-    "#],
+      LocalDefinition {
+        name: "a",
+        kind: Val(
+          None,
+        ),
+        item: AstPtr {
+          ptr: SyntaxNodePtr {
+            kind: VAL_DEF,
+            range: 39..48,
+          },
+          _phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::Item>,
+        },
+      }"#],
   );
 
   def_at(
@@ -443,6 +462,7 @@ fn class_scopes() {
                     phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::ItemBody>,
                   },
                 ),
+                Normal,
               ),
               item: SyntaxNodePtr {
                 kind: CLASS_DEF,
