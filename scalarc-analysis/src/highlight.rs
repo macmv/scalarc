@@ -146,6 +146,12 @@ impl Highlightable for ast::Item {
 
         h.visit(o.body());
       }
+      ast::Item::TraitDef(t) => {
+        h.highlight_opt(t.trait_token(), HighlightKind::Keyword);
+        h.highlight_opt(t.id_token(), HighlightKind::Class);
+
+        h.visit(t.body());
+      }
 
       ast::Item::ValDef(d) => {
         h.highlight_opt(d.val_token(), HighlightKind::Keyword);
