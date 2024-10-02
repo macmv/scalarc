@@ -115,7 +115,7 @@ pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Opt
     match_ast! {
       match n {
         ast::Expr(e) => return Some(AnyDefinition::Hir(expr_definition(db, file_id, &e)?)),
-        ast::Item(it) => return Some(AnyDefinition::Hir(item_definition(db, file_id, &it)?)),
+        ast::Item(it) => return Some(AnyDefinition::Hir(item_definition(db, file_id, &it, pos)?)),
         ast::Import(_) => return Some(AnyDefinition::Global(import_definition(db, file_id, token)?)),
         _ => n = n.parent()?,
       }
@@ -140,6 +140,40 @@ fn expr_definition(
 }
 
 fn item_definition(
+  db: &dyn HirDatabase,
+  file_id: FileId,
+  stmt: &ast::Item,
+  pos: TextSize,
+) -> Option<HirDefinition> {
+  match stmt {
+    ast::Item::FunDef(d) => {
+      if let Some(sig) = d.fun_sig() {
+        if let Some(id) = sig.id_token() {
+          if id.text_range().contains_inclusive(pos) {
+            return item_definition_real(db, file_id, stmt);
+          }
+        }
+      }
+
+      if let Some(p) = d.fun_sig() {
+        // TODO: Parameter defs.
+        for _ in p.fun_paramss() {}
+      }
+    }
+    ast::Item::ValDef(d) => {
+      if let Some(id) = d.id_token() {
+        if id.text_range().contains_inclusive(pos) {
+          return item_definition_real(db, file_id, stmt);
+        }
+      }
+    }
+    _ => {}
+  }
+
+  None
+}
+
+fn item_definition_real(
   db: &dyn HirDatabase,
   file_id: FileId,
   stmt: &ast::Item,
