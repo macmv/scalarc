@@ -96,8 +96,10 @@ fn item(p: &mut Parser) {
       | T![abstract]
       | T![override]
       | T![lazy] => {
+        let m = p.start();
         p.bump();
         p.eat_newlines();
+        m.complete(p, MODIFIER);
       }
       _ => break,
     }

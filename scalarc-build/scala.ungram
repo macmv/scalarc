@@ -297,9 +297,9 @@ PathPattern  = Path
 TypeDef     = 'type' id TypeParams? '=' Type
 
 // TODO:`FunParams` should be `ClassFunParams`
-ClassDef     = 'case'? 'class' id TypeParams? ConstrAnnotation* AccessModifier? FunParams ClassExtends body:ItemBody
-TraitDef     = 'trait' id TypeParams? body:ItemBody
-ObjectDef    = 'case'? 'object' id body:ItemBody
+ClassDef     = Modifier* 'case'? 'class' id TypeParams? ConstrAnnotation* AccessModifier? FunParams ClassExtends body:ItemBody
+TraitDef     = Modifier* 'trait' id TypeParams? body:ItemBody
+ObjectDef    = Modifier* 'case'? 'object' id body:ItemBody
 ClassExtends = 'extends' ClassTemplate // TODO
 
 TraitTemplateOpt = 'extends' TraitTemplate | ('extends'? ItemBody)?

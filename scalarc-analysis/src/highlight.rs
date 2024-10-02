@@ -140,6 +140,10 @@ impl Highlightable for ast::Item {
         h.visit(e.expr());
       }
       ast::Item::ClassDef(o) => {
+        for modifier in o.modifiers() {
+          h.highlight_opt(modifier.final_token(), HighlightKind::Keyword);
+          h.highlight_opt(modifier.abstract_token(), HighlightKind::Keyword);
+        }
         h.highlight_opt(o.case_token(), HighlightKind::Keyword);
         h.highlight_opt(o.class_token(), HighlightKind::Keyword);
         h.highlight_opt(o.id_token(), HighlightKind::Class);
@@ -147,6 +151,9 @@ impl Highlightable for ast::Item {
         h.visit(o.body());
       }
       ast::Item::TraitDef(t) => {
+        for modifier in t.modifiers() {
+          h.highlight_opt(modifier.sealed_token(), HighlightKind::Keyword);
+        }
         h.highlight_opt(t.trait_token(), HighlightKind::Keyword);
         h.highlight_opt(t.id_token(), HighlightKind::Class);
 
@@ -154,6 +161,10 @@ impl Highlightable for ast::Item {
       }
 
       ast::Item::ValDef(d) => {
+        for modifier in d.modifiers() {
+          h.highlight_opt(modifier.override_token(), HighlightKind::Keyword);
+          h.highlight_opt(modifier.implicit_token(), HighlightKind::Keyword);
+        }
         h.highlight_opt(d.val_token(), HighlightKind::Keyword);
         h.highlight_opt(d.id_token(), HighlightKind::Variable);
         h.highlight_opt(d.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
