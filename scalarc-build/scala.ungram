@@ -207,14 +207,14 @@ ClassFunParams = 'todo'
 // Bindings          = '(' Binding (',' Binding)* ')'
 // Binding           = (id | '_') (':' Type)?
 
-Modifier      = LocalModifier
-              | AccessModifier
-              | 'override'
-LocalModifier = 'abstract'
-                    |  'final'
-                    |  'sealed'
-                    |  'implicit'
-                    |  'lazy'
+Modifier = AccessModifier
+         | 'override'
+         | 'abstract'
+         | 'final'
+         | 'sealed'
+         | 'implicit'
+         | 'lazy'
+
 AccessModifier    =  ('private' | 'protected') (AccessQualifier)?
 AccessQualifier   =  '[' (id | 'this') ']'
 
@@ -240,11 +240,11 @@ Def = ValDef
     | FunDef
     | TypeDef
 
-ValDef  = 'val' id (':' Type)? '=' Expr
-VarDef  = 'var' id (':' Type)? '=' Expr
-FunDef  = 'def' FunSig '=' Expr
+ValDef  = Modifier* 'val' id (':' Type)? '=' Expr
+VarDef  = Modifier* 'var' id (':' Type)? '=' Expr
+FunDef  = Modifier* 'def' FunSig '=' Expr
 FunSig  = id TypeParams? FunParams* (':' Type)?
-TypeDec = 'type' id Type
+TypeDec = Modifier* 'type' id Type
 
 // Items
 

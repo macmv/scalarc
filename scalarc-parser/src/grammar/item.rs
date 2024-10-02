@@ -85,8 +85,17 @@ fn item(p: &mut Parser) {
     // private implicit def foo = 5
     // final abstract class Int extends AnyVal {}
     // override def foo() = {}
+    // sealed trait Foo
+    // lazy val bar = 3
     match p.current() {
-      T![private] | T![protected] | T![final] | T![implicit] | T![abstract] | T![override] => {
+      T![private]
+      | T![protected]
+      | T![final]
+      | T![implicit]
+      | T![sealed]
+      | T![abstract]
+      | T![override]
+      | T![lazy] => {
         p.bump();
         p.eat_newlines();
       }
