@@ -285,8 +285,8 @@ impl<'a> Infer<'a> {
 
   fn type_of_hir_def(&self, def: HirDefinition) -> Option<Type> {
     match def.kind {
-      HirDefinitionKind::Val(Some(ty)) => Some(ty),
-      HirDefinitionKind::Var(Some(ty)) => Some(ty),
+      HirDefinitionKind::Val(Some(ty)) => self.type_te(&ty),
+      HirDefinitionKind::Var(Some(ty)) => self.type_te(&ty),
       HirDefinitionKind::Parameter(ty) => self.type_te(&ty),
       HirDefinitionKind::Import => {
         let path = self.db.resolve_path_in_block(

@@ -106,8 +106,8 @@ impl HirDefinition {
       id,
       block_id,
       kind: match binding.kind {
-        BindingKind::Val => HirDefinitionKind::Val(None),
-        BindingKind::Var => HirDefinitionKind::Val(None),
+        BindingKind::Val => HirDefinitionKind::Val(binding.ty.clone()),
+        BindingKind::Var => HirDefinitionKind::Val(binding.ty.clone()),
         BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
       },
     }
@@ -161,8 +161,8 @@ pub enum ClassKind {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HirDefinitionKind {
-  Val(Option<Type>),
-  Var(Option<Type>),
+  Val(Option<hir::Type>),
+  Var(Option<hir::Type>),
   Parameter(hir::Type),
   Def(Signature),
   Import,
