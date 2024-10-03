@@ -48,6 +48,10 @@ pub struct UnresolvedPath {
   pub segments: Vec<String>,
 }
 
+impl UnresolvedPath {
+  pub fn from_name(name: String) -> Self { UnresolvedPath { segments: vec![name] } }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Stmt {
   Binding(Binding),

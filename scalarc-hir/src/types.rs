@@ -288,6 +288,17 @@ impl<'a> Infer<'a> {
       HirDefinitionKind::Val(Some(ty)) => Some(ty),
       HirDefinitionKind::Var(Some(ty)) => Some(ty),
       HirDefinitionKind::Parameter(ty) => Some(ty),
+      HirDefinitionKind::Import => {
+        let path = self.db.resolve_path_in_block(
+          self.block_id,
+          hir::UnresolvedPath::from_name(def.name.clone().into_string()),
+        );
+
+        let target = self.db.file_target(self.block_id.file_id)?;
+        let def = self.db.definition_for_key(target, DefinitionKey::Object(path))?;
+
+        Some(Type::Object(def.path))
+      }
       _ => None,
     }
   }

@@ -226,3 +226,21 @@ fn type_of_param() {
     expect![@"scala.Int"],
   );
 }
+
+#[test]
+fn type_of_import() {
+  type_at(
+    r#"
+    package foo.bar
+
+    object Foo {
+      val x = 2
+    }
+
+    import foo.bar.{ Foo => Baz }
+
+    Baz.x@@
+    "#,
+    expect![@"scala.Int"],
+  );
+}
