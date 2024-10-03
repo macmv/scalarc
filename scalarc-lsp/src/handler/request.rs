@@ -57,8 +57,8 @@ pub fn handle_completion(
         .into_iter()
         .map(|c| {
           let (kind, detail) = match c.kind {
-            CompletionKind::Hir(HirDefinitionKind::Val(ty)) => {
-              (lsp_types::CompletionItemKind::VARIABLE, ty.map(|t| t.to_string()))
+            CompletionKind::Hir(HirDefinitionKind::Val(_)) => {
+              (lsp_types::CompletionItemKind::VARIABLE, None)
             }
             CompletionKind::Hir(HirDefinitionKind::Var(_)) => {
               (lsp_types::CompletionItemKind::VARIABLE, None)
