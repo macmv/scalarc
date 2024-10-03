@@ -151,28 +151,20 @@ pub struct Inference {
 }
 
 struct Infer<'a> {
-  db:      &'a dyn HirDatabase,
-  file_id: FileId,
-  hir_ast: &'a Block,
-
-  parent_block: Option<BlockId>,
+  db:       &'a dyn HirDatabase,
+  block_id: InFile<BlockId>,
+  hir_ast:  &'a Block,
 
   locals: HashMap<String, Type>,
   result: Inference,
 }
 
 impl<'a> Infer<'a> {
-  pub fn new(
-    db: &'a dyn HirDatabase,
-    file_id: FileId,
-    hir_ast: &'a Block,
-    parent_block: Option<BlockId>,
-  ) -> Self {
+  pub fn new(db: &'a dyn HirDatabase, block_id: InFile<BlockId>, hir_ast: &'a Block) -> Self {
     let mut infer = Infer {
       db,
-      file_id,
       hir_ast,
-      parent_block,
+      block_id,
       locals: HashMap::new(),
       result: Inference { exprs: HashMap::new(), stmts: HashMap::new() },
     };
@@ -193,14 +185,12 @@ impl<'a> Infer<'a> {
       Expr::Name(ref path) => {
         if let Some(local) = self.locals.get(&path.segments[0]) {
           Some(local.clone())
-        } else if let Some(parent) = self.parent_block {
+        } else {
           let name = path.segments[0].clone();
-          match self.db.lookup_name_in_block(parent.in_file(self.file_id), name) {
+          match self.db.lookup_name_in_block(self.block_id, name) {
             Some(def) => self.type_of_hir_def(def),
             None => None,
           }
-        } else {
-          None
         }
       }
 
@@ -210,7 +200,7 @@ impl<'a> Infer<'a> {
         _ => None,
       },
 
-      Expr::Block(block) => self.db.type_of_block(block.in_file(self.file_id)),
+      Expr::Block(block) => self.db.type_of_block(block.in_file(self.block_id.file_id)),
 
       Expr::FieldAccess(lhs, ref name) => self.type_access(lhs, name),
       Expr::Call(lhs, ref args) => {
@@ -271,10 +261,8 @@ impl<'a> Infer<'a> {
     match te {
       hir::Type::Named(ref path) => {
         let name = path.segments[0].clone();
-        let parent_block = self.parent_block?.in_file(self.file_id);
 
-        // TODO: Lookup in the current block, not the parent block.
-        let def = match self.db.lookup_name_in_block(parent_block, name.clone()) {
+        let def = match self.db.lookup_name_in_block(self.block_id, name.clone()) {
           Some(def) => AnyDefinition::Hir(def),
           None => {
             let mut implicit_imports = HashMap::new();
@@ -287,7 +275,7 @@ impl<'a> Infer<'a> {
               None => Path { elems: vec![name.into()] },
             };
 
-            let target = self.db.file_target(self.file_id)?;
+            let target = self.db.file_target(self.block_id.file_id)?;
             AnyDefinition::Global(
               self.db.definition_for_key(target, DefinitionKey::Instance(path))?,
             )
@@ -327,7 +315,8 @@ impl<'a> Infer<'a> {
       _ => return None,
     };
 
-    for target in self.db.workspace().all_dependencies(self.db.file_target(self.file_id)?) {
+    for target in self.db.workspace().all_dependencies(self.db.file_target(self.block_id.file_id)?)
+    {
       let defs = self.db.definitions_for_target(target);
 
       if let Some(def) = defs.items.get(&key) {
@@ -389,9 +378,8 @@ impl<'a> Infer<'a> {
 
 pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
   let hir_ast = db.hir_ast_for_block(block);
-  let parent_block = db.parent_block(block);
 
-  let mut infer = Infer::new(db, block.file_id, &hir_ast, parent_block);
+  let mut infer = Infer::new(db, block, &hir_ast);
 
   for &stmt in hir_ast.items.iter() {
     match &hir_ast.stmts[stmt] {
