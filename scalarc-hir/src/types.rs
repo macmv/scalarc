@@ -6,8 +6,8 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
   hir::{
-    self, AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, ResolutionKind,
-    Stmt, StmtId,
+    self, AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Pattern,
+    PatternId, ResolutionKind, Stmt, StmtId,
   },
   DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
   HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
@@ -147,8 +147,9 @@ impl fmt::Display for Signature {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Inference {
-  exprs: HashMap<ExprId, Type>,
-  stmts: HashMap<StmtId, Type>,
+  exprs:    HashMap<ExprId, Type>,
+  stmts:    HashMap<StmtId, Type>,
+  patterns: HashMap<PatternId, Type>,
 }
 
 struct Infer<'a> {
@@ -167,7 +168,11 @@ impl<'a> Infer<'a> {
       hir_ast,
       block_id,
       locals: HashMap::new(),
-      result: Inference { exprs: HashMap::new(), stmts: HashMap::new() },
+      result: Inference {
+        exprs:    HashMap::new(),
+        stmts:    HashMap::new(),
+        patterns: HashMap::new(),
+      },
     };
 
     for param in infer.hir_ast.params.values() {
@@ -260,12 +265,12 @@ impl<'a> Infer<'a> {
       }
 
       Expr::Match(lhs, ref arms) => {
-        // TODO: We'll probably want this for matching on `Seq`s and such.
-        let _ = self.type_expr(lhs)?;
+        let lhs = self.type_expr(lhs)?;
 
         let mut ty = None;
 
-        for &(_, arm) in arms {
+        for &(pat, arm) in arms {
+          self.type_pattern(&lhs, pat);
           let arm_ty = self.type_expr(arm)?;
 
           match ty {
@@ -349,6 +354,15 @@ impl<'a> Infer<'a> {
     }
 
     None
+  }
+
+  fn type_pattern(&mut self, lhs: &Type, pat: PatternId) {
+    match self.hir_ast.patterns[pat] {
+      Pattern::Wildcard => {}
+      Pattern::Binding(_) => {
+        self.result.patterns.insert(pat, lhs.clone());
+      }
+    }
   }
 
   fn select_name_from_def(&self, def: &GlobalDefinition, name: &str) -> Option<Type> {
