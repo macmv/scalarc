@@ -368,6 +368,13 @@ pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
     }
   }
 
+  // Special case defs, as they have a single expression, with no items.
+  if hir_ast.items.is_empty() {
+    for (expr, _) in hir_ast.exprs.iter() {
+      infer.type_expr(expr);
+    }
+  }
+
   Arc::new(infer.result)
 }
 
