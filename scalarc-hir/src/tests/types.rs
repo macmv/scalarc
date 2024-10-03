@@ -216,3 +216,13 @@ fn type_of_object_vs_class() {
     expect![@"scala.Int"],
   );
 }
+
+#[test]
+fn type_of_param() {
+  type_at(
+    r#"
+    def foo(x: Int) = x@@
+    "#,
+    expect![@"scala.Int"],
+  );
+}

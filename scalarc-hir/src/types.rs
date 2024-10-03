@@ -8,8 +8,8 @@ use crate::{
   hir::{
     self, AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId,
   },
-  DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, InFile, InFileExt,
-  InferQuery, Name, Path,
+  DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
+  HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
 };
 use salsa::{Query, QueryDb};
 use scalarc_source::FileId;
@@ -155,31 +155,52 @@ struct Infer<'a> {
   file_id: FileId,
   hir_ast: &'a Block,
 
+  parent_block: Option<BlockId>,
+
   locals: HashMap<String, Type>,
   result: Inference,
 }
 
 impl<'a> Infer<'a> {
-  pub fn new(db: &'a dyn HirDatabase, file_id: FileId, hir_ast: &'a Block) -> Self {
-    Infer {
+  pub fn new(
+    db: &'a dyn HirDatabase,
+    file_id: FileId,
+    hir_ast: &'a Block,
+    parent_block: Option<BlockId>,
+  ) -> Self {
+    let mut infer = Infer {
       db,
       file_id,
       hir_ast,
+      parent_block,
       locals: HashMap::new(),
       result: Inference { exprs: HashMap::new(), stmts: HashMap::new() },
+    };
+
+    for param in infer.hir_ast.params.values() {
+      if let Some(ref ty) = param.ty {
+        if let Some(ty) = infer.type_te(ty) {
+          infer.locals.insert(param.name.clone(), ty);
+        }
+      }
     }
+
+    infer
   }
 
   pub fn type_expr(&mut self, expr: ExprId) -> Option<Type> {
     let res = match self.hir_ast.exprs[expr] {
-      // FIXME: Need name resolution.
       Expr::Name(ref path) => {
         if let Some(local) = self.locals.get(&path.segments[0]) {
           Some(local.clone())
+        } else if let Some(parent) = self.parent_block {
+          let name = path.segments[0].clone();
+          match self.db.lookup_name_in_block(parent.in_file(self.file_id), name) {
+            Some(def) => self.type_of_hir_def(def),
+            None => None,
+          }
         } else {
-          Some(Type::Object(Path {
-            elems: path.segments.iter().map(|s| Name::new(s.clone())).collect(),
-          }))
+          None
         }
       }
 
@@ -243,6 +264,22 @@ impl<'a> Infer<'a> {
     }
 
     res
+  }
+
+  fn type_te(&self, te: &hir::Type) -> Option<Type> {
+    match te {
+      hir::Type::Named(ref path) => Some(Type::Instance(Path {
+        elems: path.segments.iter().map(|s| Name::new(s.clone())).collect(),
+      })),
+    }
+  }
+
+  fn type_of_hir_def(&self, def: HirDefinition) -> Option<Type> {
+    match def.kind {
+      HirDefinitionKind::Val(Some(ty)) => Some(ty),
+      HirDefinitionKind::Var(Some(ty)) => Some(ty),
+      _ => None,
+    }
   }
 
   fn type_access(&mut self, lhs: ExprId, name: &str) -> Option<Type> {
@@ -315,8 +352,9 @@ impl<'a> Infer<'a> {
 
 pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
   let hir_ast = db.hir_ast_for_block(block);
+  let parent_block = db.parent_block(block);
 
-  let mut infer = Infer::new(db, block.file_id, &hir_ast);
+  let mut infer = Infer::new(db, block.file_id, &hir_ast, parent_block);
 
   for &stmt in hir_ast.items.iter() {
     match &hir_ast.stmts[stmt] {
