@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use super::{
   AstIdMap, Binding, BindingKind, Block, BlockId, BlockSourceMap, Expr, ExprId, Import, Literal,
-  Stmt, StmtId, UnresolvedPath,
+  Stmt, StmtId, Type, UnresolvedPath,
 };
 use crate::{HirDatabase, InFile, InFileExt, Name, Path, Signature};
 use la_arena::Arena;
@@ -372,12 +372,34 @@ impl BlockLower<'_> {
         implicit: false,
         kind: BindingKind::Val,
         name,
-        ty: None,
+        ty: self.lower_type(param.ty()),
         expr: None,
       });
       self.source_map.param.insert(AstPtr::new(&param), param_id);
       self.source_map.param_back.insert(param_id, AstPtr::new(&param));
     }
+  }
+
+  fn lower_type(&self, te: Option<ast::Type>) -> Option<Type> {
+    let path = match te? {
+      ast::Type::PathType(p) => {
+        let mut path = UnresolvedPath { segments: vec![] };
+
+        if let Some(id) = p.id_token() {
+          path.segments.push(id.text().to_string());
+        }
+
+        path
+      }
+
+      ast::Type::SimpleType(p) => {
+        UnresolvedPath { segments: vec![p.id_token()?.text().to_string()] }
+      }
+
+      _ => return None,
+    };
+
+    Some(Type::Named(path))
   }
 }
 
