@@ -284,4 +284,18 @@ fn type_of_nested_val() {
    "#,
     expect![@"scala.Int"],
   );
+
+  type_at(
+    r#"
+    val y = {
+      x
+    }
+
+    // FIXME: This causes recursion in salsa.
+    // val x = 3
+
+    y@@
+   "#,
+    expect![@"unknown"],
+  );
 }

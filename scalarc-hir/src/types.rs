@@ -336,12 +336,9 @@ impl<'a> Infer<'a> {
         // This is tricky. We need to infer the type of the parent block, and we need to
         // avoid recursion.
 
-        let parent = self.db.parent_block(self.block_id)?;
-
         match def.id {
           HirDefinitionId::Stmt(block) => {
-            let inferred = try_infer(self.db, parent.in_file(self.block_id.file_id), Some(block))?;
-
+            let inferred = try_infer(self.db, def.block_id, Some(block))?;
             inferred.stmts.get(&block).cloned()
           }
           _ => None,
