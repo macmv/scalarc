@@ -301,7 +301,7 @@ impl Highlightable for ast::Expr {
                   HirDefinitionKind::Val(_) => HighlightKind::Variable,
                   HirDefinitionKind::Var(_) => HighlightKind::Variable,
                   HirDefinitionKind::Def(_) => HighlightKind::Function,
-                  HirDefinitionKind::Parameter => HighlightKind::Parameter,
+                  HirDefinitionKind::Parameter(_) => HighlightKind::Parameter,
                   HirDefinitionKind::Import => HighlightKind::Class,
                 },
               },

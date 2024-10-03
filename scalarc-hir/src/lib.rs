@@ -146,7 +146,7 @@ pub enum ClassKind {
 pub enum HirDefinitionKind {
   Val(Option<Type>),
   Var(Option<Type>),
-  Parameter,
+  Parameter(Type),
   Def(Signature),
   Import,
 }

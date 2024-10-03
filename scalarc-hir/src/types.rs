@@ -285,6 +285,7 @@ impl<'a> Infer<'a> {
     match def.kind {
       HirDefinitionKind::Val(Some(ty)) => Some(ty),
       HirDefinitionKind::Var(Some(ty)) => Some(ty),
+      HirDefinitionKind::Parameter(ty) => Some(ty),
       _ => None,
     }
   }
