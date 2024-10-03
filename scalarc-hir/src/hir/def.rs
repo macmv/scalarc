@@ -1,9 +1,9 @@
-use hashbrown::HashMap;
 use scalarc_syntax::SyntaxNodePtr;
 
 use super::{BlockId, ExprId, UnresolvedPath};
 use crate::{
-  hir, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile, InFileExt, Path,
+  hir, DefinitionKey, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile,
+  InFileExt, Path,
 };
 
 pub fn def_for_expr(
@@ -78,11 +78,27 @@ pub fn lookup_name_in_block(
   db.lookup_name_in_block(parent_block.in_file(block.file_id), name)
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ResolutionKind {
+  Object,
+  Instance,
+}
+
+impl ResolutionKind {
+  pub fn make_key(self, path: Path) -> DefinitionKey {
+    match self {
+      ResolutionKind::Object => DefinitionKey::Object(path),
+      ResolutionKind::Instance => DefinitionKey::Instance(path),
+    }
+  }
+}
+
 pub fn resolve_path_in_block(
   db: &dyn HirDatabase,
   block: InFile<BlockId>,
   path: UnresolvedPath,
-) -> Path {
+  kind: ResolutionKind,
+) -> Option<Path> {
   let ast = db.hir_ast_for_block(block);
 
   let name = path.segments.first().unwrap();
@@ -94,30 +110,52 @@ pub fn resolve_path_in_block(
     };
 
     if matches {
-      return import.path.clone();
+      return Some(import.path.clone());
     }
   }
 
   match db.parent_block(block) {
-    Some(p) => db.resolve_path_in_block(p.in_file(block.file_id), path),
+    Some(p) => db.resolve_path_in_block(p.in_file(block.file_id), path, kind),
     None => {
       // Now that we've reached the top level, we know the name doesn't resolve
-      // anywhere. So, we attempt to resolve it with an implicit import.
+      // anywhere. So, attempt to find a package-local item.
 
-      let mut implicit_imports = HashMap::new();
-
-      implicit_imports.insert("Int", vec!["scala", "Int"]);
-
-      match implicit_imports.get(&name.as_str()) {
-        Some(elems) => Path { elems: elems.into_iter().map(|s| (*s).into()).collect() },
-
-        None => {
-          let mut package_path = db.package_for_file(block.file_id).unwrap_or_default();
-          package_path.elems.extend(path.segments.into_iter().map(|s| s.into()));
-
-          package_path
-        }
+      let mut package = db.package_for_file(block.file_id).unwrap_or_default();
+      package.elems.extend(path.segments.clone().into_iter().map(|s| s.into()));
+      let target = db.file_target(block.file_id)?;
+      if db.definition_for_key(target, kind.make_key(package.clone())).is_some() {
+        return Some(package);
       }
+
+      // The scala spec defines the following implicit imports:
+      // - `scala.Predef._`
+      // - `scala._`
+      // - `java.lang._`
+      //
+      // So we'll try those in order.
+
+      let mut scala = Path { elems: vec!["scala".into(), "Predef".into()] };
+      scala.elems.extend(path.segments.clone().into_iter().map(|s| s.into()));
+
+      if db.definition_for_key(target, kind.make_key(scala.clone())).is_some() {
+        return Some(scala);
+      }
+
+      let mut scala = Path { elems: vec!["scala".into()] };
+      scala.elems.extend(path.segments.clone().into_iter().map(|s| s.into()));
+
+      if db.definition_for_key(target, kind.make_key(scala.clone())).is_some() {
+        return Some(scala);
+      }
+
+      let mut java = Path { elems: vec!["java".into()] };
+      java.elems.extend(path.segments.into_iter().map(|s| s.into()));
+
+      if db.definition_for_key(target, kind.make_key(java.clone())).is_some() {
+        return Some(java);
+      }
+
+      None
     }
   }
 }

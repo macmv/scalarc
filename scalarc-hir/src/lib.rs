@@ -1,5 +1,6 @@
 use hir::{
-  AstId, Binding, BindingKind, BlockId, ErasedAstId, ImportId, ParamId, StmtId, UnresolvedPath,
+  AstId, Binding, BindingKind, BlockId, ErasedAstId, ImportId, ParamId, ResolutionKind, StmtId,
+  UnresolvedPath,
 };
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
@@ -235,7 +236,12 @@ pub trait HirDatabase: SourceDatabase {
   fn lookup_name_in_block(&self, block: InFile<BlockId>, name: String) -> Option<HirDefinition>;
 
   #[salsa::invoke(hir::resolve_path_in_block)]
-  fn resolve_path_in_block(&self, block: InFile<BlockId>, path: UnresolvedPath) -> Path;
+  fn resolve_path_in_block(
+    &self,
+    block: InFile<BlockId>,
+    path: UnresolvedPath,
+    kind: ResolutionKind,
+  ) -> Option<Path>;
 
   #[salsa::invoke(types::type_of_block)]
   fn type_of_block(&self, block: InFile<BlockId>) -> Option<Type>;

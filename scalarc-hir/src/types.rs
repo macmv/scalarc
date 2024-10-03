@@ -6,7 +6,8 @@ use std::{collections::HashMap, fmt, sync::Arc};
 
 use crate::{
   hir::{
-    self, AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId,
+    self, AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, ResolutionKind,
+    Stmt, StmtId,
   },
   DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
   HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
@@ -208,7 +209,8 @@ impl<'a> Infer<'a> {
           let _ = self.type_expr(*arg);
         }
 
-        let path = self.db.resolve_path_in_block(self.block_id, path.clone());
+        let path =
+          self.db.resolve_path_in_block(self.block_id, path.clone(), ResolutionKind::Instance)?;
 
         let target = self.db.file_target(self.block_id.file_id)?;
         let def = self.db.definition_for_key(target, DefinitionKey::Instance(path))?;
@@ -272,7 +274,8 @@ impl<'a> Infer<'a> {
     match te {
       hir::Type::Unknown => Some(Type::Unknown),
       hir::Type::Named(ref path) => {
-        let path = self.db.resolve_path_in_block(self.block_id, path.clone());
+        let path =
+          self.db.resolve_path_in_block(self.block_id, path.clone(), ResolutionKind::Instance)?;
 
         let target = self.db.file_target(self.block_id.file_id)?;
         let def = self.db.definition_for_key(target, DefinitionKey::Instance(path))?;
@@ -293,7 +296,8 @@ impl<'a> Infer<'a> {
         let path = self.db.resolve_path_in_block(
           self.block_id,
           hir::UnresolvedPath::from_name(def.name.clone().into_string()),
-        );
+          ResolutionKind::Object,
+        )?;
 
         let target = self.db.file_target(self.block_id.file_id)?;
         let def = self.db.definition_for_key(target, DefinitionKey::Object(path))?;

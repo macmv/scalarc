@@ -21,7 +21,9 @@ mod expr;
 mod lower;
 mod source_map;
 
-pub use def::{def_for_expr, lookup_name_in_block, parent_block, resolve_path_in_block};
+pub use def::{
+  def_for_expr, lookup_name_in_block, parent_block, resolve_path_in_block, ResolutionKind,
+};
 pub use expr::*;
 pub use lower::{block_for_node, hir_ast_with_source_for_block};
 pub use source_map::BlockSourceMap;
