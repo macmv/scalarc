@@ -74,6 +74,11 @@ fn lookup_name_in_block(
     }
   }
 
+  let parent_block = db.parent_block(block)?;
+  lookup_name_in_block(db, parent_block.in_file(block.file_id), name)
+}
+
+pub fn parent_block(db: &dyn HirDatabase, block: InFile<BlockId>) -> Option<BlockId> {
   // FIXME: Do all this without depending on the CST directly.
   let ast_id = block.id.erased();
   let ast = db.parse(block.file_id);
@@ -83,7 +88,7 @@ fn lookup_name_in_block(
   loop {
     let outer_block = db.block_for_node(ptr.in_file(block.file_id));
     if outer_block != block {
-      return lookup_name_in_block(db, outer_block, name);
+      return Some(outer_block.id);
     }
 
     let node = ptr.to_node(&ast.syntax_node());

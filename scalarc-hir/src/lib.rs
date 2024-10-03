@@ -210,6 +210,10 @@ pub trait HirDatabase: SourceDatabase {
   #[salsa::invoke(hir::block_for_node)]
   fn block_for_node(&self, block: InFile<SyntaxNodePtr>) -> InFile<BlockId>;
 
+  // Returns the parent BlockId of the given block.
+  #[salsa::invoke(hir::parent_block)]
+  fn parent_block(&self, block: InFile<BlockId>) -> Option<BlockId>;
+
   #[salsa::invoke(types::type_of_block)]
   fn type_of_block(&self, block: InFile<BlockId>) -> Option<Type>;
 
