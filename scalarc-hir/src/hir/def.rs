@@ -110,7 +110,13 @@ pub fn resolve_path_in_block(
 
       match implicit_imports.get(&name.as_str()) {
         Some(elems) => Some(Path { elems: elems.into_iter().map(|s| (*s).into()).collect() }),
-        None => None,
+
+        None => {
+          let mut package_path = db.package_for_file(block.file_id).unwrap_or_default();
+          package_path.elems.extend(path.segments.into_iter().map(|s| s.into()));
+
+          Some(package_path)
+        }
       }
     }
   }
