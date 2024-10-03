@@ -253,3 +253,19 @@ fn type_of_import() {
     expect![@"scala.Int"],
   );
 }
+
+#[test]
+fn type_of_match() {
+  type_at(
+    r#"
+    package foo.bar
+
+    val foo = 0 match {
+      case _ => 3
+    }
+
+    foo@@
+    "#,
+    expect![@"scala.Int"],
+  );
+}

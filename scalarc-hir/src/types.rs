@@ -259,6 +259,29 @@ impl<'a> Infer<'a> {
         Some(Type::Tuple(types))
       }
 
+      Expr::Match(lhs, ref arms) => {
+        // TODO: We'll probably want this for matching on `Seq`s and such.
+        let _ = self.type_expr(lhs)?;
+
+        let mut ty = None;
+
+        for &(_, arm) in arms {
+          let arm_ty = self.type_expr(arm)?;
+
+          match ty {
+            None => ty = Some(arm_ty),
+            Some(ref t) if *t == arm_ty => {}
+            Some(_) => {
+              // TODO: Supertype of `t` and `arm_ty`!
+              //
+              // For now we just use `t`.
+            }
+          }
+        }
+
+        ty
+      }
+
       _ => None,
     };
 

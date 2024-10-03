@@ -579,7 +579,7 @@ mod tests {
                 ],
               ),
               Block(
-                Block(
+                BlockExpr(
                   AstId {
                     raw: Idx::<Scala>>(4),
                     phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::BlockExpr>,
@@ -594,6 +594,10 @@ mod tests {
                 },
               ),
             ],
+          },
+          patterns: Arena {
+            len: 0,
+            data: [],
           },
           params: Arena {
             len: 0,
@@ -666,6 +670,10 @@ mod tests {
                 ],
               ),
             ],
+          },
+          patterns: Arena {
+            len: 0,
+            data: [],
           },
           params: Arena {
             len: 0,
