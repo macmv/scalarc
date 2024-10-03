@@ -265,7 +265,7 @@ impl<'a> Infer<'a> {
 
         let mut ty = None;
 
-        for &(_, arm) in arms {
+        for &arm in arms {
           let arm_ty = self.type_expr(arm)?;
 
           match ty {

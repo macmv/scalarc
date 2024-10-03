@@ -60,6 +60,10 @@ pub fn hir_ast_with_source_for_block(
     BlockId::CaseItem(case) => {
       let case = item_id_map.get(&ast, case);
 
+      if let Some(pat) = case.pattern() {
+        lower.walk_pattern(&pat);
+      }
+
       if let Some(block) = case.block() {
         lower.walk_items(block.items());
       }
@@ -380,10 +384,9 @@ impl BlockLower<'_> {
         let mut cases = vec![];
 
         for case in match_expr.case_items() {
-          let pat = self.walk_pattern(&case.pattern()?)?;
           let block = self.block.exprs.alloc(Expr::Block(self.id_map.ast_id(&case).into()));
 
-          cases.push((pat, block));
+          cases.push(block);
         }
 
         Some(self.alloc_expr(Expr::Match(lhs, cases), expr))
