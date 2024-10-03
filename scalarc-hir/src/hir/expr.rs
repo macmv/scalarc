@@ -38,6 +38,7 @@ impl Block {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
+  Unknown,
   Named(UnresolvedPath),
   // TODO: Tuples and such?
 }

@@ -114,7 +114,7 @@ impl HirDefinition {
   }
 
   pub fn new_param(binding: &Binding, block_id: InFile<BlockId>, id: HirDefinitionId) -> Self {
-    let ty = binding.ty.clone().expect("parameters must have a type");
+    let ty = binding.ty.clone().unwrap_or(hir::Type::Unknown);
 
     HirDefinition {
       name: Name::new(binding.name.clone()),

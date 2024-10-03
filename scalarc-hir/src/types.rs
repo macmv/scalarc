@@ -270,6 +270,7 @@ impl<'a> Infer<'a> {
   /// Fully resolves an HIR type into a concrete type.
   fn type_te(&self, te: &hir::Type) -> Option<Type> {
     match te {
+      hir::Type::Unknown => Some(Type::Unknown),
       hir::Type::Named(ref path) => {
         let path = self.db.resolve_path_in_block(self.block_id, path.clone());
 
