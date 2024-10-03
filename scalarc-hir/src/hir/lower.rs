@@ -24,6 +24,7 @@ pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> InFil
     scalarc_syntax::match_ast! {
       match node {
         ast::BlockExpr(it) => break BlockId::BlockExpr(ast_id_map.ast_id(&it)),
+        ast::Block(it) => break BlockId::Block(ast_id_map.ast_id(&it)),
         ast::FunDef(it) => break BlockId::Def(ast_id_map.ast_id(&it)),
         ast::ClassDef(it) => break BlockId::Class(ast_id_map.ast_id(&it)),
         ast::TraitDef(it) => break BlockId::Trait(ast_id_map.ast_id(&it)),
