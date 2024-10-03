@@ -448,7 +448,7 @@ impl BlockLower<'_> {
           Some(self.alloc_pattern(
             Pattern::Binding(Binding {
               implicit: false,
-              kind:     BindingKind::Val,
+              kind:     BindingKind::Pattern,
               ty:       None,
               name:     path.ids().next().unwrap().text().to_string(),
               expr:     None,

@@ -110,6 +110,7 @@ impl HirDefinition {
         BindingKind::Val => HirDefinitionKind::Val(binding.ty.clone()),
         BindingKind::Var => HirDefinitionKind::Val(binding.ty.clone()),
         BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
+        BindingKind::Pattern => HirDefinitionKind::Pattern,
       },
     }
   }
@@ -166,6 +167,7 @@ pub enum HirDefinitionKind {
   Val(Option<hir::Type>),
   Var(Option<hir::Type>),
   Parameter(hir::Type),
+  Pattern,
   Def(Signature),
   Import,
 }

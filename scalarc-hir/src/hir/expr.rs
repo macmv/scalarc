@@ -81,6 +81,7 @@ pub enum BindingKind {
   Val,
   Var,
   Def(Signature),
+  Pattern,
 }
 
 #[derive(Debug, PartialEq, Eq)]

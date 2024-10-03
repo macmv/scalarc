@@ -10,7 +10,7 @@ use crate::{
     Stmt, StmtId,
   },
   DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
-  HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
+  HirDefinitionId, HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
 };
 use salsa::{Query, QueryDb};
 use scalarc_source::FileId;
@@ -435,6 +435,7 @@ pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
                 BindingKind::Val => body_ty,
                 BindingKind::Var => body_ty,
                 BindingKind::Def(_) => unreachable!(),
+                BindingKind::Pattern => todo!(),
               };
 
               infer.result.stmts.insert(stmt, ty.clone());
