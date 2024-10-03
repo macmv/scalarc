@@ -422,8 +422,8 @@ fn def_sigs() {
     expect![@r#"
       LocalDefinition {
         name: "foo",
-        kind: Val(
-          None,
+        kind: Def(
+          Signature(),
         ),
         item: AstPtr {
           ptr: SyntaxNodePtr {
