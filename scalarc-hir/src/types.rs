@@ -8,7 +8,7 @@ use crate::{
   hir::{
     self, AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId,
   },
-  AnyDefinition, DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
+  DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
   HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
 };
 use salsa::{Query, QueryDb};
@@ -193,9 +193,10 @@ impl<'a> Infer<'a> {
               let path = Path { elems: vec![name.clone().into()] };
 
               let target = self.db.file_target(self.block_id.file_id)?;
-              self.type_of_global_def(
-                self.db.definition_for_key(target, DefinitionKey::Object(path))?,
-              )
+              let def = self.db.definition_for_key(target, DefinitionKey::Object(path))?;
+
+              // NB: The name `Int` on its own refers to an object, not a class.
+              Some(Type::Object(def.path))
             }
           }
         }
@@ -269,35 +270,23 @@ impl<'a> Infer<'a> {
       hir::Type::Named(ref path) => {
         let name = path.segments[0].clone();
 
-        let def = match self.db.lookup_name_in_block(self.block_id, name.clone()) {
-          Some(def) => AnyDefinition::Hir(def),
-          None => {
-            let mut implicit_imports = HashMap::new();
+        let mut implicit_imports = HashMap::new();
 
-            implicit_imports.insert("Int", vec!["scala", "Int"]);
+        implicit_imports.insert("Int", vec!["scala", "Int"]);
 
-            let path = match implicit_imports.get(&name.as_str()) {
-              Some(elems) => Path { elems: elems.into_iter().map(|s| (*s).into()).collect() },
-              // TODO: Use current package.
-              None => Path { elems: vec![name.into()] },
-            };
-
-            let target = self.db.file_target(self.block_id.file_id)?;
-            AnyDefinition::Global(
-              self.db.definition_for_key(target, DefinitionKey::Instance(path))?,
-            )
-          }
+        let path = match implicit_imports.get(&name.as_str()) {
+          Some(elems) => Path { elems: elems.into_iter().map(|s| (*s).into()).collect() },
+          // TODO: Use current package.
+          None => Path { elems: vec![name.into()] },
         };
 
-        self.type_of_def(def)
-      }
-    }
-  }
+        let target = self.db.file_target(self.block_id.file_id)?;
+        let def = self.db.definition_for_key(target, DefinitionKey::Instance(path))?;
 
-  fn type_of_def(&self, def: AnyDefinition) -> Option<Type> {
-    match def {
-      AnyDefinition::Hir(def) => self.type_of_hir_def(def),
-      AnyDefinition::Global(def) => self.type_of_global_def(def),
+        // NB: The type `Int` in a type expression refers to the `Int` class, not the
+        // `Int` object.
+        Some(Type::Instance(def.path))
+      }
     }
   }
 
@@ -308,10 +297,6 @@ impl<'a> Infer<'a> {
       HirDefinitionKind::Parameter(ty) => Some(ty),
       _ => None,
     }
-  }
-
-  fn type_of_global_def(&self, def: GlobalDefinition) -> Option<Type> {
-    Some(Type::Instance(def.path))
   }
 
   fn type_access(&mut self, lhs: ExprId, name: &str) -> Option<Type> {
