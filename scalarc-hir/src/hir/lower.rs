@@ -23,7 +23,7 @@ pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> InFil
   let id = loop {
     scalarc_syntax::match_ast! {
       match node {
-        ast::BlockExpr(it) => break BlockId::Block(ast_id_map.ast_id(&it)),
+        ast::BlockExpr(it) => break BlockId::BlockExpr(ast_id_map.ast_id(&it)),
         ast::FunDef(it) => break BlockId::Def(ast_id_map.ast_id(&it)),
         ast::ClassDef(it) => break BlockId::Class(ast_id_map.ast_id(&it)),
         ast::TraitDef(it) => break BlockId::Trait(ast_id_map.ast_id(&it)),
@@ -52,6 +52,10 @@ pub fn hir_ast_with_source_for_block(
     BlockLower { id_map: &item_id_map, block: &mut block, source_map: &mut source_map };
 
   match block_id {
+    BlockId::BlockExpr(block) => {
+      let block = item_id_map.get(&ast, block);
+      lower.walk_items(block.items());
+    }
     BlockId::Block(block) => {
       let block = item_id_map.get(&ast, block);
       lower.walk_items(block.items());
@@ -464,7 +468,7 @@ mod tests {
 
     let (ast, _source_map) = db.hir_ast_with_source_for_block(InFile {
       file_id,
-      id: BlockId::Block(AstId {
+      id: BlockId::BlockExpr(AstId {
         raw:     Idx::from_raw(RawIdx::from_u32(1)),
         phantom: std::marker::PhantomData,
       }),
