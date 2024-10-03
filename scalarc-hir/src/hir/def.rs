@@ -1,9 +1,8 @@
 use scalarc_syntax::SyntaxNodePtr;
 
-use super::{BindingKind, BlockId, ExprId};
+use super::{BlockId, ExprId};
 use crate::{
-  hir, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile, InFileExt, Name,
-  Signature,
+  hir, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile, InFileExt,
 };
 
 pub fn def_for_expr(
@@ -22,7 +21,7 @@ pub fn def_for_expr(
       // pull that out.
       let name = path.segments.last().unwrap();
 
-      lookup_name_in_block(db, block, name)
+      db.lookup_name_in_block(block, name.into())
     }
 
     hir::Expr::New(ref path, _) => {
@@ -30,17 +29,17 @@ pub fn def_for_expr(
       // pull that out.
       let name = path.segments.last().unwrap();
 
-      lookup_name_in_block(db, block, name)
+      db.lookup_name_in_block(block, name.into())
     }
 
     _ => None,
   }
 }
 
-fn lookup_name_in_block(
+pub fn lookup_name_in_block(
   db: &dyn HirDatabase,
   block: InFile<BlockId>,
-  name: &str,
+  name: String,
 ) -> Option<HirDefinition> {
   let ast = db.hir_ast_for_block(block);
 
@@ -75,7 +74,7 @@ fn lookup_name_in_block(
   }
 
   let parent_block = db.parent_block(block)?;
-  lookup_name_in_block(db, parent_block.in_file(block.file_id), name)
+  db.lookup_name_in_block(parent_block.in_file(block.file_id), name)
 }
 
 pub fn parent_block(db: &dyn HirDatabase, block: InFile<BlockId>) -> Option<BlockId> {

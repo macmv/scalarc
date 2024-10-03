@@ -214,6 +214,9 @@ pub trait HirDatabase: SourceDatabase {
   #[salsa::invoke(hir::parent_block)]
   fn parent_block(&self, block: InFile<BlockId>) -> Option<BlockId>;
 
+  #[salsa::invoke(hir::lookup_name_in_block)]
+  fn lookup_name_in_block(&self, block: InFile<BlockId>, name: String) -> Option<HirDefinition>;
+
   #[salsa::invoke(types::type_of_block)]
   fn type_of_block(&self, block: InFile<BlockId>) -> Option<Type>;
 
