@@ -82,7 +82,7 @@ pub fn resolve_path_in_block(
   db: &dyn HirDatabase,
   block: InFile<BlockId>,
   path: UnresolvedPath,
-) -> Option<Path> {
+) -> Path {
   let ast = db.hir_ast_for_block(block);
 
   let name = path.segments.first().unwrap();
@@ -94,7 +94,7 @@ pub fn resolve_path_in_block(
     };
 
     if matches {
-      return Some(import.path.clone());
+      return import.path.clone();
     }
   }
 
@@ -109,13 +109,13 @@ pub fn resolve_path_in_block(
       implicit_imports.insert("Int", vec!["scala", "Int"]);
 
       match implicit_imports.get(&name.as_str()) {
-        Some(elems) => Some(Path { elems: elems.into_iter().map(|s| (*s).into()).collect() }),
+        Some(elems) => Path { elems: elems.into_iter().map(|s| (*s).into()).collect() },
 
         None => {
           let mut package_path = db.package_for_file(block.file_id).unwrap_or_default();
           package_path.elems.extend(path.segments.into_iter().map(|s| s.into()));
 
-          Some(package_path)
+          package_path
         }
       }
     }

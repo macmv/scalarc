@@ -208,7 +208,7 @@ impl<'a> Infer<'a> {
           let _ = self.type_expr(*arg);
         }
 
-        let path = self.db.resolve_path_in_block(self.block_id, path.clone())?;
+        let path = self.db.resolve_path_in_block(self.block_id, path.clone());
 
         let target = self.db.file_target(self.block_id.file_id)?;
         let def = self.db.definition_for_key(target, DefinitionKey::Instance(path))?;
@@ -271,7 +271,7 @@ impl<'a> Infer<'a> {
   fn type_te(&self, te: &hir::Type) -> Option<Type> {
     match te {
       hir::Type::Named(ref path) => {
-        let path = self.db.resolve_path_in_block(self.block_id, path.clone())?;
+        let path = self.db.resolve_path_in_block(self.block_id, path.clone());
 
         let target = self.db.file_target(self.block_id.file_id)?;
         let def = self.db.definition_for_key(target, DefinitionKey::Instance(path))?;

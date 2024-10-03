@@ -224,7 +224,7 @@ pub trait HirDatabase: SourceDatabase {
   fn lookup_name_in_block(&self, block: InFile<BlockId>, name: String) -> Option<HirDefinition>;
 
   #[salsa::invoke(hir::resolve_path_in_block)]
-  fn resolve_path_in_block(&self, block: InFile<BlockId>, path: UnresolvedPath) -> Option<Path>;
+  fn resolve_path_in_block(&self, block: InFile<BlockId>, path: UnresolvedPath) -> Path;
 
   #[salsa::invoke(types::type_of_block)]
   fn type_of_block(&self, block: InFile<BlockId>) -> Option<Type>;
