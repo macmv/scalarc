@@ -27,6 +27,7 @@ fn def_at(src: &str, expect: Expect) {
       let item = match d.id {
         HirDefinitionId::Stmt(s) => source_map.stmt_syntax(s).unwrap().to_node(&ast),
         HirDefinitionId::Param(s) => source_map.param_syntax(s).unwrap().to_node(&ast),
+        HirDefinitionId::Pattern(s) => source_map.pattern_syntax(s).unwrap().to_node(&ast),
         HirDefinitionId::Import(id) => {
           let import = &db.hir_ast_for_block(d.block_id).imports[id];
           let target = db.file_target(file).unwrap();
@@ -238,6 +239,19 @@ fn import_renames() {
 
         Baz
       }
+    "#],
+  );
+}
+
+#[test]
+fn pattern_bindings() {
+  def_at(
+    r#"
+    0 match {
+      case x => x|
+    }
+    "#,
+    expect![@r#"
     "#],
   );
 }

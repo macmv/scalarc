@@ -1,6 +1,6 @@
 use hir::{
-  AstId, Binding, BindingKind, BlockId, ErasedAstId, ImportId, ParamId, ResolutionKind, StmtId,
-  UnresolvedPath,
+  AstId, Binding, BindingKind, BlockId, ErasedAstId, ImportId, ParamId, PatternId, ResolutionKind,
+  StmtId, UnresolvedPath,
 };
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
@@ -130,6 +130,7 @@ impl HirDefinition {
 pub enum HirDefinitionId {
   Stmt(StmtId),
   Param(ParamId),
+  Pattern(PatternId),
   Import(ImportId),
 }
 

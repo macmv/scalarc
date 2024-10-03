@@ -58,6 +58,21 @@ pub fn lookup_name_in_block(
     }
   }
 
+  for (pattern_id, pattern) in ast.patterns.iter() {
+    match pattern {
+      hir::Pattern::Binding(ref binding) => {
+        if binding.name == *name {
+          return Some(HirDefinition::new_param(
+            binding,
+            block,
+            HirDefinitionId::Pattern(pattern_id),
+          ));
+        }
+      }
+      _ => {}
+    }
+  }
+
   for (import_id, import) in ast.imports.iter() {
     let matches = match import.rename {
       Some(ref n) => n.as_str() == name,

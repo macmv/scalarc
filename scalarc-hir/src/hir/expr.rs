@@ -105,6 +105,7 @@ pub enum Expr {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Pattern {
   Wildcard,
+  Binding(Binding),
 }
 
 #[derive(Debug, PartialEq, Eq)]

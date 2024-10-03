@@ -152,8 +152,7 @@ impl fmt::Debug for DebugUtil<'_, '_, HirDefinition> {
     let source_map = self.db.hir_source_map_for_block(self.item.block_id);
     let item = match self.item.id {
       HirDefinitionId::Stmt(s) => source_map.stmt_syntax(s).unwrap(),
-      HirDefinitionId::Param(_) => unreachable!(),
-      HirDefinitionId::Import(_) => unreachable!(),
+      _ => unreachable!(),
     };
 
     f.debug_struct("LocalDefinition")
