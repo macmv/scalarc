@@ -8,7 +8,7 @@ use crate::{
   hir::{
     self, AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Stmt, StmtId,
   },
-  DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
+  AnyDefinition, DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
   HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
 };
 use salsa::{Query, QueryDb};
@@ -274,10 +274,35 @@ impl<'a> Infer<'a> {
         let parent_block = self.parent_block?.in_file(self.file_id);
 
         // TODO: Lookup in the current block, not the parent block.
-        let def = self.db.lookup_name_in_block(parent_block, name.into());
+        let def = match self.db.lookup_name_in_block(parent_block, name.clone()) {
+          Some(def) => AnyDefinition::Hir(def),
+          None => {
+            let mut implicit_imports = HashMap::new();
 
-        def.and_then(|d| self.type_of_hir_def(d))
+            implicit_imports.insert("Int", vec!["scala", "Int"]);
+
+            let path = match implicit_imports.get(&name.as_str()) {
+              Some(elems) => Path { elems: elems.into_iter().map(|s| (*s).into()).collect() },
+              // TODO: Use current package.
+              None => Path { elems: vec![name.into()] },
+            };
+
+            let target = self.db.file_target(self.file_id)?;
+            AnyDefinition::Global(
+              self.db.definition_for_key(target, DefinitionKey::Instance(path))?,
+            )
+          }
+        };
+
+        self.type_of_def(def)
       }
+    }
+  }
+
+  fn type_of_def(&self, def: AnyDefinition) -> Option<Type> {
+    match def {
+      AnyDefinition::Hir(def) => self.type_of_hir_def(def),
+      AnyDefinition::Global(def) => self.type_of_global_def(def),
     }
   }
 
@@ -288,6 +313,10 @@ impl<'a> Infer<'a> {
       HirDefinitionKind::Parameter(ty) => Some(ty),
       _ => None,
     }
+  }
+
+  fn type_of_global_def(&self, def: GlobalDefinition) -> Option<Type> {
+    Some(Type::Instance(Path { elems: vec![def.name] }.into()))
   }
 
   fn type_access(&mut self, lhs: ExprId, name: &str) -> Option<Type> {
