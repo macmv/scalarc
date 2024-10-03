@@ -287,7 +287,7 @@ impl<'a> Infer<'a> {
     match def.kind {
       HirDefinitionKind::Val(Some(ty)) => Some(ty),
       HirDefinitionKind::Var(Some(ty)) => Some(ty),
-      HirDefinitionKind::Parameter(ty) => Some(ty),
+      HirDefinitionKind::Parameter(ty) => self.type_te(&ty),
       HirDefinitionKind::Import => {
         let path = self.db.resolve_path_in_block(
           self.block_id,

@@ -181,7 +181,7 @@ fn item_definition_real(
 
   match db.hir_ast_for_block(block).stmts[item_id] {
     hir::Stmt::Binding(ref binding) => {
-      Some(HirDefinition::from_binding(binding, block, HirDefinitionId::Stmt(item_id)))
+      Some(HirDefinition::new_local(binding, block, HirDefinitionId::Stmt(item_id)))
     }
     _ => None,
   }
@@ -218,7 +218,7 @@ fn param_definition_real(
 
   let binding = &db.hir_ast_for_block(block).params[binding_id];
 
-  Some(HirDefinition::from_binding(binding, block, HirDefinitionId::Param(binding_id)))
+  Some(HirDefinition::new_local(binding, block, HirDefinitionId::Param(binding_id)))
 }
 
 fn import_definition(

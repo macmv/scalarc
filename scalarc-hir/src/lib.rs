@@ -100,7 +100,7 @@ impl GlobalDefinition {
 }
 
 impl HirDefinition {
-  pub fn from_binding(binding: &Binding, block_id: InFile<BlockId>, id: HirDefinitionId) -> Self {
+  pub fn new_local(binding: &Binding, block_id: InFile<BlockId>, id: HirDefinitionId) -> Self {
     HirDefinition {
       name: Name::new(binding.name.clone()),
       id,
@@ -110,6 +110,17 @@ impl HirDefinition {
         BindingKind::Var => HirDefinitionKind::Val(None),
         BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
       },
+    }
+  }
+
+  pub fn new_param(binding: &Binding, block_id: InFile<BlockId>, id: HirDefinitionId) -> Self {
+    let ty = binding.ty.clone().expect("parameters must have a type");
+
+    HirDefinition {
+      name: Name::new(binding.name.clone()),
+      id,
+      block_id,
+      kind: HirDefinitionKind::Parameter(ty),
     }
   }
 }
@@ -152,7 +163,7 @@ pub enum ClassKind {
 pub enum HirDefinitionKind {
   Val(Option<Type>),
   Var(Option<Type>),
-  Parameter(Type),
+  Parameter(hir::Type),
   Def(Signature),
   Import,
 }

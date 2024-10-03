@@ -225,6 +225,15 @@ fn type_of_param() {
     "#,
     expect![@"scala.Int"],
   );
+
+  type_at(
+    r#"
+    def foo(x: Int) = {
+      x@@
+    }
+    "#,
+    expect![@"scala.Int"],
+  );
 }
 
 #[test]

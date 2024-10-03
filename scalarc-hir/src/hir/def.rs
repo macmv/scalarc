@@ -47,14 +47,14 @@ pub fn lookup_name_in_block(
   for item in ast.items.iter() {
     if let hir::Stmt::Binding(ref binding) = ast.stmts[*item] {
       if binding.name == *name {
-        return Some(HirDefinition::from_binding(binding, block, HirDefinitionId::Stmt(*item)));
+        return Some(HirDefinition::new_local(binding, block, HirDefinitionId::Stmt(*item)));
       }
     }
   }
 
   for (param, binding) in ast.params.iter() {
     if binding.name == *name {
-      return Some(HirDefinition::from_binding(binding, block, HirDefinitionId::Param(param)));
+      return Some(HirDefinition::new_param(binding, block, HirDefinitionId::Param(param)));
     }
   }
 
