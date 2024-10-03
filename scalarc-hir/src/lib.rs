@@ -253,7 +253,7 @@ pub trait HirDatabase: SourceDatabase {
   fn type_of_expr(&self, block: InFile<BlockId>, expr: hir::ExprId) -> Option<Type>;
 
   #[salsa::invoke(types::infer)]
-  fn infer(&self, block: InFile<BlockId>) -> Arc<Inference>;
+  fn infer(&self, block: InFile<BlockId>, stop_at: Option<StmtId>) -> Arc<Inference>;
 }
 
 fn hir_ast_for_block(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<hir::Block> {

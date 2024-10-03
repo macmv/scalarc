@@ -269,3 +269,19 @@ fn type_of_match() {
     expect![@"scala.Int"],
   );
 }
+
+#[test]
+fn type_of_nested_val() {
+  type_at(
+    r#"
+    val x = 3
+
+    val y = {
+      x
+    }
+
+    y@@
+   "#,
+    expect![@"scala.Int"],
+  );
+}

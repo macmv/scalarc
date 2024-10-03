@@ -10,7 +10,7 @@ use crate::{
     PatternId, ResolutionKind, Stmt, StmtId,
   },
   DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
-  HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
+  HirDefinitionId, HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
 };
 use salsa::{Query, QueryDb};
 use scalarc_source::FileId;
@@ -332,7 +332,21 @@ impl<'a> Infer<'a> {
 
         Some(Type::Object(def.path))
       }
-      _ => None,
+      _ => {
+        // This is tricky. We need to infer the type of the parent block, and we need to
+        // avoid recursion.
+
+        let parent = self.db.parent_block(self.block_id)?;
+
+        match def.id {
+          HirDefinitionId::Stmt(block) => {
+            let inferred = try_infer(self.db, parent.in_file(self.block_id.file_id), Some(block))?;
+
+            inferred.stmts.get(&block).cloned()
+          }
+          _ => None,
+        }
+      }
     }
   }
 
@@ -380,7 +394,7 @@ impl<'a> Infer<'a> {
     };
 
     let hir_ast = self.db.hir_ast_for_block(block);
-    let inferred = try_infer(self.db, block)?;
+    let inferred = try_infer(self.db, block, None)?;
 
     // Find all the `def` and `val`s in the block.
     let decls: Vec<_> = hir_ast
@@ -414,12 +428,22 @@ impl<'a> Infer<'a> {
   }
 }
 
-pub fn infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Arc<Inference> {
+pub fn infer(
+  db: &dyn HirDatabase,
+  block: InFile<BlockId>,
+  stop_at: Option<StmtId>,
+) -> Arc<Inference> {
   let hir_ast = db.hir_ast_for_block(block);
 
   let mut infer = Infer::new(db, block, &hir_ast);
 
   for &stmt in hir_ast.items.iter() {
+    if let Some(stop) = stop_at {
+      if stmt > stop {
+        break;
+      }
+    }
+
     match &hir_ast.stmts[stmt] {
       Stmt::Binding(b) => match b.kind {
         BindingKind::Def(ref sig) => {
@@ -495,18 +519,22 @@ where
   query_storage
 }
 
-fn try_infer(db: &dyn HirDatabase, block: InFile<BlockId>) -> Option<Arc<Inference>> {
+fn try_infer(
+  db: &dyn HirDatabase,
+  block: InFile<BlockId>,
+  stop_at: Option<StmtId>,
+) -> Option<Arc<Inference>> {
   let storage = get_query_storage::<InferQuery>(db);
 
   use salsa::plumbing::QueryStorageOps;
-  match storage.try_fetch(db, &block) {
+  match storage.try_fetch(db, &(block, stop_at)) {
     Ok(v) => Some(v),
     Err(_) => None,
   }
 }
 
 pub fn type_of_expr(db: &dyn HirDatabase, block: InFile<BlockId>, expr: ExprId) -> Option<Type> {
-  let inferred = try_infer(db, block)?;
+  let inferred = try_infer(db, block, None)?;
   inferred.exprs.get(&expr).cloned()
 }
 
