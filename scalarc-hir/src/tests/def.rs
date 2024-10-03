@@ -252,6 +252,9 @@ fn pattern_bindings() {
     }
     "#,
     expect![@r#"
+      0 match {
+        case @x@ => x
+      }
     "#],
   );
 }

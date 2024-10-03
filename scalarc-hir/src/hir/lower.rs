@@ -443,10 +443,21 @@ impl BlockLower<'_> {
         let path = path.path()?;
 
         if path.ids().count() == 1 && path.ids().next().unwrap().text() == "_" {
-          return Some(self.alloc_pattern(Pattern::Wildcard, pat));
+          Some(self.alloc_pattern(Pattern::Wildcard, pat))
+        } else if path.ids().count() == 1 {
+          Some(self.alloc_pattern(
+            Pattern::Binding(Binding {
+              implicit: false,
+              kind:     BindingKind::Val,
+              ty:       None,
+              name:     path.ids().next().unwrap().text().to_string(),
+              expr:     None,
+            }),
+            pat,
+          ))
+        } else {
+          None
         }
-
-        None
       }
 
       _ => {
