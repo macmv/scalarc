@@ -433,7 +433,7 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
       if let Some(expr) = ast::Expr::cast(node.parent()?) {
         let block = db.block_for_node(SyntaxNodePtr::new(&node.parent()?).in_file(file_id));
 
-        let (_, source_map) = db.hir_ast_with_source_for_block(block);
+        let source_map = db.hir_source_map_for_block(block);
         let expr_id = source_map.expr(AstPtr::new(&expr))?;
 
         db.type_of_expr(block, expr_id)
