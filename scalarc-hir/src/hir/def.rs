@@ -161,7 +161,6 @@ pub fn resolve_path_in_block(
 }
 
 pub fn parent_block(db: &dyn HirDatabase, block: InFile<BlockId>) -> Option<BlockId> {
-  // FIXME: Do all this without depending on the CST directly.
   let ast_id = block.id.erased();
   let ast = db.parse(block.file_id);
   let ast_id_map = db.ast_id_map(block.file_id);
