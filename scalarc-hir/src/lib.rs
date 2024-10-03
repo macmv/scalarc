@@ -79,7 +79,7 @@ pub enum AnyDefinition {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GlobalDefinition {
-  pub name:    Name,
+  pub path:    Path,
   pub file_id: FileId,
   pub ast_id:  ErasedAstId,
   pub kind:    GlobalDefinitionKind,
@@ -91,6 +91,10 @@ pub struct HirDefinition {
   pub block_id: InFile<BlockId>,
   pub id:       HirDefinitionId,
   pub kind:     HirDefinitionKind,
+}
+
+impl GlobalDefinition {
+  pub fn name(&self) -> &Name { self.path.elems.last().unwrap() }
 }
 
 impl HirDefinition {
@@ -118,7 +122,7 @@ pub enum HirDefinitionId {
 impl AnyDefinition {
   pub fn name(&self) -> &Name {
     match self {
-      AnyDefinition::Global(d) => &d.name,
+      AnyDefinition::Global(d) => d.name(),
       AnyDefinition::Hir(d) => &d.name,
     }
   }
@@ -253,7 +257,6 @@ fn definitions_for_target(db: &dyn HirDatabase, target: TargetId) -> DefinitionM
 
 fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap {
   let file_scopes = db.scopes_of(file_id);
-  let package = db.package_for_file(file_id).unwrap_or_default();
 
   // Only the outermost scope is visible.
   //
@@ -269,8 +272,7 @@ fn definitions_for_file(db: &dyn HirDatabase, file_id: FileId) -> DefinitionMap 
       .iter()
       .rev()
       .map(|(_, def)| {
-        let mut path = package.clone();
-        path.elems.push(def.name.clone());
+        let path = def.path.clone();
 
         match def.kind {
           GlobalDefinitionKind::Class(_, _) | GlobalDefinitionKind::Trait(_) => {

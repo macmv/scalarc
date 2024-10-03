@@ -140,7 +140,7 @@ impl fmt::Debug for DebugUtil<'_, '_, GlobalDefinition> {
     let item = item_id_map.get_erased(self.item.ast_id);
 
     f.debug_struct("Definition")
-      .field("name", &self.item.name.as_str())
+      .field("path", &self.item.path)
       .field("kind", &self.item.kind)
       .field("item", &item)
       .finish()
@@ -181,7 +181,13 @@ fn simple_example() {
           },
           declarations: {
             "Foo": Definition {
-              name: "Foo",
+              path: Path {
+                elems: [
+                  Name(
+                    "Foo",
+                  ),
+                ],
+              },
               kind: Class(
                 Some(
                   AstId {
@@ -197,7 +203,13 @@ fn simple_example() {
               },
             },
             "Bar": Definition {
-              name: "Bar",
+              path: Path {
+                elems: [
+                  Name(
+                    "Bar",
+                  ),
+                ],
+              },
               kind: Class(
                 Some(
                   AstId {
@@ -213,7 +225,13 @@ fn simple_example() {
               },
             },
             "Baz": Definition {
-              name: "Baz",
+              path: Path {
+                elems: [
+                  Name(
+                    "Baz",
+                  ),
+                ],
+              },
               kind: Class(
                 Some(
                   AstId {
@@ -251,7 +269,13 @@ fn simple_example() {
           },
           declarations: {
             "Foo": Definition {
-              name: "Foo",
+              path: Path {
+                elems: [
+                  Name(
+                    "Foo",
+                  ),
+                ],
+              },
               kind: Class(
                 Some(
                   AstId {
@@ -267,7 +291,13 @@ fn simple_example() {
               },
             },
             "Bar": Definition {
-              name: "Bar",
+              path: Path {
+                elems: [
+                  Name(
+                    "Bar",
+                  ),
+                ],
+              },
               kind: Class(
                 Some(
                   AstId {
@@ -283,7 +313,13 @@ fn simple_example() {
               },
             },
             "Baz": Definition {
-              name: "Baz",
+              path: Path {
+                elems: [
+                  Name(
+                    "Baz",
+                  ),
+                ],
+              },
               kind: Class(
                 Some(
                   AstId {
@@ -307,7 +343,13 @@ fn simple_example() {
           },
           declarations: {
             "A": Definition {
-              name: "A",
+              path: Path {
+                elems: [
+                  Name(
+                    "A",
+                  ),
+                ],
+              },
               kind: Class(
                 None,
                 Normal,
@@ -318,7 +360,13 @@ fn simple_example() {
               },
             },
             "B": Definition {
-              name: "B",
+              path: Path {
+                elems: [
+                  Name(
+                    "B",
+                  ),
+                ],
+              },
               kind: Class(
                 None,
                 Normal,
@@ -454,7 +502,13 @@ fn class_scopes() {
           },
           declarations: {
             "Foo": Definition {
-              name: "Foo",
+              path: Path {
+                elems: [
+                  Name(
+                    "Foo",
+                  ),
+                ],
+              },
               kind: Class(
                 Some(
                   AstId {

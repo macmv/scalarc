@@ -346,16 +346,19 @@ fn definitions_of<'a>(
 ) -> impl Iterator<Item = (String, GlobalDefinition)> + 'a {
   n.children().filter_map(move |n| {
     let def = def_of_node(db, file_id, scope, n);
-    def.map(|def| (def.name.as_str().into(), def))
+    def.map(|def| (def.name().as_str().into(), def))
   })
 }
 
+// FIXME: Defs should really be per-scope, not per-file.
 fn def_of_node(
   db: &dyn HirDatabase,
   file_id: FileId,
-  scope: ScopeId,
+  _scope: ScopeId,
   n: SyntaxNode,
 ) -> Option<GlobalDefinition> {
+  let mut path = db.package_for_file(file_id).unwrap_or_default();
+
   match n.kind() {
     SyntaxKind::CLASS_DEF => {
       let ast_id_map = db.ast_id_map(file_id);
@@ -363,9 +366,10 @@ fn def_of_node(
 
       let c = scalarc_syntax::ast::ClassDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
+      path.elems.push(id.text().into());
 
       Some(GlobalDefinition {
-        name: id.text().into(),
+        path,
         file_id,
         ast_id,
         kind: GlobalDefinitionKind::Class(
@@ -381,9 +385,10 @@ fn def_of_node(
 
       let c = scalarc_syntax::ast::TraitDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
+      path.elems.push(id.text().into());
 
       Some(GlobalDefinition {
-        name: id.text().into(),
+        path,
         file_id,
         ast_id,
         kind: GlobalDefinitionKind::Trait(c.body().map(|node| ast_id_map.ast_id(&node))),
@@ -396,9 +401,10 @@ fn def_of_node(
 
       let c = scalarc_syntax::ast::ObjectDef::cast(n.clone()).unwrap();
       let id = c.id_token()?;
+      path.elems.push(id.text().into());
 
       Some(GlobalDefinition {
-        name: id.text().into(),
+        path,
         file_id,
         ast_id,
         kind: GlobalDefinitionKind::Object(c.body().map(|node| ast_id_map.ast_id(&node))),

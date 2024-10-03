@@ -53,9 +53,9 @@ impl Completer<'_> {
 
     let mut names = HashSet::new();
     for (_, def) in &scope.declarations {
-      if names.insert(def.name.clone()) {
+      if names.insert(def.name().clone()) {
         completions.push(Completion {
-          label: def.name.as_str().into(),
+          label: def.name().as_str().into(),
           kind:  CompletionKind::Global(def.kind.clone()),
         });
       }

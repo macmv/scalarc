@@ -316,7 +316,7 @@ impl<'a> Infer<'a> {
   }
 
   fn type_of_global_def(&self, def: GlobalDefinition) -> Option<Type> {
-    Some(Type::Instance(Path { elems: vec![def.name] }.into()))
+    Some(Type::Instance(def.path))
   }
 
   fn type_access(&mut self, lhs: ExprId, name: &str) -> Option<Type> {
