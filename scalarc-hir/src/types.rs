@@ -10,7 +10,7 @@ use crate::{
     Stmt, StmtId,
   },
   DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
-  HirDefinitionId, HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
+  HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
 };
 use salsa::{Query, QueryDb};
 use scalarc_source::FileId;
@@ -265,7 +265,7 @@ impl<'a> Infer<'a> {
 
         let mut ty = None;
 
-        for &arm in arms {
+        for &(_, arm) in arms {
           let arm_ty = self.type_expr(arm)?;
 
           match ty {

@@ -57,11 +57,12 @@ pub fn hir_ast_with_source_for_block(
       let block = item_id_map.get(&ast, block);
       lower.walk_items(block.items());
     }
+
     BlockId::CaseItem(case) => {
       let case = item_id_map.get(&ast, case);
 
       if let Some(pat) = case.pattern() {
-        lower.walk_pattern(&pat);
+        lower.walk_pattern_params(&pat);
       }
 
       if let Some(block) = case.block() {
@@ -384,9 +385,10 @@ impl BlockLower<'_> {
         let mut cases = vec![];
 
         for case in match_expr.case_items() {
+          let pattern = self.walk_pattern(&case.pattern()?)?;
           let block = self.block.exprs.alloc(Expr::Block(self.id_map.ast_id(&case).into()));
 
-          cases.push(block);
+          cases.push((pattern, block));
         }
 
         Some(self.alloc_expr(Expr::Match(lhs, cases), expr))
@@ -410,8 +412,8 @@ impl BlockLower<'_> {
         ty: self.lower_type(param.ty()),
         expr: None,
       });
-      self.source_map.param.insert(AstPtr::new(&param), param_id);
-      self.source_map.param_back.insert(param_id, AstPtr::new(&param));
+      self.source_map.param.insert(SyntaxNodePtr::new(param.syntax()), param_id);
+      self.source_map.param_back.insert(param_id, SyntaxNodePtr::new(param.syntax()));
     }
   }
 
@@ -463,6 +465,32 @@ impl BlockLower<'_> {
       _ => {
         warn!("Unhandled pattern: {:#?}", pat);
         None
+      }
+    }
+  }
+
+  fn walk_pattern_params(&mut self, pat: &scalarc_syntax::ast::Pattern) {
+    match pat {
+      ast::Pattern::PathPattern(path) => {
+        let Some(path) = path.path() else { return };
+
+        if path.ids().count() == 1 && path.ids().next().unwrap().text() == "_" {
+          // TODO
+        } else if path.ids().count() == 1 {
+          let pattern_id = self.block.params.alloc(Binding {
+            implicit: false,
+            kind:     BindingKind::Pattern,
+            name:     path.ids().next().unwrap().text().to_string(),
+            ty:       None,
+            expr:     None,
+          });
+          self.source_map.param.insert(SyntaxNodePtr::new(pat.syntax()), pattern_id);
+          self.source_map.param_back.insert(pattern_id, SyntaxNodePtr::new(pat.syntax()));
+        }
+      }
+
+      _ => {
+        warn!("Unhandled pattern: {:#?}", pat);
       }
     }
   }

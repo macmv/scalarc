@@ -213,7 +213,7 @@ fn param_definition_real(
   let syntax_ptr = SyntaxNodePtr::new(&def);
   let block = db.block_for_node(syntax_ptr.in_file(file_id));
 
-  let ptr = AstPtr::new(param);
+  let ptr = SyntaxNodePtr::new(param.syntax());
   let binding_id = db.hir_source_map_for_block(block).param(ptr)?;
 
   let binding = &db.hir_ast_for_block(block).params[binding_id];

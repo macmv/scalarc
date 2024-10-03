@@ -26,7 +26,9 @@ fn def_at(src: &str, expect: Expect) {
       let source_map = db.hir_source_map_for_block(d.block_id);
       let item = match d.id {
         HirDefinitionId::Stmt(s) => source_map.stmt_syntax(s).unwrap().to_node(&ast),
-        HirDefinitionId::Param(s) => source_map.param_syntax(s).unwrap().to_node(&ast),
+        HirDefinitionId::Param(s) => {
+          source_map.param_syntax(s).unwrap().to_node(&ast.syntax_node())
+        }
         HirDefinitionId::Pattern(s) => source_map.pattern_syntax(s).unwrap().to_node(&ast),
         HirDefinitionId::Import(id) => {
           let import = &db.hir_ast_for_block(d.block_id).imports[id];

@@ -100,7 +100,7 @@ pub enum Expr {
   New(UnresolvedPath, Vec<ExprId>),
 
   If(ExprId, ExprId, Option<ExprId>),
-  Match(ExprId, Vec<ExprId>),
+  Match(ExprId, Vec<(PatternId, ExprId)>),
 }
 
 #[derive(Debug, PartialEq, Eq)]

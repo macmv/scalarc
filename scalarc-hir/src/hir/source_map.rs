@@ -2,7 +2,7 @@
 
 use super::{ExprId, ParamId, PatternId, StmtId};
 use hashbrown::HashMap;
-use scalarc_syntax::{ast, AstPtr};
+use scalarc_syntax::{ast, AstPtr, SyntaxNodePtr};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct BlockSourceMap {
@@ -16,8 +16,8 @@ pub struct BlockSourceMap {
   pub(super) pattern:      HashMap<AstPtr<ast::Pattern>, PatternId>,
   pub(super) pattern_back: HashMap<PatternId, AstPtr<ast::Pattern>>,
 
-  pub(super) param:      HashMap<AstPtr<ast::FunParam>, ParamId>,
-  pub(super) param_back: HashMap<ParamId, AstPtr<ast::FunParam>>,
+  pub(super) param:      HashMap<SyntaxNodePtr, ParamId>,
+  pub(super) param_back: HashMap<ParamId, SyntaxNodePtr>,
 }
 
 impl BlockSourceMap {
@@ -51,10 +51,8 @@ impl BlockSourceMap {
     self.pattern_back.get(&id).copied()
   }
 
-  pub fn param(&self, param: AstPtr<ast::FunParam>) -> Option<ParamId> {
-    self.param.get(&param).copied()
-  }
-  pub fn param_syntax(&self, id: ParamId) -> Option<AstPtr<ast::FunParam>> {
+  pub fn param(&self, param: SyntaxNodePtr) -> Option<ParamId> { self.param.get(&param).copied() }
+  pub fn param_syntax(&self, id: ParamId) -> Option<SyntaxNodePtr> {
     self.param_back.get(&id).copied()
   }
 }

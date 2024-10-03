@@ -134,7 +134,11 @@ impl Analysis {
               Some((def, FileRange { file, range: item.text_range() }))
             }
             HirDefinitionId::Param(s) => {
-              let item = source_map.param_syntax(s).unwrap().to_node(&ast);
+              let item = source_map.param_syntax(s).unwrap().to_node(&ast.syntax_node());
+              Some((def, FileRange { file, range: item.text_range() }))
+            }
+            HirDefinitionId::Pattern(s) => {
+              let item = source_map.pattern_syntax(s).unwrap().to_node(&ast);
               Some((def, FileRange { file, range: item.text_range() }))
             }
             HirDefinitionId::Import(id) => {

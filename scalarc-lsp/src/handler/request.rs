@@ -66,6 +66,9 @@ pub fn handle_completion(
             CompletionKind::Hir(HirDefinitionKind::Parameter(_)) => {
               (lsp_types::CompletionItemKind::VARIABLE, None)
             }
+            CompletionKind::Hir(HirDefinitionKind::Pattern) => {
+              (lsp_types::CompletionItemKind::VARIABLE, None)
+            }
             CompletionKind::Hir(HirDefinitionKind::Def(sig)) => {
               (lsp_types::CompletionItemKind::FUNCTION, Some(sig.to_string()))
             }
