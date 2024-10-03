@@ -186,10 +186,17 @@ impl<'a> Infer<'a> {
         if let Some(local) = self.locals.get(&path.segments[0]) {
           Some(local.clone())
         } else {
-          let name = path.segments[0].clone();
-          match self.db.lookup_name_in_block(self.block_id, name) {
+          let name = &path.segments[0];
+          match self.db.lookup_name_in_block(self.block_id, name.clone()) {
             Some(def) => self.type_of_hir_def(def),
-            None => None,
+            None => {
+              let path = Path { elems: vec![name.clone().into()] };
+
+              let target = self.db.file_target(self.block_id.file_id)?;
+              self.type_of_global_def(
+                self.db.definition_for_key(target, DefinitionKey::Object(path))?,
+              )
+            }
           }
         }
       }
