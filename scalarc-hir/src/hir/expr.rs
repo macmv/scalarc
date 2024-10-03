@@ -5,13 +5,15 @@ use scalarc_syntax::ast;
 
 pub type StmtId = Idx<Stmt>;
 pub type ExprId = Idx<Expr>;
+pub type PatternId = Idx<Pattern>;
 pub type ParamId = Idx<Binding>;
 pub type ImportId = Idx<Import>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Block {
-  pub stmts: Arena<Stmt>,
-  pub exprs: Arena<Expr>,
+  pub stmts:    Arena<Stmt>,
+  pub exprs:    Arena<Expr>,
+  pub patterns: Arena<Pattern>,
 
   // Parameters of this block. This will be set if this block is for a function or class body.
   pub params: Arena<Binding>,
@@ -97,6 +99,12 @@ pub enum Expr {
   New(UnresolvedPath, Vec<ExprId>),
 
   If(ExprId, ExprId, Option<ExprId>),
+  Match(ExprId, Vec<(PatternId, ExprId)>),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Pattern {
+  Wildcard,
 }
 
 #[derive(Debug, PartialEq, Eq)]

@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use super::{
   AstIdMap, Binding, BindingKind, Block, BlockId, BlockSourceMap, Expr, ExprId, Import, Literal,
-  Stmt, StmtId, Type, UnresolvedPath,
+  Pattern, PatternId, Stmt, StmtId, Type, UnresolvedPath,
 };
 use crate::{HirDatabase, InFile, InFileExt, Name, Path, Signature};
 use la_arena::Arena;
@@ -111,11 +111,12 @@ pub fn hir_ast_with_source_for_block(
 impl Block {
   pub fn empty() -> Self {
     Block {
-      stmts:   Arena::new(),
-      exprs:   Arena::new(),
-      params:  Arena::new(),
-      imports: Arena::new(),
-      items:   vec![],
+      stmts:    Arena::new(),
+      exprs:    Arena::new(),
+      patterns: Arena::new(),
+      params:   Arena::new(),
+      imports:  Arena::new(),
+      items:    vec![],
     }
   }
 }
@@ -142,6 +143,14 @@ impl BlockLower<'_> {
 
     self.source_map.stmt.insert(AstPtr::new(ast), id);
     self.source_map.stmt_back.insert(id, AstPtr::new(ast));
+
+    id
+  }
+  fn alloc_pattern(&mut self, hir: Pattern, ast: &ast::Pattern) -> PatternId {
+    let id = self.block.patterns.alloc(hir);
+
+    self.source_map.pattern.insert(AstPtr::new(ast), id);
+    self.source_map.pattern_back.insert(id, AstPtr::new(ast));
 
     id
   }
@@ -357,6 +366,22 @@ impl BlockLower<'_> {
         Some(self.alloc_expr(Expr::If(cond, then, els), expr))
       }
 
+      ast::Expr::MatchExpr(match_expr) => {
+        let lhs = self.walk_expr(&match_expr.expr()?)?;
+
+        let mut cases = vec![];
+
+        for case in match_expr.case_items() {
+          let pat = self.walk_pattern(&case.pattern()?)?;
+          let block =
+            self.block.exprs.alloc(Expr::Block(self.id_map.ast_id(&case.block()?).into()));
+
+          cases.push((pat, block));
+        }
+
+        Some(self.alloc_expr(Expr::Match(lhs, cases), expr))
+      }
+
       _ => {
         warn!("Unhandled expr: {expr:#?}");
         None
@@ -400,6 +425,25 @@ impl BlockLower<'_> {
     };
 
     Some(Type::Named(path))
+  }
+
+  fn walk_pattern(&mut self, pat: &scalarc_syntax::ast::Pattern) -> Option<PatternId> {
+    match pat {
+      ast::Pattern::PathPattern(path) => {
+        let path = path.path()?;
+
+        if path.ids().count() == 1 && path.ids().next().unwrap().text() == "_" {
+          return Some(self.alloc_pattern(Pattern::Wildcard, pat));
+        }
+
+        None
+      }
+
+      _ => {
+        warn!("Unhandled pattern: {:#?}", pat);
+        None
+      }
+    }
   }
 }
 

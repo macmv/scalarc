@@ -1,6 +1,6 @@
 //! Maps HIR exprs in a Block back to source.
 
-use super::{ExprId, ParamId, StmtId};
+use super::{ExprId, ParamId, PatternId, StmtId};
 use hashbrown::HashMap;
 use scalarc_syntax::{ast, AstPtr};
 
@@ -13,6 +13,9 @@ pub struct BlockSourceMap {
   pub(super) stmt:      HashMap<AstPtr<ast::Item>, StmtId>,
   pub(super) stmt_back: HashMap<StmtId, AstPtr<ast::Item>>,
 
+  pub(super) pattern:      HashMap<AstPtr<ast::Pattern>, PatternId>,
+  pub(super) pattern_back: HashMap<PatternId, AstPtr<ast::Pattern>>,
+
   pub(super) param:      HashMap<AstPtr<ast::FunParam>, ParamId>,
   pub(super) param_back: HashMap<ParamId, AstPtr<ast::FunParam>>,
 }
@@ -20,12 +23,14 @@ pub struct BlockSourceMap {
 impl BlockSourceMap {
   pub fn empty() -> BlockSourceMap {
     BlockSourceMap {
-      expr:       HashMap::new(),
-      expr_back:  HashMap::new(),
-      stmt:       HashMap::new(),
-      stmt_back:  HashMap::new(),
-      param:      HashMap::new(),
-      param_back: HashMap::new(),
+      expr:         HashMap::new(),
+      expr_back:    HashMap::new(),
+      stmt:         HashMap::new(),
+      stmt_back:    HashMap::new(),
+      pattern:      HashMap::new(),
+      pattern_back: HashMap::new(),
+      param:        HashMap::new(),
+      param_back:   HashMap::new(),
     }
   }
 
@@ -37,6 +42,13 @@ impl BlockSourceMap {
   pub fn stmt(&self, stmt: AstPtr<ast::Item>) -> Option<StmtId> { self.stmt.get(&stmt).copied() }
   pub fn stmt_syntax(&self, id: StmtId) -> Option<AstPtr<ast::Item>> {
     self.stmt_back.get(&id).copied()
+  }
+
+  pub fn pattern(&self, stmt: AstPtr<ast::Pattern>) -> Option<PatternId> {
+    self.pattern.get(&stmt).copied()
+  }
+  pub fn pattern_syntax(&self, id: PatternId) -> Option<AstPtr<ast::Pattern>> {
+    self.pattern_back.get(&id).copied()
   }
 
   pub fn param(&self, param: AstPtr<ast::FunParam>) -> Option<ParamId> {
