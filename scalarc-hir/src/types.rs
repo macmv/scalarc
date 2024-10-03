@@ -266,11 +266,18 @@ impl<'a> Infer<'a> {
     res
   }
 
+  /// Fully resolves an HIR type into a concrete type.
   fn type_te(&self, te: &hir::Type) -> Option<Type> {
     match te {
-      hir::Type::Named(ref path) => Some(Type::Instance(Path {
-        elems: path.segments.iter().map(|s| Name::new(s.clone())).collect(),
-      })),
+      hir::Type::Named(ref path) => {
+        let name = path.segments[0].clone();
+        let parent_block = self.parent_block?.in_file(self.file_id);
+
+        // TODO: Lookup in the current block, not the parent block.
+        let def = self.db.lookup_name_in_block(parent_block, name.into());
+
+        def.and_then(|d| self.type_of_hir_def(d))
+      }
     }
   }
 
