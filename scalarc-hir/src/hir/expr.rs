@@ -43,7 +43,7 @@ pub enum Type {
 }
 
 /// An unresolved path to a type.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnresolvedPath {
   pub segments: Vec<String>,
 }

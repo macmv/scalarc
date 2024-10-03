@@ -202,6 +202,21 @@ impl<'a> Infer<'a> {
         }
       }
 
+      Expr::New(ref path, ref args) => {
+        // TODO: Do we care about the arguments?
+        for arg in args {
+          let _ = self.type_expr(*arg);
+        }
+
+        let path = self.db.resolve_path_in_block(self.block_id, path.clone())?;
+
+        let target = self.db.file_target(self.block_id.file_id)?;
+        let def = self.db.definition_for_key(target, DefinitionKey::Instance(path))?;
+
+        // NB: The name `new Int()` on its own refers to a class, not an object.
+        Some(Type::Instance(def.path))
+      }
+
       Expr::Literal(ref lit) => match lit {
         Literal::Int(_) => Some(Type::int()),
         Literal::Float(_) => Some(Type::float()),
@@ -242,18 +257,6 @@ impl<'a> Infer<'a> {
         Some(Type::Tuple(types))
       }
 
-      Expr::New(ref path, ref args) => {
-        // TODO: Do we care about the arguments?
-        for arg in args {
-          let _ = self.type_expr(*arg);
-        }
-
-        // FIXME: Need name resolution.
-        Some(Type::Instance(Path {
-          elems: path.segments.iter().map(|s| Name::new(s.clone())).collect(),
-        }))
-      }
-
       _ => None,
     };
 
@@ -268,17 +271,7 @@ impl<'a> Infer<'a> {
   fn type_te(&self, te: &hir::Type) -> Option<Type> {
     match te {
       hir::Type::Named(ref path) => {
-        let name = path.segments[0].clone();
-
-        let mut implicit_imports = HashMap::new();
-
-        implicit_imports.insert("Int", vec!["scala", "Int"]);
-
-        let path = match implicit_imports.get(&name.as_str()) {
-          Some(elems) => Path { elems: elems.into_iter().map(|s| (*s).into()).collect() },
-          // TODO: Use current package.
-          None => Path { elems: vec![name.into()] },
-        };
+        let path = self.db.resolve_path_in_block(self.block_id, path.clone())?;
 
         let target = self.db.file_target(self.block_id.file_id)?;
         let def = self.db.definition_for_key(target, DefinitionKey::Instance(path))?;

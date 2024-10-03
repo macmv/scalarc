@@ -1,8 +1,9 @@
+use hashbrown::HashMap;
 use scalarc_syntax::SyntaxNodePtr;
 
-use super::{BlockId, ExprId};
+use super::{BlockId, ExprId, UnresolvedPath};
 use crate::{
-  hir, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile, InFileExt,
+  hir, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile, InFileExt, Path,
 };
 
 pub fn def_for_expr(
@@ -75,6 +76,44 @@ pub fn lookup_name_in_block(
 
   let parent_block = db.parent_block(block)?;
   db.lookup_name_in_block(parent_block.in_file(block.file_id), name)
+}
+
+pub fn resolve_path_in_block(
+  db: &dyn HirDatabase,
+  block: InFile<BlockId>,
+  path: UnresolvedPath,
+) -> Option<Path> {
+  let ast = db.hir_ast_for_block(block);
+
+  let name = path.segments.first().unwrap();
+
+  for import in ast.imports.values() {
+    let matches = match import.rename {
+      Some(ref n) => n.as_str() == name,
+      None => import.path.elems.last().unwrap().as_str() == name,
+    };
+
+    if matches {
+      return Some(import.path.clone());
+    }
+  }
+
+  match db.parent_block(block) {
+    Some(p) => db.resolve_path_in_block(p.in_file(block.file_id), path),
+    None => {
+      // Now that we've reached the top level, we know the name doesn't resolve
+      // anywhere. So, we attempt to resolve it with an implicit import.
+
+      let mut implicit_imports = HashMap::new();
+
+      implicit_imports.insert("Int", vec!["scala", "Int"]);
+
+      match implicit_imports.get(&name.as_str()) {
+        Some(elems) => Some(Path { elems: elems.into_iter().map(|s| (*s).into()).collect() }),
+        None => None,
+      }
+    }
+  }
 }
 
 pub fn parent_block(db: &dyn HirDatabase, block: InFile<BlockId>) -> Option<BlockId> {
