@@ -24,7 +24,7 @@ pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> InFil
     scalarc_syntax::match_ast! {
       match node {
         ast::BlockExpr(it) => break BlockId::BlockExpr(ast_id_map.ast_id(&it)),
-        ast::Block(it) => break BlockId::Block(ast_id_map.ast_id(&it)),
+        ast::CaseItem(it) => break BlockId::CaseItem(ast_id_map.ast_id(&it)),
         ast::FunDef(it) => break BlockId::Def(ast_id_map.ast_id(&it)),
         ast::ClassDef(it) => break BlockId::Class(ast_id_map.ast_id(&it)),
         ast::TraitDef(it) => break BlockId::Trait(ast_id_map.ast_id(&it)),
@@ -57,9 +57,12 @@ pub fn hir_ast_with_source_for_block(
       let block = item_id_map.get(&ast, block);
       lower.walk_items(block.items());
     }
-    BlockId::Block(block) => {
-      let block = item_id_map.get(&ast, block);
-      lower.walk_items(block.items());
+    BlockId::CaseItem(case) => {
+      let case = item_id_map.get(&ast, case);
+
+      if let Some(block) = case.block() {
+        lower.walk_items(block.items());
+      }
     }
 
     BlockId::Def(def) => {
@@ -378,8 +381,7 @@ impl BlockLower<'_> {
 
         for case in match_expr.case_items() {
           let pat = self.walk_pattern(&case.pattern()?)?;
-          let block =
-            self.block.exprs.alloc(Expr::Block(self.id_map.ast_id(&case.block()?).into()));
+          let block = self.block.exprs.alloc(Expr::Block(self.id_map.ast_id(&case).into()));
 
           cases.push((pat, block));
         }

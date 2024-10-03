@@ -125,7 +125,7 @@ impl Eq for EqFloat {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlockId {
   BlockExpr(AstId<ast::BlockExpr>),
-  Block(AstId<ast::Block>),
+  CaseItem(AstId<ast::CaseItem>),
   Def(AstId<ast::FunDef>),
   Class(AstId<ast::ClassDef>),
   Trait(AstId<ast::TraitDef>),
@@ -136,8 +136,8 @@ pub enum BlockId {
 impl From<AstId<ast::BlockExpr>> for BlockId {
   fn from(id: AstId<ast::BlockExpr>) -> Self { BlockId::BlockExpr(id) }
 }
-impl From<AstId<ast::Block>> for BlockId {
-  fn from(id: AstId<ast::Block>) -> Self { BlockId::Block(id) }
+impl From<AstId<ast::CaseItem>> for BlockId {
+  fn from(id: AstId<ast::CaseItem>) -> Self { BlockId::CaseItem(id) }
 }
 impl From<AstId<ast::FunDef>> for BlockId {
   fn from(id: AstId<ast::FunDef>) -> Self { BlockId::Def(id) }
@@ -159,7 +159,7 @@ impl BlockId {
   pub fn erased(&self) -> ErasedAstId {
     match self {
       BlockId::BlockExpr(id) => id.erased(),
-      BlockId::Block(id) => id.erased(),
+      BlockId::CaseItem(id) => id.erased(),
       BlockId::Def(id) => id.erased(),
       BlockId::Class(id) => id.erased(),
       BlockId::Trait(id) => id.erased(),
