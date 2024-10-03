@@ -3,7 +3,7 @@ use scalarc_syntax::SyntaxNodePtr;
 use super::{BlockId, ExprId, UnresolvedPath};
 use crate::{
   hir, DefinitionKey, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile,
-  InFileExt, Path,
+  InFileExt, Name, Path,
 };
 
 pub fn def_for_expr(
@@ -62,11 +62,12 @@ pub fn lookup_name_in_block(
     match pattern {
       hir::Pattern::Binding(ref binding) => {
         if binding.name == *name {
-          return Some(HirDefinition::new_param(
-            binding,
-            block,
-            HirDefinitionId::Pattern(pattern_id),
-          ));
+          return Some(HirDefinition {
+            name:     Name::new(binding.name.clone()),
+            id:       HirDefinitionId::Pattern(pattern_id),
+            block_id: block,
+            kind:     HirDefinitionKind::Pattern,
+          });
         }
       }
       _ => {}
