@@ -165,3 +165,39 @@ fn tuple() {
     "#],
   );
 }
+
+#[test]
+fn lambda() {
+  check(
+    "val foo: (Int, String) => Int = 3",
+    expect![@r#"
+      SOURCE_FILE
+        VAL_DEF
+          VAL_KW 'val'
+          WHITESPACE ' '
+          IDENT 'foo'
+          COLON ':'
+          WHITESPACE ' '
+          LAMBDA_TYPE
+            TUPLE_TYPE
+              OPEN_PAREN '('
+              SIMPLE_TYPE
+                IDENT 'Int'
+              COMMA ','
+              WHITESPACE ' '
+              SIMPLE_TYPE
+                IDENT 'String'
+              CLOSE_PAREN ')'
+            WHITESPACE ' '
+            FAT_ARROW '=>'
+            WHITESPACE ' '
+            SIMPLE_TYPE
+              IDENT 'Int'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '3'
+    "#],
+  );
+}

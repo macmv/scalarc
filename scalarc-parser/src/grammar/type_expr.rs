@@ -3,7 +3,10 @@ use crate::{
   Parser,
 };
 
-pub fn type_expr(p: &mut Parser) {
+pub fn type_expr(p: &mut Parser) { type_expr_0(p, false); }
+pub fn type_expr_pattern(p: &mut Parser) { type_expr_0(p, true); }
+
+fn type_expr_0(p: &mut Parser, pattern: bool) {
   let m = p.start();
   let mut lhs = match p.current() {
     // test ok
@@ -45,15 +48,24 @@ pub fn type_expr(p: &mut Parser) {
         lhs = m.complete(p, GENERIC_TYPE);
       }
 
+      T![=>] => {
+        if pattern {
+          // This is not a lambda, its a pattern guard.
+          return;
+        } else {
+          let m = lhs.precede(p);
+          p.eat(T![=>]);
+          type_expr(p);
+          lhs = m.complete(p, LAMBDA_TYPE);
+        }
+      }
+
       T![,] | T![']'] | T![')'] | T!['}'] | T![=] | T![nl] | T![<:] | T![>:] | T![:] | EOF => {
         return
       }
 
       // This is for class definitions. Not sure if correct or not.
       T!['{'] | T![with] => return,
-
-      // This is for patterns
-      T![=>] => return,
 
       _ => {
         p.error(format!("expected type, got {:?}", p.current()));

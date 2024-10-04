@@ -100,7 +100,7 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
             m2.abandon(p);
 
             p.eat(T![:]);
-            super::type_expr::type_expr(p);
+            super::type_expr::type_expr_pattern(p);
             Some(m.complete(p, TYPE_PATTERN))
           }
 
