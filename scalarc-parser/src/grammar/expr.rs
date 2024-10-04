@@ -450,7 +450,9 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       // new Iterator[Int]
       // new Iterator[String]("hello")
       if p.at(T!['[']) {
-        super::type_expr::type_params(p);
+        let m = p.start();
+        super::type_expr::type_params(p, T!['['], T![']']);
+        m.complete(p, TYPE_PARAMS);
       }
 
       // test ok

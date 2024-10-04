@@ -1,12 +1,30 @@
 use crate::{
-  syntax_kind::{SyntaxKind::*, T},
+  syntax_kind::{SyntaxKind, SyntaxKind::*, T},
   Parser,
 };
 
 pub fn type_expr(p: &mut Parser) {
   let m = p.start();
-  p.expect(T![ident]);
-  let mut lhs = m.complete(p, SIMPLE_TYPE);
+  let mut lhs = match p.current() {
+    // test ok
+    // val foo: (Int, String) = 0
+    T!['('] => {
+      type_params(p, T!['('], T![')']);
+      m.complete(p, TUPLE_TYPE)
+    }
+
+    T![ident] => {
+      p.eat(T![ident]);
+      m.complete(p, SIMPLE_TYPE)
+    }
+
+    _ => {
+      p.error("expected type");
+      m.abandon(p);
+
+      return;
+    }
+  };
 
   loop {
     match p.current() {
@@ -16,9 +34,14 @@ pub fn type_expr(p: &mut Parser) {
         p.expect(T![ident]);
         lhs = m.complete(p, PATH_TYPE);
       }
+
       T!['['] => {
         let m = lhs.precede(p);
-        type_params(p);
+        {
+          let m = p.start();
+          type_params(p, T!['['], T![']']);
+          m.complete(p, TYPE_PARAMS);
+        }
         lhs = m.complete(p, GENERIC_TYPE);
       }
 
@@ -98,9 +121,8 @@ pub fn type_args(p: &mut Parser) {
   }
 }
 
-pub fn type_params(p: &mut Parser) {
-  let m = p.start();
-  p.eat(T!['[']);
+pub fn type_params(p: &mut Parser, start: SyntaxKind, end: SyntaxKind) {
+  p.eat(start);
 
   p.eat_newlines();
   loop {
@@ -120,8 +142,7 @@ pub fn type_params(p: &mut Parser) {
       // ) = 3
       p.eat_newlines();
     } else {
-      p.expect(T![']']);
-      m.complete(p, TYPE_PARAMS);
+      p.expect(end);
       break;
     }
   }

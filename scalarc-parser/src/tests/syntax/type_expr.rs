@@ -69,8 +69,7 @@ fn type_params() {
               IDENT 'Foo'
             TYPE_PARAMS
               OPEN_BRACKET '['
-              SIMPLE_TYPE
-                error: expected IDENT
+              error: expected type
               CLOSE_BRACKET ']'
           WHITESPACE ' '
           EQ '='
@@ -128,6 +127,36 @@ fn type_params() {
               SIMPLE_TYPE
                 IDENT 'String'
               CLOSE_BRACKET ']'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '3'
+    "#],
+  );
+}
+
+#[test]
+fn tuple() {
+  check(
+    "val foo: (Int, String) = 3",
+    expect![@r#"
+      SOURCE_FILE
+        VAL_DEF
+          VAL_KW 'val'
+          WHITESPACE ' '
+          IDENT 'foo'
+          COLON ':'
+          WHITESPACE ' '
+          TUPLE_TYPE
+            OPEN_PAREN '('
+            SIMPLE_TYPE
+              IDENT 'Int'
+            COMMA ','
+            WHITESPACE ' '
+            SIMPLE_TYPE
+              IDENT 'String'
+            CLOSE_PAREN ')'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '

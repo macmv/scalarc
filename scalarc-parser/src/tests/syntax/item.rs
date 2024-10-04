@@ -76,8 +76,7 @@ fn fun_dec() {
               FUN_PARAM
                 IDENT 'a'
                 COLON ':'
-                SIMPLE_TYPE
-                  error: expected IDENT
+                error: expected type
               CLOSE_PAREN ')'
           WHITESPACE ' '
           EQ '='
