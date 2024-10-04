@@ -700,7 +700,7 @@ fn match_exprs() {
                 EXPR_ITEM
                   LIT_EXPR
                     INT_LIT_KW '3'
-                NL_KW '\n'
+            NL_KW '\n'
             WHITESPACE '      '
             CASE_ITEM
               CASE_KW 'case'
@@ -714,7 +714,7 @@ fn match_exprs() {
                 EXPR_ITEM
                   LIT_EXPR
                     INT_LIT_KW '4'
-                NL_KW '\n'
+            NL_KW '\n'
             WHITESPACE '      '
             CASE_ITEM
               CASE_KW 'case'
@@ -790,7 +790,7 @@ fn match_exprs() {
                 EXPR_ITEM
                   LIT_EXPR
                     INT_LIT_KW '1'
-                NL_KW '\n'
+            NL_KW '\n'
             WHITESPACE ' '
             CASE_ITEM
               CASE_KW 'case'
@@ -806,6 +806,65 @@ fn match_exprs() {
                     INT_LIT_KW '3'
             WHITESPACE ' '
             CLOSE_CURLY '}'
+    "#],
+  );
+}
+
+#[test]
+fn case_args() {
+  check(
+    r#"
+    foo foreach {
+      case 1 => 3
+      case _ => 5
+    }
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '    '
+        EXPR_ITEM
+          INFIX_EXPR
+            IDENT_EXPR
+              IDENT 'foo'
+            WHITESPACE ' '
+            IDENT 'foreach'
+            WHITESPACE ' '
+            BLOCK_EXPR
+              OPEN_CURLY '{'
+              NL_KW '\n'
+              WHITESPACE '      '
+              CASE_ITEM
+                CASE_KW 'case'
+                WHITESPACE ' '
+                LIT_PATTERN
+                  INT_LIT_KW '1'
+                WHITESPACE ' '
+                FAT_ARROW '=>'
+                WHITESPACE ' '
+                BLOCK
+                  EXPR_ITEM
+                    LIT_EXPR
+                      INT_LIT_KW '3'
+              NL_KW '\n'
+              WHITESPACE '      '
+              CASE_ITEM
+                CASE_KW 'case'
+                WHITESPACE ' '
+                PATH_PATTERN
+                  PATH
+                    IDENT '_'
+                WHITESPACE ' '
+                FAT_ARROW '=>'
+                WHITESPACE ' '
+                BLOCK
+                  EXPR_ITEM
+                    LIT_EXPR
+                      INT_LIT_KW '5'
+                  NL_KW '\n'
+              WHITESPACE '    '
+              CLOSE_CURLY '}'
+        NL_KW '\n'
     "#],
   );
 }

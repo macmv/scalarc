@@ -29,6 +29,19 @@ fn items(p: &mut Parser, terminator: BlockTerminator) {
     loop {
       if p.at(T![nl]) {
         found_newline = true;
+
+        // Special case: If we have a `nl` then a `case`, break early, so that the `nl`
+        // gets picked up by the outer block.
+        //
+        // test ok
+        // {
+        //   case 3 => 3
+        //   case 4 => 4
+        // }
+        if p.peek() == T![case] && terminator == BlockTerminator::Case {
+          break 'items;
+        }
+
         p.eat(T![nl]);
       } else if p.at(EOF) {
         if terminator == BlockTerminator::Brace {

@@ -218,6 +218,8 @@ fn match_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
     // case_item eats a newline and handles errors.
     super::item::case_item(p, c);
 
+    p.eat_newlines();
+
     if p.at(T!['}']) {
       p.eat(T!['}']);
       break;
