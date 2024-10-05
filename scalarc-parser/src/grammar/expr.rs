@@ -439,6 +439,14 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       Some(m.complete(p, RETURN_EXPR))
     }
 
+    T![throw] => {
+      // test ok
+      // throw new IllegalStateException(3, 4)
+      p.eat(T![throw]);
+      expr(p);
+      Some(m.complete(p, THROW_EXPR))
+    }
+
     T![new] => {
       p.eat(T![new]);
 
