@@ -10,9 +10,10 @@ fn type_expr_0(p: &mut Parser, pattern: bool) {
   let m = p.start();
   let mut lhs = match p.current() {
     // test ok
+    // val foo: () = 0
     // val foo: (Int, String) = 0
     T!['('] => {
-      type_args(p, T!['('], T![')']);
+      type_args_0(p, T!['('], T![')'], true);
       m.complete(p, TUPLE_TYPE)
     }
 
@@ -106,7 +107,16 @@ pub fn type_param(p: &mut Parser) {
 
 /// Type arguments. These show up in function calls, like `foo[Int, String]`.
 pub fn type_args(p: &mut Parser, start: SyntaxKind, end: SyntaxKind) {
+  type_args_0(p, start, end, false);
+}
+
+fn type_args_0(p: &mut Parser, start: SyntaxKind, end: SyntaxKind, allow_empty: bool) {
   p.eat(start);
+
+  if allow_empty && p.at(end) {
+    p.eat(end);
+    return;
+  }
 
   p.eat_newlines();
   loop {
