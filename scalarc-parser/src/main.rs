@@ -1,15 +1,28 @@
 use scalarc_parser::{format::print_events, EntryPoint, Event, Lexer};
 
 fn main() {
-  let name = match std::env::args().nth(1) {
-    Some(it) => it,
-    None => {
-      eprintln!("Usage: scalarc-parser <file>");
-      std::process::exit(1);
-    }
-  };
+  let files = std::env::args().skip(1).collect::<Vec<_>>();
+  if files.is_empty() {
+    eprintln!("Usage: scalarc-parser <file>...");
+    std::process::exit(1);
+  }
 
-  let src = std::fs::read_to_string(name).unwrap();
+  let mut is_err = false;
+  for file in files {
+    if parse_file(&file).is_err() {
+      is_err = true;
+      break;
+    }
+  }
+  if is_err {
+    std::process::exit(1);
+  }
+}
+
+fn parse_file(name: &str) -> Result<(), ()> {
+  let src = std::fs::read_to_string(name).map_err(|e| {
+    eprintln!("error: {}", e);
+  })?;
 
   let mut events = EntryPoint::SourceFile.parse(&mut Lexer::new(&src));
   let processed = scalarc_parser::process_events(&mut events);
@@ -66,6 +79,8 @@ fn main() {
   }
 
   if processed.iter().any(|e| matches!(e, scalarc_parser::Event::Error { .. })) {
-    std::process::exit(1);
+    Err(())
+  } else {
+    Ok(())
   }
 }
