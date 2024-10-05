@@ -232,3 +232,47 @@ fn paths_work() {
     "#],
   );
 }
+
+#[test]
+fn tuple_patterns() {
+  check(
+    "case ((x, y), z, _) => 1",
+    expect![@r#"
+      SOURCE_FILE
+        CASE_ITEM
+          CASE_KW 'case'
+          WHITESPACE ' '
+          TUPLE_PATTERN
+            OPEN_PAREN '('
+            TUPLE_PATTERN
+              OPEN_PAREN '('
+              PATH_PATTERN
+                PATH
+                  IDENT 'x'
+              COMMA ','
+              WHITESPACE ' '
+              PATH_PATTERN
+                PATH
+                  IDENT 'y'
+              CLOSE_PAREN ')'
+            COMMA ','
+            WHITESPACE ' '
+            PATH_PATTERN
+              PATH
+                IDENT 'z'
+            COMMA ','
+            WHITESPACE ' '
+            PATH_PATTERN
+              PATH
+                IDENT '_'
+            CLOSE_PAREN ')'
+          WHITESPACE ' '
+          FAT_ARROW '=>'
+          WHITESPACE ' '
+          BLOCK
+            EXPR_ITEM
+              LIT_EXPR
+                INT_LIT_KW '1'
+    "#],
+  );
+}

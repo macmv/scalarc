@@ -47,6 +47,13 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
       Some(m.complete(p, DOUBLE_QUOTED_STRING))
     }
 
+    // test ok
+    // case (x, y) =>
+    T!['('] => {
+      arg_pattern(p);
+      Some(m.complete(p, TUPLE_PATTERN))
+    }
+
     IDENT => {
       let m2 = p.start();
       p.eat(IDENT);
@@ -69,7 +76,9 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
             T!['('] => {
               m2.complete(p, PATH);
 
+              let args = p.start();
               arg_pattern(p);
+              args.complete(p, PATTERN_ARGS);
               break Some(m.complete(p, ARG_PATTERN));
             }
 
@@ -90,7 +99,9 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
           T!['('] => {
             m2.complete(p, PATH);
 
+            let args = p.start();
             arg_pattern(p);
+            args.complete(p, PATTERN_ARGS);
             Some(m.complete(p, ARG_PATTERN))
           }
 
@@ -158,7 +169,6 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
 }
 
 fn arg_pattern(p: &mut Parser) {
-  let args = p.start();
   p.eat(T!['(']);
   // test ok
   // case Seq(
@@ -171,7 +181,6 @@ fn arg_pattern(p: &mut Parser) {
   // case Seq() => 1
   if p.at(T![')']) {
     p.eat(T![')']);
-    args.complete(p, PATTERN_ARGS);
     return;
   }
 
@@ -199,5 +208,4 @@ fn arg_pattern(p: &mut Parser) {
   }
 
   p.expect(T![')']);
-  args.complete(p, PATTERN_ARGS);
 }

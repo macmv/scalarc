@@ -274,11 +274,12 @@ CaseItem = 'case' Pattern Guard? '=>' Block
 Guard    = 'if' Expr
 
 Pattern = UnionPattern
-  | TypePattern
-  | AtPattern
-  | ArgPattern
-  | LitPattern
-  | PathPattern
+        | TypePattern
+        | AtPattern
+        | ArgPattern
+        | LitPattern
+        | PathPattern
+        | TuplePattern
 
 PatternArgs = '(' (Pattern (',' Pattern)*) ')'
 
@@ -287,6 +288,7 @@ TypePattern  = id ':' Type
 AtPattern    = id '@' Pattern
 ArgPattern   = Path PatternArgs
 PathPattern  = Path
+TuplePattern = '(' (Pattern (',' Pattern)*) ')'
 
 // TODO: Need to merge this with ValDef and VarDef
 // PatDef      = ('val' | 'var') PatternAt (',' PatternAt)* (':' Type)? '=' Expr
