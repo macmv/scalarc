@@ -379,7 +379,9 @@ fn extends_item(p: &mut Parser) {
   // test ok
   // class Foo extends Seq[Int] {}
   if p.at(T!['[']) {
-    super::type_expr::type_args(p);
+    let m = p.start();
+    super::type_expr::type_args(p, T!['['], T![']']);
+    m.complete(p, TYPE_ARGS);
   }
 
   // test ok
@@ -432,7 +434,11 @@ fn fun_sig(p: &mut Parser) {
   p.expect(T![ident]);
 
   if p.at(T!['[']) {
-    generic_def(p);
+    // test ok
+    // def foo[A <: Int](a: A) = 3
+    let m = p.start();
+    super::type_expr::type_params(p, T!['['], T![']']);
+    m.complete(p, TYPE_PARAMS);
   }
 
   // test ok
@@ -450,52 +456,6 @@ fn fun_sig(p: &mut Parser) {
   }
 
   m.complete(p, FUN_SIG);
-}
-
-// test ok
-// def foo[A] = 3
-fn generic_def(p: &mut Parser) {
-  let m = p.start();
-  p.eat(T!['[']);
-
-  // test ok
-  // def foo[] = 3
-  if p.at(T![']']) {
-    p.eat(T![']']);
-    m.complete(p, TYPE_PARAMS);
-    return;
-  }
-
-  // test ok
-  // def foo[
-  //   A
-  // ] = 3
-  p.eat_newlines();
-
-  loop {
-    // test ok
-    // def foo[A <: Int] = 3
-    super::type_expr::type_param(p);
-
-    p.eat_newlines();
-    // test ok
-    // def foo[A, B] = 3
-    if p.current() == T![,] {
-      p.eat(T![,]);
-
-      // test ok
-      // def foo[
-      //   A
-      //   ,
-      //   B
-      // ] = 3
-      p.eat_newlines();
-    } else {
-      p.expect(T![']']);
-      m.complete(p, TYPE_PARAMS);
-      break;
-    }
-  }
 }
 
 fn fun_params(p: &mut Parser, is_class: bool) {

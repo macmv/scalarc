@@ -143,7 +143,11 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
       T!['['] => {
         let te = lhs.precede(p);
 
-        type_expr::type_args(p);
+        {
+          let m = p.start();
+          type_expr::type_args(p, T!['['], T![']']);
+          m.complete(p, TYPE_ARGS);
+        }
 
         te.complete(p, TYPED_EXPR)
       }
@@ -461,8 +465,8 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       // new Iterator[String]("hello")
       if p.at(T!['[']) {
         let m = p.start();
-        super::type_expr::type_params(p, T!['['], T![']']);
-        m.complete(p, TYPE_PARAMS);
+        super::type_expr::type_args(p, T!['['], T![']']);
+        m.complete(p, TYPE_ARGS);
       }
 
       // test ok

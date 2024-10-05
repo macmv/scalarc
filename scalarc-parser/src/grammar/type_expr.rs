@@ -12,7 +12,7 @@ fn type_expr_0(p: &mut Parser, pattern: bool) {
     // test ok
     // val foo: (Int, String) = 0
     T!['('] => {
-      type_params(p, T!['('], T![')']);
+      type_args(p, T!['('], T![')']);
       m.complete(p, TUPLE_TYPE)
     }
 
@@ -42,8 +42,8 @@ fn type_expr_0(p: &mut Parser, pattern: bool) {
         let m = lhs.precede(p);
         {
           let m = p.start();
-          type_params(p, T!['['], T![']']);
-          m.complete(p, TYPE_PARAMS);
+          type_args(p, T!['['], T![']']);
+          m.complete(p, TYPE_ARGS);
         }
         lhs = m.complete(p, GENERIC_TYPE);
       }
@@ -104,9 +104,9 @@ pub fn type_param(p: &mut Parser) {
   }
 }
 
-pub fn type_args(p: &mut Parser) {
-  let m = p.start();
-  p.eat(T!['[']);
+/// Type arguments. These show up in function calls, like `foo[Int, String]`.
+pub fn type_args(p: &mut Parser, start: SyntaxKind, end: SyntaxKind) {
+  p.eat(start);
 
   p.eat_newlines();
   loop {
@@ -126,19 +126,20 @@ pub fn type_args(p: &mut Parser) {
       // ]
       p.eat_newlines();
     } else {
-      p.expect(T![']']);
-      m.complete(p, TYPE_ARGS);
+      p.expect(end);
       break;
     }
   }
 }
 
+/// Type parameters. These show up in function definitions, like `def foo[A <:
+/// B]`.
 pub fn type_params(p: &mut Parser, start: SyntaxKind, end: SyntaxKind) {
   p.eat(start);
 
   p.eat_newlines();
   loop {
-    type_expr(p);
+    type_param(p);
     p.eat_newlines();
 
     // test ok

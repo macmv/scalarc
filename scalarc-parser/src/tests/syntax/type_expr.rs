@@ -53,7 +53,7 @@ fn type_paths() {
 }
 
 #[test]
-fn type_params() {
+fn type_args() {
   check(
     "val foo: Foo[] = 3",
     expect![@r#"
@@ -67,7 +67,7 @@ fn type_params() {
           GENERIC_TYPE
             SIMPLE_TYPE
               IDENT 'Foo'
-            TYPE_PARAMS
+            TYPE_ARGS
               OPEN_BRACKET '['
               error: expected type
               CLOSE_BRACKET ']'
@@ -92,7 +92,7 @@ fn type_params() {
           GENERIC_TYPE
             SIMPLE_TYPE
               IDENT 'Foo'
-            TYPE_PARAMS
+            TYPE_ARGS
               OPEN_BRACKET '['
               SIMPLE_TYPE
                 IDENT 'Int'
@@ -118,7 +118,7 @@ fn type_params() {
           GENERIC_TYPE
             SIMPLE_TYPE
               IDENT 'Foo'
-            TYPE_PARAMS
+            TYPE_ARGS
               OPEN_BRACKET '['
               SIMPLE_TYPE
                 IDENT 'Int'
@@ -127,6 +127,46 @@ fn type_params() {
               SIMPLE_TYPE
                 IDENT 'String'
               CLOSE_BRACKET ']'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '3'
+    "#],
+  );
+}
+
+#[test]
+fn type_params() {
+  check(
+    "def foo[A <: Int](a: A) = 3",
+    expect![@r#"
+      SOURCE_FILE
+        FUN_DEF
+          DEF_KW 'def'
+          WHITESPACE ' '
+          FUN_SIG
+            IDENT 'foo'
+            TYPE_PARAMS
+              OPEN_BRACKET '['
+              LOWER_BOUND_PARAM
+                SIMPLE_TYPE
+                  IDENT 'A'
+                WHITESPACE ' '
+                LESS_COLON '<:'
+                WHITESPACE ' '
+                SIMPLE_TYPE
+                  IDENT 'Int'
+              CLOSE_BRACKET ']'
+            FUN_PARAMS
+              OPEN_PAREN '('
+              FUN_PARAM
+                IDENT 'a'
+                COLON ':'
+                WHITESPACE ' '
+                SIMPLE_TYPE
+                  IDENT 'A'
+              CLOSE_PAREN ')'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
