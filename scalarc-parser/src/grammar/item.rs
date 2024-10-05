@@ -342,7 +342,8 @@ fn class_def(p: &mut Parser, m: Marker) {
   // class Foo extends AnyVal {}
   if p.current() == T![extends] {
     p.eat(T![extends]);
-    super::type_expr::type_expr(p);
+
+    extends_item(p);
   }
 
   // test ok
@@ -361,6 +362,31 @@ fn class_def(p: &mut Parser, m: Marker) {
   }
 
   m.complete(p, kind);
+}
+
+// test ok
+// class Foo extends foo.bar.Baz[Int, String](2, 3) {}
+fn extends_item(p: &mut Parser) {
+  p.expect(T![ident]);
+
+  // test ok
+  // class Foo extends foo.bar.Baz {}
+  while p.at(T![.]) {
+    p.bump();
+    p.expect(T![ident]);
+  }
+
+  // test ok
+  // class Foo extends Seq[Int] {}
+  if p.at(T!['[']) {
+    super::type_expr::type_args(p);
+  }
+
+  // test ok
+  // class Foo extends Bar(2, 3) {}
+  if p.at(T!['(']) {
+    super::expr::call_paren_expr(p);
+  }
 }
 
 fn item_body(p: &mut Parser) {

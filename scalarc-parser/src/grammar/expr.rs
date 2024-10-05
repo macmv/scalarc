@@ -229,7 +229,7 @@ fn match_expr(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
   m.complete(p, MATCH_EXPR)
 }
 
-fn call_paren_expr(p: &mut Parser) {
+pub fn call_paren_expr(p: &mut Parser) {
   p.eat(T!['(']);
   // test ok
   // hi(
