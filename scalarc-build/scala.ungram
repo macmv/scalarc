@@ -299,6 +299,7 @@ Pattern = UnionPattern
         | InfixPattern
         | TypePattern
         | AtPattern
+        | SpreadPattern
         | ArgPattern
         | LitPattern
         | PathPattern
@@ -306,13 +307,14 @@ Pattern = UnionPattern
 
 PatternArgs = '(' (Pattern (',' Pattern)*) ')'
 
-UnionPattern = Pattern '|' Pattern
-InfixPattern = Pattern id Pattern
-TypePattern  = id ':' Type
-AtPattern    = id '@' Pattern
-ArgPattern   = Path PatternArgs
-PathPattern  = Path
-TuplePattern = '(' (Pattern (',' Pattern)*) ')'
+UnionPattern  = Pattern '|' Pattern
+InfixPattern  = Pattern id Pattern
+TypePattern   = id ':' Type
+AtPattern     = id '@' Pattern
+SpreadPattern = id '@' '_' '*'
+ArgPattern    = Path PatternArgs
+PathPattern   = Path
+TuplePattern  = '(' (Pattern (',' Pattern)*) ')'
 
 // TODO: Need to merge this with ValDef and VarDef
 // PatDef      = ('val' | 'var') PatternAt (',' PatternAt)* (':' Type)? '=' Expr
