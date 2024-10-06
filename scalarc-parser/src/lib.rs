@@ -86,7 +86,12 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       "#" => T![#],
       _ => T![ident],
     },
+
+    // FIXME: Build different tokens for different literals.
     Token::Literal(token::Literal::Integer) => SyntaxKind::INT_LIT_KW,
+    Token::Literal(token::Literal::HexInteger) => SyntaxKind::INT_LIT_KW,
+    Token::Literal(token::Literal::BinaryInteger) => SyntaxKind::INT_LIT_KW,
+
     Token::Literal(token::Literal::Float) => SyntaxKind::FLOAT_LIT_KW,
 
     Token::Newline => T![nl],
