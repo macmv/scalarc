@@ -566,7 +566,10 @@ fn fun_sig(p: &mut Parser) {
   // test ok
   // def foo(a: String) = 2
   // def bar(a: String)(b: String) = 3
-  while p.at(T!['(']) {
+  // def foo(a: String)
+  //        (implicit b: String) = 3
+  while p.at(T!['(']) || (p.at(T![nl]) && p.peek() == T!['(']) {
+    p.eat_newlines();
     fun_params(p, false);
   }
 
