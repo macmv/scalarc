@@ -1,4 +1,4 @@
-use crate::Marker;
+use crate::{CompletedMarker, Marker};
 
 use super::*;
 
@@ -117,25 +117,12 @@ fn item(p: &mut Parser) {
     // sealed trait Foo
     // lazy val bar = 3
     match p.current() {
-      T![private]
-      | T![protected]
-      | T![final]
-      | T![implicit]
-      | T![sealed]
-      | T![abstract]
-      | T![override]
-      | T![lazy] => {
+      _ if access_modifier(p).is_some() => {}
+
+      T![final] | T![implicit] | T![sealed] | T![abstract] | T![override] | T![lazy] => {
         let m = p.start();
 
-        match p.current() {
-          T![private] | T![protected] => {
-            p.bump();
-            access_qualifier(p)
-          }
-          _ => {
-            p.bump();
-          }
-        }
+        p.bump();
 
         p.eat_newlines();
         m.complete(p, MODIFIER);
@@ -478,6 +465,24 @@ fn class_def(p: &mut Parser, m: Marker) {
   m.complete(p, kind);
 }
 
+fn access_modifier(p: &mut Parser) -> Option<CompletedMarker> {
+  // test ok
+  // private def foo = 3
+  // protected val bar = 3
+  match p.current() {
+    T![private] | T![protected] => {
+      let m = p.start();
+
+      p.bump();
+      access_qualifier(p);
+
+      p.eat_newlines();
+      Some(m.complete(p, MODIFIER))
+    }
+    _ => None,
+  }
+}
+
 // test ok
 // class Foo extends foo.bar.Baz[Int, String](2, 3) {}
 fn extends_item(p: &mut Parser) {
@@ -660,12 +665,16 @@ fn fun_param(p: &mut Parser, is_class: bool) {
   // test ok
   // class Foo(val a: Int, val b: Int) {}
   if is_class {
+    // test ok
+    // class Foo(protected val a: Int) {}
+    // class Foo(private[this] val a: Int) {}
+    access_modifier(p);
+
     match p.current() {
       // test ok
-      // class Foo(private val a: Int) {}
       // class Foo(override val a: Int) {}
       // class Foo(final val a: Int) {}
-      T![private] | T![protected] | T![override] | T![final] => {
+      T![override] | T![final] => {
         p.bump();
       }
       _ => {}
