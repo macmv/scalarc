@@ -1661,3 +1661,37 @@ fn while_in_lambda_works() {
     "#],
   );
 }
+
+#[test]
+fn tripple_quoted_strings() {
+  check(
+    r#"
+      s"""\"${foo}\""""
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          INTERPOLATED_STRING
+            IDENT 's'
+            DOUBLE_QUOTE '"'
+            DOUBLE_QUOTE '"'
+            DOUBLE_QUOTE '"'
+            IDENT '\'
+            DOUBLE_QUOTE '"'
+            INTERPOLATION
+              IDENT '$'
+              OPEN_CURLY '{'
+              IDENT_EXPR
+                IDENT 'foo'
+              CLOSE_CURLY '}'
+            IDENT '\'
+            DOUBLE_QUOTE '"'
+            DOUBLE_QUOTE '"'
+            DOUBLE_QUOTE '"'
+            DOUBLE_QUOTE '"'
+        NL_KW '\n'
+    "#],
+  );
+}

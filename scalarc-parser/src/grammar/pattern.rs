@@ -71,7 +71,7 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
     DOUBLE_QUOTE => {
       p.eat(DOUBLE_QUOTE);
 
-      expr::double_quote_string(p);
+      expr::parse_string(p, false);
 
       Some(m.complete(p, DOUBLE_QUOTED_STRING))
     }

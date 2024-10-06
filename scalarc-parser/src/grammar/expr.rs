@@ -516,17 +516,9 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
     DOUBLE_QUOTE => {
       p.eat(DOUBLE_QUOTE);
 
-      double_quote_string(p);
+      parse_string(p, false);
 
       Some(m.complete(p, DOUBLE_QUOTED_STRING))
-    }
-
-    TRIPPLE_QUOTE => {
-      p.eat(TRIPPLE_QUOTE);
-
-      tripple_quote_string(p);
-
-      Some(m.complete(p, TRIPPLE_QUOTED_STRING))
     }
 
     IDENT => {
@@ -535,25 +527,15 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       match p.current() {
         // test ok
         // s"hello $world"
+        // s"""hello $world"""
         DOUBLE_QUOTE => {
           p.eat(DOUBLE_QUOTE);
 
-          // FIXME: Need to parse interpolated strings.
-          interpolated_string(p);
+          parse_string(p, true);
 
           Some(m.complete(p, INTERPOLATED_STRING))
         }
 
-        // test ok
-        // s"""hello $world"""
-        TRIPPLE_QUOTE => {
-          p.eat(TRIPPLE_QUOTE);
-
-          // FIXME: Need to parse interpolated strings.
-          tripple_quote_string(p);
-
-          Some(m.complete(p, TRIPPLE_QUOTED_STRING))
-        }
         _ => Some(m.complete(p, IDENT_EXPR)),
       }
     }
@@ -743,15 +725,62 @@ pub fn character_lit(p: &mut Parser) {
   }
 }
 
-pub fn double_quote_string(p: &mut Parser) {
-  // test ok
-  // "hello"
+pub fn parse_string(p: &mut Parser, interpolations: bool) {
+  let mut is_start = true;
+  let mut is_tripple_quote = false;
+  let mut quote_count = 0;
+
   loop {
     match p.current() {
-      DOUBLE_QUOTE => {
+      DOUBLE_QUOTE if is_tripple_quote => {
         p.eat(DOUBLE_QUOTE);
-        break;
+        quote_count += 1;
+
+        // This makes a string with the text `"hello"`.
+        //
+        // test ok
+        // """"hello""""
+        dbg!(quote_count);
+        if quote_count >= 3 && !p.at(DOUBLE_QUOTE) {
+          break;
+        }
+
+        continue;
       }
+      _ => quote_count = 0,
+    }
+
+    match p.current() {
+      DOUBLE_QUOTE if !is_tripple_quote => {
+        p.eat(DOUBLE_QUOTE);
+
+        if is_start && p.at(DOUBLE_QUOTE) {
+          p.eat(DOUBLE_QUOTE);
+          is_tripple_quote = true;
+        } else {
+          break;
+        }
+      }
+
+      T![ident] if interpolations && p.slice() == "$" && p.peek() == T!['{'] => {
+        let m = p.start();
+        p.eat(T![ident]); // The `$`
+        p.eat(T!['{']);
+        expr(p);
+        p.expect(T!['}']);
+        m.complete(p, INTERPOLATION);
+      }
+
+      T![ident] if interpolations && p.slice().starts_with("$") => {
+        let m = p.start();
+        {
+          let m = p.start();
+          p.eat(T![ident]);
+          m.complete(p, IDENT_EXPR);
+        }
+        m.complete(p, INTERPOLATION);
+      }
+
       // test err
       // "hello
       EOF => {
@@ -789,80 +818,8 @@ pub fn double_quote_string(p: &mut Parser) {
         p.bump();
       }
     }
-  }
-}
 
-pub fn tripple_quote_string(p: &mut Parser) {
-  // test ok
-  // """hello"""
-  loop {
-    match p.current() {
-      TRIPPLE_QUOTE => {
-        p.eat(TRIPPLE_QUOTE);
-        break;
-      }
-      // test err
-      // """hello
-      EOF => {
-        p.error("unexpected end of file");
-        break;
-      }
-      // test ok
-      // """hello
-      // world"""
-      _ => {
-        p.bump();
-      }
-    }
-  }
-}
-
-pub fn interpolated_string(p: &mut Parser) {
-  loop {
-    match p.current() {
-      DOUBLE_QUOTE => {
-        p.eat(DOUBLE_QUOTE);
-        break;
-      }
-
-      T![ident] if p.slice() == "$" && p.peek() == T!['{'] => {
-        let m = p.start();
-        p.eat(T![ident]); // The `$`
-        p.eat(T!['{']);
-        expr(p);
-        p.expect(T!['}']);
-        m.complete(p, INTERPOLATION);
-      }
-
-      T![ident] if p.slice().starts_with("$") => {
-        let m = p.start();
-        {
-          let m = p.start();
-          p.eat(T![ident]);
-          m.complete(p, IDENT_EXPR);
-        }
-        m.complete(p, INTERPOLATION);
-      }
-
-      // test err
-      // "hello
-      EOF => {
-        p.error("unexpected end of file");
-        break;
-      }
-
-      // test ok
-      // s"hello\"world"
-      IDENT if p.slice() == "\\" => {
-        p.bump();
-
-        // TODO: Parse unicode escapes and such.
-        p.bump();
-      }
-      _ => {
-        p.bump();
-      }
-    }
+    is_start = false;
   }
 }
 
