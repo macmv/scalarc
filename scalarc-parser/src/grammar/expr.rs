@@ -59,20 +59,28 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
       let m = lhs.precede(p);
       p.bump(); // eat T![ident] or T![=>]
 
+      // Eat at most 1 newline.
+      // This is one expression:
+      // 2 +
+      //   3
+      //
+      // These are two expressions:
+      // 2 +
+      //
+      //   3
+      let found_newline = p.at(T![nl]);
+      if found_newline {
+        p.eat(T![nl]);
+      }
+
+      // Any of these tokens are a terminator, or a double newline is a terminator.
       let is_at_terminator = match p.current() {
         T![,] | T![')'] | T!['}'] | T![else] | EOF => true,
+        T![nl] if found_newline => true,
         _ => false,
       };
 
-      // this is one expression
-      // 2 +
-      //   3
-      //
-      // these are two expressions
-      // 2 +
-      //
-      //   3
-      if (p.eat_newlines_max(1) >= 1 && p.at(T![nl])) || is_at_terminator {
+      if is_at_terminator {
         if kind == ASSIGN_EXPR {
           m.abandon(p);
           p.error(format!("expected expression, got expression separator {:?}", p.current()));

@@ -385,6 +385,52 @@ fn lambda_expr() {
 }
 
 #[test]
+fn lambda_with_postfix_op() {
+  check_expr(
+    "Seq() foreach { _ =>
+      Seq() flatten
+    }",
+    expect![@r#"
+      INFIX_EXPR
+        CALL_EXPR
+          IDENT_EXPR
+            IDENT 'Seq'
+          PAREN_ARGUMENTS
+            OPEN_PAREN '('
+            CLOSE_PAREN ')'
+        WHITESPACE ' '
+        IDENT 'foreach'
+        WHITESPACE ' '
+        BLOCK_EXPR
+          OPEN_CURLY '{'
+          WHITESPACE ' '
+          EXPR_ITEM
+            LAMBDA_EXPR
+              IDENT_EXPR
+                IDENT '_'
+              WHITESPACE ' '
+              FAT_ARROW '=>'
+              NL_KW '\n'
+              WHITESPACE '      '
+              BLOCK
+                EXPR_ITEM
+                  POSTFIX_EXPR
+                    CALL_EXPR
+                      IDENT_EXPR
+                        IDENT 'Seq'
+                      PAREN_ARGUMENTS
+                        OPEN_PAREN '('
+                        CLOSE_PAREN ')'
+                    WHITESPACE ' '
+                    IDENT 'flatten'
+                    NL_KW '\n'
+          WHITESPACE '    '
+          CLOSE_CURLY '}'
+    "#],
+  );
+}
+
+#[test]
 fn call_op() {
   check_expr(
     "hi(2)",
