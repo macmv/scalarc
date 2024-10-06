@@ -145,15 +145,18 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
           // test ok
           // case foo @ _* =>
           if p.at(T![ident]) && p.slice() == "_" {
+            let m2 = p.start();
             p.eat(T![ident]);
             if p.at(T![ident]) && p.slice() == "*" {
+              m2.abandon(p);
               p.eat(T![ident]);
               Some(m.complete(p, SPREAD_PATTERN))
             } else {
-              // FIXME: This isn't handled correctly.
-              p.error("expected `*`");
-              m.abandon(p);
-              None
+              // test ok
+              // case foo @ _ =>
+
+              m2.complete(p, PATH_PATTERN);
+              Some(m.complete(p, AT_PATTERN))
             }
           } else {
             pattern_inner(p, is_case);
