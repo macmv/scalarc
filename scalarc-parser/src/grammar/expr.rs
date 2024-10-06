@@ -664,6 +664,14 @@ pub fn character_lit(p: &mut Parser) {
     }
 
     // test ok
+    // '\u0000'
+    T![ident] if p.slice() == "\\" => {
+      p.eat(T![ident]);
+      // TODO: Read escape parsing.
+      p.bump();
+    }
+
+    // test ok
     // '3'
     _ => {
       // test err
