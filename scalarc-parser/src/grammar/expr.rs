@@ -1080,11 +1080,7 @@ fn try_expr(p: &mut Parser) {
   if p.at(T![catch]) {
     p.eat(T![catch]);
 
-    if p.at(T!['{']) {
-      super::item::block_items(p);
-    } else {
-      p.error("expected catch block");
-    }
+    expr(p);
   }
 
   // test ok
@@ -1094,11 +1090,7 @@ fn try_expr(p: &mut Parser) {
   if p.at(T![finally]) {
     p.eat(T![finally]);
 
-    if p.at(T!['{']) {
-      super::item::block_items(p);
-    } else {
-      p.error("expected finally block");
-    }
+    expr(p);
   }
 }
 
