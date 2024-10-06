@@ -1597,3 +1597,67 @@ fn interpolated_string() {
     "#],
   );
 }
+
+#[test]
+fn while_in_lambda_works() {
+  check(
+    r#"
+      { _ =>
+        val x = 3
+        while (true) println(x)
+      }
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          BLOCK_EXPR
+            OPEN_CURLY '{'
+            WHITESPACE ' '
+            EXPR_ITEM
+              LAMBDA_EXPR
+                IDENT_EXPR
+                  IDENT '_'
+                WHITESPACE ' '
+                FAT_ARROW '=>'
+                NL_KW '\n'
+                WHITESPACE '        '
+                BLOCK
+                  VAL_DEF
+                    VAL_KW 'val'
+                    WHITESPACE ' '
+                    PATH_PATTERN
+                      PATH
+                        IDENT 'x'
+                    WHITESPACE ' '
+                    EQ '='
+                    WHITESPACE ' '
+                    LIT_EXPR
+                      INT_LIT_KW '3'
+                  NL_KW '\n'
+                  WHITESPACE '        '
+                  EXPR_ITEM
+                    WHILE_EXPR
+                      WHILE_KW 'while'
+                      WHITESPACE ' '
+                      OPEN_PAREN '('
+                      LIT_EXPR
+                        TRUE_KW 'true'
+                      CLOSE_PAREN ')'
+                      WHITESPACE ' '
+                      CALL_EXPR
+                        IDENT_EXPR
+                          IDENT 'println'
+                        PAREN_ARGUMENTS
+                          OPEN_PAREN '('
+                          IDENT_EXPR
+                            IDENT 'x'
+                          CLOSE_PAREN ')'
+                  NL_KW '\n'
+            WHITESPACE '      '
+            CLOSE_CURLY '}'
+        NL_KW '\n'
+    "#],
+  );
+}
