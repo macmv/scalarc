@@ -150,7 +150,7 @@ fn patterns() {
           AT_PATTERN
             IDENT 'list'
             WHITESPACE ' '
-            IDENT '@'
+            AT '@'
             WHITESPACE ' '
             ARG_PATTERN
               PATH

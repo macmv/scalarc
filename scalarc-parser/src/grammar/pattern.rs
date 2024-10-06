@@ -117,10 +117,10 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
 
           // test ok
           // case foo @ Int =>
-          T![ident] if p.slice() == "@" => {
+          T![@] => {
             m2.abandon(p);
 
-            p.eat(T![ident]);
+            p.eat(T![@]);
             pattern(p);
             Some(m.complete(p, AT_PATTERN))
           }

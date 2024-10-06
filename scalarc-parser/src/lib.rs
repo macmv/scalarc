@@ -74,6 +74,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       "=>" => T![=>],
       "<:" => T![<:],
       ">:" => T![>:],
+      "@" => T![@],
       _ => T![ident],
     },
     Token::Literal(token::Literal::Integer) => SyntaxKind::INT_LIT_KW,
