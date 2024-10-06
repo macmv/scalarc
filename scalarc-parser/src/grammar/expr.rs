@@ -579,13 +579,6 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       }
 
       // test ok
-      // new Iterator with Seq[Int]
-      if p.at(T![with]) {
-        p.eat(T![with]);
-        super::type_expr::simple_type_expr(p);
-      }
-
-      // test ok
       // new Iterator[Int]
       // new Iterator[String]("hello")
       if p.at(T!['[']) {
@@ -601,6 +594,13 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
         let m = p.start();
         call_paren_expr(p);
         m.complete(p, PAREN_ARGUMENTS);
+      }
+
+      // test ok
+      // new Iterator() with Seq[Int]
+      if p.at(T![with]) {
+        p.eat(T![with]);
+        super::type_expr::simple_type_expr(p);
       }
 
       // test ok
