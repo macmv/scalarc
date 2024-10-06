@@ -329,6 +329,13 @@ pub fn call_paren_expr(p: &mut Parser) {
       // )
       p.expect(T![ident]);
       p.expect(T![=]);
+      // test ok
+      // hi(
+      //   foo =
+      //     3,
+      //   bar = 4
+      // )
+      p.eat_newlines();
       expr(p);
     } else {
       expr(p);
