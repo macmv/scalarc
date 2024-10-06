@@ -820,5 +820,21 @@ pub fn type_def(p: &mut Parser, m: Marker) {
     super::type_expr::type_expr(p);
   }
 
+  // test ok
+  // type A <: Int
+  if p.at(T![<:]) {
+    p.eat(T![<:]);
+    p.eat_newlines();
+    super::type_expr::type_expr(p);
+  }
+
+  // test ok
+  // type A >: Int
+  if p.at(T![>:]) {
+    p.eat(T![>:]);
+    p.eat_newlines();
+    super::type_expr::type_expr(p);
+  }
+
   m.complete(p, TYPE_DEF);
 }
