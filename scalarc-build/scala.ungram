@@ -154,6 +154,7 @@ Expr = IfExpr
      | TupleExpr
      | FieldExpr
      | CallExpr
+     | MacroExpr
 
 IfExpr      = 'if' '(' Expr ')' Expr ('else' Expr)?
 WhileExpr   = 'while' '(' Expr ')' (nl)* Expr
@@ -184,6 +185,7 @@ TupleExpr      = '(' (Expr (',' Expr)*)? ')'
 FieldExpr      = Expr '.' id
 TypedExpr      = Expr TypeArgs
 CallExpr       = Expr Arguments
+MacroExpr      = 'macro' Path
 
 Arguments       = ParenArguments | SpreadArguments | BlockExpr
 ParenArguments  = '(' (Expr (',' Expr)*)? ')'

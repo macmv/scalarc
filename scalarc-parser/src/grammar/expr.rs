@@ -629,6 +629,12 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       Some(m.complete(p, FOR_EXPR))
     }
 
+    // NB: This should only really be allowed as the item of a `def`, but this works well enough.
+    T![macro] => {
+      macro_expr(p);
+      Some(m.complete(p, MACRO_EXPR))
+    }
+
     _ => {
       m.abandon(p);
       p.error(format!("expected expression, got {:?}", p.current()));
@@ -967,4 +973,20 @@ fn generator(p: &mut Parser) {
   }
 
   m.complete(p, generator);
+}
+
+// test ok
+// macro foo.bar.Baz
+fn macro_expr(p: &mut Parser) {
+  p.eat(T![macro]);
+
+  let m = p.start();
+  p.expect(T![ident]);
+
+  while p.at(T![.]) {
+    p.eat(T![.]);
+    p.expect(T![ident]);
+  }
+
+  m.complete(p, PATH);
 }
