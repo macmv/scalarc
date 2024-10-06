@@ -3,10 +3,10 @@ use crate::{
   Parser,
 };
 
-pub fn type_expr(p: &mut Parser) { type_expr_0(p, false); }
-pub fn type_expr_is_case(p: &mut Parser, is_case: bool) { type_expr_0(p, is_case); }
+pub fn type_expr(p: &mut Parser) { type_expr_0(p, false, false); }
+pub fn type_expr_is_case(p: &mut Parser, is_case: bool) { type_expr_0(p, is_case, true); }
 
-fn type_expr_0(p: &mut Parser, is_case: bool) {
+fn type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) {
   let mut m = p.start();
   if p.at(T![=>]) && !is_case {
     // test ok
@@ -64,9 +64,18 @@ fn type_expr_0(p: &mut Parser, is_case: bool) {
         } else {
           let m = lhs.precede(p);
           p.eat(T![=>]);
-          type_expr(p);
+          type_expr_0(p, is_case, is_simple);
           lhs = m.complete(p, LAMBDA_TYPE);
         }
+      }
+
+      // test ok
+      // val foo: Int with String = 5
+      T![with] if is_simple => {
+        let m = lhs.precede(p);
+        p.eat(T![with]);
+        type_expr_0(p, is_case, is_simple);
+        lhs = m.complete(p, WITH_TYPE);
       }
 
       T![ident] if p.slice() == "*" => {

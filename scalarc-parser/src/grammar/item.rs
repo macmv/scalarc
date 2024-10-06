@@ -519,11 +519,6 @@ fn item_body(p: &mut Parser) {
     p.eat(T![:]);
     super::type_expr::type_expr_is_case(p, true);
 
-    while p.at(T![with]) {
-      p.eat(T![with]);
-      super::type_expr::type_expr_is_case(p, true);
-    }
-
     p.expect(T![=>]);
     m.complete(p, SELF_TYPE);
   }
