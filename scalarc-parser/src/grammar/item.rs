@@ -395,6 +395,14 @@ fn class_def(p: &mut Parser, m: Marker) {
   p.expect(T![ident]);
 
   // test ok
+  // class Foo[T] {}
+  if p.at(T!['[']) {
+    let m = p.start();
+    super::type_expr::type_params(p, T!['['], T![']']);
+    m.complete(p, TYPE_PARAMS);
+  }
+
+  // test ok
   // class Foo private {}
   // class Bar protected {}
   match p.current() {
