@@ -50,6 +50,7 @@ struct Parser<'a> {
   in_string: bool,
 }
 
+#[derive(Debug)]
 enum Brace {
   /// `(` and `)`
   Paren,
@@ -248,7 +249,15 @@ struct CompletedMarker {
 }
 
 impl Parser<'_> {
-  pub fn finish(self) -> Vec<Event> { self.events }
+  pub fn finish(self) -> Vec<Event> {
+    #[cfg(debug_assertions)]
+    if !self.events.iter().any(|e| matches!(e, Event::Error { .. })) && !self.brace_stack.is_empty()
+    {
+      panic!("successful parse with non-empty brace stack: {:?}", self.brace_stack);
+    }
+
+    self.events
+  }
 
   pub fn newlines_enabled(&self) -> bool {
     match self.brace_stack.last() {

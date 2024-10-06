@@ -449,6 +449,7 @@ impl<'a> Lexer<'a> {
       // Only shows up when in a string.
       InnerToken::Letter => self.ok(start, Token::Ident(Ident::Plain)),
       InnerToken::Operator => self.ok(start, Token::Ident(Ident::Plain)),
+      InnerToken::Underscore => self.ok(start, Token::Ident(Ident::Plain)),
 
       t => unreachable!("inner token {t:?}"),
     }

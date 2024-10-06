@@ -811,8 +811,18 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
         p.set_in_string(false);
         p.eat(T!['{']);
         expr(p);
+
+        // HACK: We set this back to `in_string`, so that `p.expect()` can parse the
+        // next token as being inside a string. Then, we also pop the `}`
+        // manually.
         p.set_in_string(true);
-        p.expect(T!['}']);
+        if p.current() == T!['}'] {
+          p.brace_stack.pop();
+          p.bump();
+        } else {
+          p.expect(T!['}']);
+        }
+
         m.complete(p, INTERPOLATION);
       }
 
