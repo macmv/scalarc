@@ -72,6 +72,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       "if" => T![if],
       "else" => T![else],
       "while" => T![while],
+      "do" => T![do],
       "for" => T![for],
       "yield" => T![yield],
       "=" => T![=],

@@ -68,7 +68,7 @@ fn items(p: &mut Parser, terminator: BlockTerminator) {
         // test ok
         // println(() => 2, () => 3)
         match p.current() {
-          T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | T![else] | EOF => break 'items,
+          T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | T![else] | T![while] | EOF => break 'items,
           _ => break,
         }
       } else {

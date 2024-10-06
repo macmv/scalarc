@@ -73,7 +73,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
 
       // Any of these tokens are a terminator, or a double newline is a terminator.
       let is_at_terminator = match terminator_token {
-        T![,] | T![')'] | T!['}'] | T![else] | EOF => true,
+        T![,] | T![')'] | T!['}'] | T![else] | T![while] | EOF => true,
         T![nl] if found_newline => true,
 
         // `val` and `var` declare the next statement, but in the case of a lambda, `val` and `var`
@@ -127,13 +127,13 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
       }
     } else {
       match p.current() {
-        T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | T![else] | EOF => {
+        T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | T![else] | T![while] | EOF => {
           return;
         }
 
         _ => {
           p.error(format!("expected operator, got {:?}", p.current()));
-          p.recover_until_any(&[T![nl], T![,], T![')'], T!['}'], T![else]]);
+          p.recover_until_any(&[T![nl], T![,], T![')'], T!['}'], T![else], T![while]]);
           return;
         }
       }
@@ -595,6 +595,11 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       Some(m.complete(p, WHILE_EXPR))
     }
 
+    T![do] => {
+      do_while_expr(p);
+      Some(m.complete(p, DO_WHILE_EXPR))
+    }
+
     T![for] => {
       for_expr(p);
       Some(m.complete(p, FOR_EXPR))
@@ -794,6 +799,18 @@ fn while_expr(p: &mut Parser) {
   expr(p);
   p.eat_newlines();
   p.expect(T![')']);
+
+  expr(p);
+}
+
+// test ok
+// do println("hi") while (true)
+fn do_while_expr(p: &mut Parser) {
+  p.eat(T![do]);
+
+  expr(p);
+
+  p.expect(T![while]);
 
   expr(p);
 }
