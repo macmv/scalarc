@@ -332,6 +332,8 @@ impl Parser<'_> {
         let kind = match kind {
           T![nl] if !self.newlines_enabled() => {
             // Skip newlines if they are disabled.
+            self.current = kind;
+            self.current_range = self.lexer.range();
             continue;
           }
           // `;` always acts like a newline, even if newlines are disabled.
