@@ -576,6 +576,13 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       // new Iterator
       if p.at(T![ident]) {
         p.eat(T![ident]);
+
+        // test ok
+        // new foo.bar.Iterator()
+        while p.at(T![.]) {
+          p.eat(T![.]);
+          p.expect(T![ident]);
+        }
       }
 
       // test ok
