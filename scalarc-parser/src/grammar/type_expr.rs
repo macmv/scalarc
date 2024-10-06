@@ -7,7 +7,15 @@ pub fn type_expr(p: &mut Parser) { type_expr_0(p, false); }
 pub fn type_expr_is_case(p: &mut Parser, is_case: bool) { type_expr_0(p, is_case); }
 
 fn type_expr_0(p: &mut Parser, is_case: bool) {
-  let m = p.start();
+  let mut m = p.start();
+  if p.at(T![=>]) && !is_case {
+    // test ok
+    // def foo: => Int = 0
+    p.eat(T![=>]);
+    let prefix = m.complete(p, ANON_LAMBDA_TYPE);
+    m = prefix.precede(p)
+  }
+
   let mut lhs = match p.current() {
     // test ok
     // val foo: () = 0

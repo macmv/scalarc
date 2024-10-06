@@ -78,6 +78,7 @@ StableId = Path
 //                   | '(' Types ')'
 
 Type = LambdaType
+     | AnonLambdaType
      | GenericType
      | TupleType
      | PathType
@@ -93,11 +94,12 @@ UpperBoundParam = Type '>:' Type
 ImplicitParam = Type ':' Type
 SimpleParam = Type
 
-LambdaType  = '(' ')' '=>' Type // TODO
-GenericType = Type TypeArgs
-PathType    = Type '.' id
-TupleType   = '(' (Type (',' Type)*)? ')'
-SimpleType  = id
+LambdaType     = '(' ')' '=>' Type // TODO
+AnonLambdaType = '=>' Type
+GenericType    = Type TypeArgs
+PathType       = Type '.' id
+TupleType      = '(' (Type (',' Type)*)? ')'
+SimpleType     = id
 
 // Type parameters: `[T <: Ordering]`, like in a declaration.
 TypeParams = '[' (TypeParam (',' TypeParam)*) ']'
