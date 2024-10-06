@@ -483,9 +483,9 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
           p.eat(DOUBLE_QUOTE);
 
           // FIXME: Need to parse interpolated strings.
-          double_quote_string(p);
+          interpolated_string(p);
 
-          Some(m.complete(p, DOUBLE_QUOTED_STRING))
+          Some(m.complete(p, INTERPOLATED_STRING))
         }
 
         // test ok
@@ -688,6 +688,55 @@ pub fn tripple_quote_string(p: &mut Parser) {
       // test ok
       // """hello
       // world"""
+      _ => {
+        p.bump();
+      }
+    }
+  }
+}
+
+pub fn interpolated_string(p: &mut Parser) {
+  loop {
+    match p.current() {
+      DOUBLE_QUOTE => {
+        p.eat(DOUBLE_QUOTE);
+        break;
+      }
+
+      T![ident] if p.slice() == "$" && p.peek() == T!['{'] => {
+        let m = p.start();
+        p.eat(T![ident]); // The `$`
+        p.eat(T!['{']);
+        expr(p);
+        p.expect(T!['}']);
+        m.complete(p, INTERPOLATION);
+      }
+
+      T![ident] if p.slice().starts_with("$") => {
+        let m = p.start();
+        {
+          let m = p.start();
+          p.eat(T![ident]);
+          m.complete(p, IDENT_EXPR);
+        }
+        m.complete(p, INTERPOLATION);
+      }
+
+      // test err
+      // "hello
+      EOF => {
+        p.error("unexpected end of file");
+        break;
+      }
+
+      // test ok
+      // s"hello\"world"
+      IDENT if p.slice() == "\\" => {
+        p.bump();
+
+        // TODO: Parse unicode escapes and such.
+        p.bump();
+      }
       _ => {
         p.bump();
       }

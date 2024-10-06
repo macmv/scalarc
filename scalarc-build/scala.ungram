@@ -42,6 +42,9 @@ any = 'any'
 CharacterLit = '\'' any '\''
 DoubleQuotedString = '"' any* '"'
 TrippleQuotedString = '"""' any* '"""'
+InterpolatedString = '"' any* Interpolation* '"'
+// NB: The `id` is `$`, we just parse it as an identifier.
+Interpolation = id '{' Expr '}'
 
 id = 'ident'
 nl = 'nl'
@@ -143,6 +146,7 @@ Expr = IfExpr
      | CharacterLit
      | DoubleQuotedString
      | TrippleQuotedString
+     | InterpolatedString
      | PathExpr
      | UnderscoreExpr
      | TupleExpr

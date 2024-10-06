@@ -1503,3 +1503,43 @@ fn for_expr() {
     "#],
   );
 }
+
+#[test]
+fn interpolated_string() {
+  check(
+    r#"s"$foo is: ${" " * 3} $bar""#,
+    expect![@r#"
+      SOURCE_FILE
+        EXPR_ITEM
+          INTERPOLATED_STRING
+            IDENT 's'
+            DOUBLE_QUOTE '"'
+            INTERPOLATION
+              IDENT_EXPR
+                IDENT '$foo'
+            WHITESPACE ' '
+            IDENT 'is'
+            COLON ':'
+            WHITESPACE ' '
+            INTERPOLATION
+              IDENT '$'
+              OPEN_CURLY '{'
+              INFIX_EXPR
+                DOUBLE_QUOTED_STRING
+                  DOUBLE_QUOTE '"'
+                  WHITESPACE ' '
+                  DOUBLE_QUOTE '"'
+                WHITESPACE ' '
+                IDENT '*'
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '3'
+              CLOSE_CURLY '}'
+            WHITESPACE ' '
+            INTERPOLATION
+              IDENT_EXPR
+                IDENT '$bar'
+            DOUBLE_QUOTE '"'
+    "#],
+  );
+}
