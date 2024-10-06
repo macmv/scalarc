@@ -355,7 +355,7 @@ impl Highlightable for ast::Expr {
           h.highlight_opt(case.case_token(), HighlightKind::Keyword);
 
           h.visit(case.pattern());
-          if let Some(guard) = case.guard() {
+          if let Some(guard) = case.case_guard() {
             h.highlight_opt(guard.if_token(), HighlightKind::Keyword);
             h.visit(guard.expr());
           }
