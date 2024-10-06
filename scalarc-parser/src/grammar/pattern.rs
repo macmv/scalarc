@@ -61,112 +61,85 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
       let m2 = p.start();
       p.eat(IDENT);
 
-      if p.at(T![.]) {
+      let mut is_path = false;
+      while p.at(T![.]) {
         // test ok
         // case foo.bar =>
         p.eat(T![.]);
+        p.expect(T![ident]);
+        is_path = true;
+      }
 
-        loop {
-          p.expect(IDENT);
+      // test ok
+      // case _
+      //   =>
+      //
+      // test ok
+      // case _
+      //   if true =>
+      if p.at(T![nl]) {
+        p.eat(T![nl]);
+      }
 
-          match p.current() {
-            // test ok
-            // case foo.bar.baz =>
-            T![.] => p.eat(T![.]),
-
-            // test ok
-            // case scala.Seq(1, 2) =>
-            T!['('] => {
-              m2.complete(p, PATH);
-
-              let args = p.start();
-              arg_pattern(p);
-              args.complete(p, PATTERN_ARGS);
-              break Some(m.complete(p, ARG_PATTERN));
-            }
-
-            // test ok
-            // case foo.bar =>
-            _ => {
-              m2.complete(p, PATH);
-
-              m.complete(p, PATH_PATTERN);
-              break None;
-            }
-          }
-        }
-      } else {
+      match p.current() {
         // test ok
-        // case _
-        //   =>
+        // case Seq(1, 2) =>
+        T!['('] => {
+          m2.complete(p, PATH);
+
+          let args = p.start();
+          arg_pattern(p);
+          args.complete(p, PATTERN_ARGS);
+          Some(m.complete(p, ARG_PATTERN))
+        }
+
+        // test ok
+        // case foo: Int =>
+        T![:] if !is_path => {
+          m2.abandon(p);
+
+          p.eat(T![:]);
+          super::type_expr::type_expr_is_case(p, is_case);
+          Some(m.complete(p, TYPE_PATTERN))
+        }
+
+        // test ok
+        // case foo @ Int =>
+        T![@] if !is_path => {
+          m2.abandon(p);
+
+          p.eat(T![@]);
+          pattern_inner(p, is_case);
+          Some(m.complete(p, AT_PATTERN))
+        }
+
+        // test ok
+        // case foo =>
         //
         // test ok
-        // case _
-        //   if true =>
-        if p.at(T![nl]) {
-          p.eat(T![nl]);
+        // case foo if bar =>
+        //
+        // test ok
+        // case Seq(foo, bar) =>
+        T![=>] | T![=] | T![if] | T![,] | T![')'] => {
+          m2.complete(p, PATH);
+
+          Some(m.complete(p, PATH_PATTERN))
         }
 
-        match p.current() {
-          // test ok
-          // case Seq(1, 2) =>
-          T!['('] => {
-            m2.complete(p, PATH);
+        // `|` is a valid terminator, for union patterns.
+        T![ident] if p.slice() == "|" => {
+          m2.complete(p, PATH);
 
-            let args = p.start();
-            arg_pattern(p);
-            args.complete(p, PATTERN_ARGS);
-            Some(m.complete(p, ARG_PATTERN))
-          }
+          Some(m.complete(p, PATH_PATTERN))
+        }
 
-          // test ok
-          // case foo: Int =>
-          T![:] => {
-            m2.abandon(p);
+        _ => {
+          m2.abandon(p);
+          m.abandon(p);
 
-            p.eat(T![:]);
-            super::type_expr::type_expr_is_case(p, is_case);
-            Some(m.complete(p, TYPE_PATTERN))
-          }
-
-          // test ok
-          // case foo @ Int =>
-          T![@] => {
-            m2.abandon(p);
-
-            p.eat(T![@]);
-            pattern_inner(p, is_case);
-            Some(m.complete(p, AT_PATTERN))
-          }
-
-          // test ok
-          // case foo =>
-          //
-          // test ok
-          // case foo if bar =>
-          //
-          // test ok
-          // case Seq(foo, bar) =>
-          T![=>] | T![=] | T![if] | T![,] | T![')'] => {
-            m2.complete(p, PATH);
-
-            Some(m.complete(p, PATH_PATTERN))
-          }
-
-          // `|` is a valid terminator, for union patterns.
-          T![ident] if p.slice() == "|" => {
-            m2.complete(p, PATH);
-
-            Some(m.complete(p, PATH_PATTERN))
-          }
-
-          _ => {
-            m2.abandon(p);
-            m.abandon(p);
-
-            p.error(format!("expected pattern, got {:?}", p.current()));
-            None
-          }
+          p.error(format!("expected pattern, got {:?}", p.current()));
+          None
         }
       }
     }
