@@ -526,3 +526,52 @@ fn multiline_vals() {
     "#],
   );
 }
+
+#[test]
+fn empty_case_items() {
+  check(
+    r#"
+    x match {
+      case _ =>
+      case foo =>
+    }
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '    '
+        EXPR_ITEM
+          MATCH_EXPR
+            IDENT_EXPR
+              IDENT 'x'
+            WHITESPACE ' '
+            MATCH_KW 'match'
+            WHITESPACE ' '
+            OPEN_CURLY '{'
+            NL_KW '\n'
+            WHITESPACE '      '
+            CASE_ITEM
+              CASE_KW 'case'
+              WHITESPACE ' '
+              PATH_PATTERN
+                PATH
+                  IDENT '_'
+              WHITESPACE ' '
+              FAT_ARROW '=>'
+              NL_KW '\n'
+            WHITESPACE '      '
+            CASE_ITEM
+              CASE_KW 'case'
+              WHITESPACE ' '
+              PATH_PATTERN
+                PATH
+                  IDENT 'foo'
+              WHITESPACE ' '
+              FAT_ARROW '=>'
+              NL_KW '\n'
+            WHITESPACE '    '
+            CLOSE_CURLY '}'
+        NL_KW '\n'
+    "#],
+  );
+}

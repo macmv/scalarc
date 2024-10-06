@@ -769,10 +769,13 @@ pub fn case_item(p: &mut Parser, m: Marker) {
   //
   // test ok
   // case 3 =>
-  if !(p.at(T!['}']) || p.at(T![nl]) || p.at(EOF)) {
-    let m = p.start();
-    items(p, BlockTerminator::Case);
-    m.complete(p, BLOCK);
+  match p.current() {
+    T![nl] | T!['}'] | T![case] | EOF => {}
+    _ => {
+      let m = p.start();
+      items(p, BlockTerminator::Case);
+      m.complete(p, BLOCK);
+    }
   }
 
   m.complete(p, CASE_ITEM);
