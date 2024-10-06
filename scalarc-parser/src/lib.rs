@@ -343,7 +343,7 @@ impl Parser<'_> {
         // Ignore whitespace tokens here, because we usually don't care about them when parsing. We
         // record that they got skipped, so that we can recover them later if we need a concrete
         // tree.
-        Ok(Token::Whitespace) => {
+        Ok(Token::Whitespace) if !self.in_string => {
           self.pending_whitespace += self.lexer.slice().len();
         }
         Ok(Token::Newline) if !self.newlines_enabled() => {
@@ -369,7 +369,7 @@ impl Parser<'_> {
         // Ignore whitespace tokens here, because we usually don't care about them when parsing. We
         // record that they got skipped, so that we can recover them later if we need a concrete
         // tree.
-        Ok(Token::Whitespace) => {
+        Ok(Token::Whitespace) if !self.in_string => {
           self.peeked_whitespace += self.lexer.slice().len();
         }
         Ok(Token::Newline) if !self.newlines_enabled() => {

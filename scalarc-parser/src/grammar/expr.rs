@@ -521,16 +521,12 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
     }
 
     SINGLE_QUOTE => {
-      p.eat(SINGLE_QUOTE);
-
       character_lit(p);
 
       Some(m.complete(p, CHARACTER_LIT))
     }
 
     DOUBLE_QUOTE => {
-      p.eat(DOUBLE_QUOTE);
-
       parse_string(p, false);
 
       Some(m.complete(p, DOUBLE_QUOTED_STRING))
@@ -544,8 +540,6 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
         // s"hello $world"
         // s"""hello $world"""
         DOUBLE_QUOTE => {
-          p.eat(DOUBLE_QUOTE);
-
           parse_string(p, true);
 
           Some(m.complete(p, INTERPOLATED_STRING))
@@ -684,6 +678,8 @@ pub fn character_lit(p: &mut Parser) {
   // val y = 3
   p.set_in_string(true);
 
+  p.eat(SINGLE_QUOTE);
+
   // test ok
   // 'a'
   // '*'
@@ -695,6 +691,10 @@ pub fn character_lit(p: &mut Parser) {
       p.eat(SINGLE_QUOTE);
       return;
     }
+
+    // test ok
+    // ' '
+
     // test err
     // 'a
     EOF => {
@@ -766,9 +766,12 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
   // val y = 3
   p.set_in_string(true);
 
+  p.eat(DOUBLE_QUOTE);
+
   loop {
     match p.current() {
       DOUBLE_QUOTE if is_tripple_quote => {
+        p.set_in_string(false);
         p.eat(DOUBLE_QUOTE);
         quote_count += 1;
 
@@ -778,10 +781,10 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
         // """"hello""""
         dbg!(quote_count);
         if quote_count >= 3 && !p.at(DOUBLE_QUOTE) {
-          p.set_in_string(false);
           break;
         }
 
+        p.set_in_string(true);
         continue;
       }
       _ => quote_count = 0,
@@ -792,13 +795,14 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
         // test ok
         // val x = println("hello")
         // val y = 3
+        p.set_in_string(false);
         p.eat(DOUBLE_QUOTE);
 
         if is_start && p.at(DOUBLE_QUOTE) {
           p.eat(DOUBLE_QUOTE);
+          p.set_in_string(true);
           is_tripple_quote = true;
         } else {
-          p.set_in_string(false);
           break;
         }
       }
