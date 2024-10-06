@@ -1001,3 +1001,193 @@ fn bare_assignment() {
     "#],
   );
 }
+
+#[test]
+fn postfix_ops() {
+  check(
+    "Seq(1, 2) flatten",
+    expect![@r#"
+      SOURCE_FILE
+        EXPR_ITEM
+          POSTFIX_EXPR
+            CALL_EXPR
+              IDENT_EXPR
+                IDENT 'Seq'
+              PAREN_ARGUMENTS
+                OPEN_PAREN '('
+                LIT_EXPR
+                  INT_LIT_KW '1'
+                COMMA ','
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '2'
+                CLOSE_PAREN ')'
+            WHITESPACE ' '
+            IDENT 'flatten'
+    "#],
+  );
+
+  check(
+    r#"
+      (Seq(1, 2) flatten)
+      2
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          TUPLE_EXPR
+            OPEN_PAREN '('
+            POSTFIX_EXPR
+              CALL_EXPR
+                IDENT_EXPR
+                  IDENT 'Seq'
+                PAREN_ARGUMENTS
+                  OPEN_PAREN '('
+                  LIT_EXPR
+                    INT_LIT_KW '1'
+                  COMMA ','
+                  WHITESPACE ' '
+                  LIT_EXPR
+                    INT_LIT_KW '2'
+                  CLOSE_PAREN ')'
+              WHITESPACE ' '
+              IDENT 'flatten'
+            CLOSE_PAREN ')'
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          LIT_EXPR
+            INT_LIT_KW '2'
+        NL_KW '\n'
+    "#],
+  );
+
+  check(
+    r#"
+      (Seq(1, 2) flatten, Seq(1, 2) flatten)
+      2
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          TUPLE_EXPR
+            OPEN_PAREN '('
+            POSTFIX_EXPR
+              CALL_EXPR
+                IDENT_EXPR
+                  IDENT 'Seq'
+                PAREN_ARGUMENTS
+                  OPEN_PAREN '('
+                  LIT_EXPR
+                    INT_LIT_KW '1'
+                  COMMA ','
+                  WHITESPACE ' '
+                  LIT_EXPR
+                    INT_LIT_KW '2'
+                  CLOSE_PAREN ')'
+              WHITESPACE ' '
+              IDENT 'flatten'
+            COMMA ','
+            WHITESPACE ' '
+            POSTFIX_EXPR
+              CALL_EXPR
+                IDENT_EXPR
+                  IDENT 'Seq'
+                PAREN_ARGUMENTS
+                  OPEN_PAREN '('
+                  LIT_EXPR
+                    INT_LIT_KW '1'
+                  COMMA ','
+                  WHITESPACE ' '
+                  LIT_EXPR
+                    INT_LIT_KW '2'
+                  CLOSE_PAREN ')'
+              WHITESPACE ' '
+              IDENT 'flatten'
+            CLOSE_PAREN ')'
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          LIT_EXPR
+            INT_LIT_KW '2'
+        NL_KW '\n'
+    "#],
+  );
+
+  // FIXME: Expr parsing needs to not consume all these newlines, so that the item
+  // block can get the newline.
+  check(
+    r#"
+      Seq(1, 2) flatten
+
+      2
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          POSTFIX_EXPR
+            CALL_EXPR
+              IDENT_EXPR
+                IDENT 'Seq'
+              PAREN_ARGUMENTS
+                OPEN_PAREN '('
+                LIT_EXPR
+                  INT_LIT_KW '1'
+                COMMA ','
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '2'
+                CLOSE_PAREN ')'
+            WHITESPACE ' '
+            IDENT 'flatten'
+            NL_KW '\n'
+            NL_KW '\n'
+        error: expected newline
+        WHITESPACE '      '
+        EXPR_ITEM
+          LIT_EXPR
+            INT_LIT_KW '2'
+        NL_KW '\n'
+    "#],
+  );
+
+  // NB: This is an infix expr!
+  check(
+    r#"
+      Seq(1, 2) flatten
+      2
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          INFIX_EXPR
+            CALL_EXPR
+              IDENT_EXPR
+                IDENT 'Seq'
+              PAREN_ARGUMENTS
+                OPEN_PAREN '('
+                LIT_EXPR
+                  INT_LIT_KW '1'
+                COMMA ','
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '2'
+                CLOSE_PAREN ')'
+            WHITESPACE ' '
+            IDENT 'flatten'
+            NL_KW '\n'
+            WHITESPACE '      '
+            LIT_EXPR
+              INT_LIT_KW '2'
+        NL_KW '\n'
+    "#],
+  );
+}

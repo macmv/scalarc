@@ -52,6 +52,11 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
       let m = lhs.precede(p);
       p.bump(); // eat T![ident] or T![=>]
 
+      let is_at_terminator = match p.current() {
+        T![,] | T![')'] | T!['}'] | T![else] | EOF => true,
+        _ => false,
+      };
+
       // this is one expression
       // 2 +
       //   3
@@ -60,15 +65,20 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
       // 2 +
       //
       //   3
-      if p.eat_newlines() >= 2 {
-        m.abandon(p);
-        p.error(format!("expected expression, got expression separator {:?}", p.current()));
-        p.recover_until_any(&[T![nl], T![,], T![')'], T!['}']]);
-        return;
-      };
-
-      expr_bp(p, r_bp, fat_arrow);
-      lhs = m.complete(p, kind);
+      if p.eat_newlines() >= 2 || is_at_terminator {
+        if kind == ASSIGN_EXPR {
+          m.abandon(p);
+          p.error(format!("expected expression, got expression separator {:?}", p.current()));
+          p.recover_until_any(&[T![nl], T![,], T![')'], T!['}']]);
+          return;
+        } else {
+          m.complete(p, POSTFIX_EXPR);
+          return;
+        }
+      } else {
+        expr_bp(p, r_bp, fat_arrow);
+        lhs = m.complete(p, kind);
+      }
     } else {
       match p.current() {
         T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | T![else] | EOF => {
