@@ -153,7 +153,7 @@ IfExpr      = 'if' '(' Expr ')' Expr ('else' Expr)?
 WhileExpr   = 'while' '(' Expr ')' (nl)* Expr
 TryExpr     = 'try' Expr ('catch' Expr)? ('finally' Expr)?
 DoWhileExpr = 'do' Expr (';')? 'while' '(' Expr ')'
-ForExpr     = 'for' ('(' Enumerators ')' | '{' Enumerators '}') (nl)* ('yield')? Expr
+ForExpr     = 'for' ('(' Generator* ')' | '{' Generator* '}') 'yield'? Expr
 ThrowExpr   = 'throw' Expr
 ReturnExpr  = 'return' Expr?
 
@@ -187,8 +187,9 @@ BlockExpr      = '{' (Item (';' Item)*) '}'
 Block          = Item (';' Item)*
 ResultExpr     = Expr
 
-Enumerators    = Generator (';' Generator)*
-Generator      = ('case')? Pattern '<-' Expr ((';')? Guard | ';' Pattern '=' Expr)*
+Generator           = FlatmapGenerator | AssignmentGenerator
+FlatmapGenerator    = 'case'? Pattern '<-' Expr
+AssignmentGenerator = Pattern '=' Expr
 
 // TypeParamClause    = '[' VariantTypeParam (',' VariantTypeParam)* ']'
 // FunTypeParamClause = '[' TypeParam (',' TypeParam)* ']'

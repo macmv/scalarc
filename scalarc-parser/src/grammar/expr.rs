@@ -583,6 +583,11 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       Some(m.complete(p, IF_EXPR))
     }
 
+    T![for] => {
+      for_expr(p);
+      Some(m.complete(p, FOR_EXPR))
+    }
+
     _ => {
       m.abandon(p);
       p.error(format!("expected expression, got {:?}", p.current()));
@@ -712,4 +717,82 @@ fn if_expr(p: &mut Parser) {
     p.eat(T![else]);
     expr(p);
   }
+}
+
+// test ok
+// for (x <- 1 to 10) println(x)
+fn for_expr(p: &mut Parser) {
+  p.eat(T![for]);
+
+  let end = if p.at(T!['(']) {
+    p.eat(T!['(']);
+    T![')']
+  } else if p.at(T!['{']) {
+    p.eat(T!['{']);
+    T!['}']
+  } else {
+    p.error("expected `(` or `{`");
+    return;
+  };
+
+  p.eat_newlines();
+
+  loop {
+    generator(p);
+
+    let found_newline = p.at(T![nl]);
+    p.eat_newlines();
+
+    if p.at(end) {
+      p.eat(end);
+      break;
+    }
+    if p.at(EOF) {
+      p.error("unexpected end of file");
+      break;
+    }
+
+    if !found_newline {
+      p.error("expected newline");
+      p.recover_until_any(&[T![nl], T![')'], T!['}']]);
+      if p.at(T![')']) || p.at(T!['}']) {
+        break;
+      }
+    }
+  }
+
+  if p.at(T![yield]) {
+    p.eat(T![yield]);
+  }
+
+  expr(p);
+}
+
+// Part of a for, like `pat <- expr` or `pat = expr`.
+fn generator(p: &mut Parser) {
+  let m = p.start();
+
+  super::pattern::pattern_val(p);
+
+  let generator = match p.current() {
+    T![<-] => {
+      p.eat(T![<-]);
+      FLATMAP_GENERATOR
+    }
+
+    T![=] => {
+      p.eat(T![=]);
+      ASSIGNMENT_GENERATOR
+    }
+
+    _ => {
+      p.error("expected `<-` or `=`");
+      m.abandon(p);
+      return;
+    }
+  };
+
+  expr(p);
+
+  m.complete(p, generator);
 }

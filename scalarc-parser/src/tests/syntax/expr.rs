@@ -1385,3 +1385,121 @@ fn type_ascription() {
     "#],
   );
 }
+
+#[test]
+fn for_expr() {
+  check(
+    "for (x <- 1 to 10) println(x)",
+    expect![@r#"
+      SOURCE_FILE
+        EXPR_ITEM
+          FOR_EXPR
+            FOR_KW 'for'
+            WHITESPACE ' '
+            OPEN_PAREN '('
+            FLATMAP_GENERATOR
+              PATH_PATTERN
+                PATH
+                  IDENT 'x'
+              WHITESPACE ' '
+              THIN_LEFT_ARROW '<-'
+              WHITESPACE ' '
+              INFIX_EXPR
+                LIT_EXPR
+                  INT_LIT_KW '1'
+                WHITESPACE ' '
+                IDENT 'to'
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '10'
+            CLOSE_PAREN ')'
+            WHITESPACE ' '
+            CALL_EXPR
+              IDENT_EXPR
+                IDENT 'println'
+              PAREN_ARGUMENTS
+                OPEN_PAREN '('
+                IDENT_EXPR
+                  IDENT 'x'
+                CLOSE_PAREN ')'
+    "#],
+  );
+
+  check(
+    r#"
+      for {
+        x <- 1 to 10
+        y <- 1 to 10
+      } yield {
+        x + y
+      }
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          FOR_EXPR
+            FOR_KW 'for'
+            WHITESPACE ' '
+            OPEN_CURLY '{'
+            NL_KW '\n'
+            WHITESPACE '        '
+            FLATMAP_GENERATOR
+              PATH_PATTERN
+                PATH
+                  IDENT 'x'
+              WHITESPACE ' '
+              THIN_LEFT_ARROW '<-'
+              WHITESPACE ' '
+              INFIX_EXPR
+                LIT_EXPR
+                  INT_LIT_KW '1'
+                WHITESPACE ' '
+                IDENT 'to'
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '10'
+            NL_KW '\n'
+            WHITESPACE '        '
+            FLATMAP_GENERATOR
+              PATH_PATTERN
+                PATH
+                  IDENT 'y'
+              WHITESPACE ' '
+              THIN_LEFT_ARROW '<-'
+              WHITESPACE ' '
+              INFIX_EXPR
+                LIT_EXPR
+                  INT_LIT_KW '1'
+                WHITESPACE ' '
+                IDENT 'to'
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '10'
+            NL_KW '\n'
+            WHITESPACE '      '
+            CLOSE_CURLY '}'
+            WHITESPACE ' '
+            YIELD_KW 'yield'
+            WHITESPACE ' '
+            BLOCK_EXPR
+              OPEN_CURLY '{'
+              NL_KW '\n'
+              WHITESPACE '        '
+              EXPR_ITEM
+                INFIX_EXPR
+                  IDENT_EXPR
+                    IDENT 'x'
+                  WHITESPACE ' '
+                  IDENT '+'
+                  WHITESPACE ' '
+                  IDENT_EXPR
+                    IDENT 'y'
+              NL_KW '\n'
+              WHITESPACE '      '
+              CLOSE_CURLY '}'
+        NL_KW '\n'
+    "#],
+  );
+}
