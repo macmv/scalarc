@@ -558,7 +558,7 @@ fn empty_case_items() {
                   IDENT '_'
               WHITESPACE ' '
               FAT_ARROW '=>'
-              NL_KW '\n'
+            NL_KW '\n'
             WHITESPACE '      '
             CASE_ITEM
               CASE_KW 'case'
@@ -568,9 +568,69 @@ fn empty_case_items() {
                   IDENT 'foo'
               WHITESPACE ' '
               FAT_ARROW '=>'
-              NL_KW '\n'
+            NL_KW '\n'
             WHITESPACE '    '
             CLOSE_CURLY '}'
+        NL_KW '\n'
+    "#],
+  );
+
+  check(
+    r#"
+    foo.foreach {
+      case Left(_) =>
+      case Right(_) =>
+    }
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '    '
+        EXPR_ITEM
+          CALL_EXPR
+            FIELD_EXPR
+              IDENT_EXPR
+                IDENT 'foo'
+              DOT '.'
+              IDENT 'foreach'
+            WHITESPACE ' '
+            BLOCK_EXPR
+              OPEN_CURLY '{'
+              NL_KW '\n'
+              WHITESPACE '      '
+              CASE_ITEM
+                CASE_KW 'case'
+                WHITESPACE ' '
+                ARG_PATTERN
+                  PATH
+                    IDENT 'Left'
+                  PATTERN_ARGS
+                    OPEN_PAREN '('
+                    PATH_PATTERN
+                      PATH
+                        IDENT '_'
+                    CLOSE_PAREN ')'
+                WHITESPACE ' '
+                FAT_ARROW '=>'
+              NL_KW '\n'
+              WHITESPACE '      '
+              CASE_ITEM
+                CASE_KW 'case'
+                WHITESPACE ' '
+                ARG_PATTERN
+                  PATH
+                    IDENT 'Right'
+                  PATTERN_ARGS
+                    OPEN_PAREN '('
+                    PATH_PATTERN
+                      PATH
+                        IDENT '_'
+                    CLOSE_PAREN ')'
+                WHITESPACE ' '
+                FAT_ARROW '=>'
+              NL_KW '\n'
+              WHITESPACE '    '
+              CLOSE_CURLY '}'
         NL_KW '\n'
     "#],
   );

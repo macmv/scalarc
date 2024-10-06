@@ -761,15 +761,21 @@ pub fn case_item(p: &mut Parser, m: Marker) {
 
   p.expect(T![=>]);
 
-  p.eat_newlines();
+  // Eat newlines, but leave one around for the outer block to parse.
+  while p.at(T![nl]) && p.peek() == T![nl] {
+    p.eat(T![nl]);
+  }
+
+  let terminator = if p.at(T![nl]) { p.peek() } else { p.current() };
 
   // An expression after the `=>` is optional.
   //
   // test ok
   // case 3 =>
-  match p.current() {
-    T![nl] | T!['}'] | T![case] | EOF => {}
+  match terminator {
+    T!['}'] | T![case] | EOF => {}
     _ => {
+      p.eat_newlines();
       let m = p.start();
       items(p, BlockTerminator::Case);
       m.complete(p, BLOCK);
