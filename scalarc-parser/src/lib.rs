@@ -289,16 +289,20 @@ impl Parser<'_> {
     }
   }
 
-  pub fn eat_newlines(&mut self) -> u32 {
+  pub fn eat_newlines(&mut self) -> u32 { self.eat_newlines_0(None) }
+  pub fn eat_newlines_max(&mut self, max: u32) -> u32 { self.eat_newlines_0(Some(max)) }
+
+  fn eat_newlines_0(&mut self, max: Option<u32>) -> u32 {
     let mut newlines = 0;
-    loop {
+    while max.is_none_or(|m| newlines < m) {
       if self.at(T![nl]) {
         self.eat(T![nl]);
         newlines += 1;
       } else {
-        break newlines;
+        break;
       }
     }
+    newlines
   }
 
   fn recover_until_any(&mut self, kinds: &[SyntaxKind]) {

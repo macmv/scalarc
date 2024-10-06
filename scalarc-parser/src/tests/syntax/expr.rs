@@ -111,15 +111,12 @@ fn whitespace() {
   check_expr(
     "2 +\n\n 3",
     expect![@r#"
-      LIT_EXPR
-        INT_LIT_KW '2'
-      WHITESPACE ' '
-      IDENT '+'
-      NL_KW '\n'
-      NL_KW '\n'
-      error: expected expression, got expression separator INT_LIT_KW
-      WHITESPACE ' '
-      INT_LIT_KW '3'
+      POSTFIX_EXPR
+        LIT_EXPR
+          INT_LIT_KW '2'
+        WHITESPACE ' '
+        IDENT '+'
+        NL_KW '\n'
     "#],
   );
 }
@@ -1147,8 +1144,7 @@ fn postfix_ops() {
             WHITESPACE ' '
             IDENT 'flatten'
             NL_KW '\n'
-            NL_KW '\n'
-        error: expected newline
+        NL_KW '\n'
         WHITESPACE '      '
         EXPR_ITEM
           LIT_EXPR

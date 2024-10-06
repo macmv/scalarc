@@ -65,7 +65,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
       // 2 +
       //
       //   3
-      if p.eat_newlines() >= 2 || is_at_terminator {
+      if (p.eat_newlines_max(1) >= 1 && p.at(T![nl])) || is_at_terminator {
         if kind == ASSIGN_EXPR {
           m.abandon(p);
           p.error(format!("expected expression, got expression separator {:?}", p.current()));
