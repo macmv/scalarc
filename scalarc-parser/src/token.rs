@@ -333,7 +333,7 @@ impl<'a> Lexer<'a> {
           self.tok.eat().unwrap();
           loop {
             match self.tok.peek_char() {
-              Some('0'..='9') | Some('a'..='f') | Some('A'..='F') => {}
+              Some('0'..='9' | 'a'..='f' | 'A'..='F' | '_') => {}
               Some(_) | None => break,
             }
             self.tok.eat().unwrap();
@@ -346,7 +346,7 @@ impl<'a> Lexer<'a> {
           self.tok.eat().unwrap();
           loop {
             match self.tok.peek_char() {
-              Some('0'..='1') => {}
+              Some('0'..='1' | '_') => {}
               Some(_) | None => break,
             }
             self.tok.eat().unwrap();
@@ -360,7 +360,7 @@ impl<'a> Lexer<'a> {
           let mut is_exponent = false;
           loop {
             match self.tok.peek_char() {
-              Some('0'..='9') => {}
+              Some('0'..='9' | '_') => {}
               Some('.') => {
                 if !is_float && self.tok.peek2() == Some(InnerToken::Digit) {
                   is_float = true;
@@ -401,7 +401,7 @@ impl<'a> Lexer<'a> {
         let mut is_exponent = false;
         loop {
           match self.tok.peek_char() {
-            Some('0'..='9') => {}
+            Some('0'..='9' | '_') => {}
 
             Some('e' | 'E') => {
               if is_exponent {
@@ -590,6 +590,11 @@ mod tests {
     assert_eq!(lexer.slice(), "0b01");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
     assert_eq!(lexer.slice(), "2");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("1_000_000");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "1_000_000");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
