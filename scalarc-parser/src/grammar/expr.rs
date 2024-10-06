@@ -774,6 +774,13 @@ fn generator(p: &mut Parser) {
 
   super::pattern::pattern_val(p);
 
+  // test ok
+  // for (
+  //   x
+  //     <- 1 to 10
+  // ) yield x
+  p.eat_newlines();
+
   let generator = match p.current() {
     T![<-] => {
       p.eat(T![<-]);
@@ -791,6 +798,13 @@ fn generator(p: &mut Parser) {
       return;
     }
   };
+
+  // test ok
+  // for (
+  //   x <-
+  //     1 to 10
+  // ) yield x
+  p.eat_newlines();
 
   expr(p);
 
