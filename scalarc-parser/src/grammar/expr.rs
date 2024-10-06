@@ -710,13 +710,19 @@ pub fn character_lit(p: &mut Parser) {
       match p.slice() {
         "u" => {
           p.bump(); // eat `u`
-          p.expect(INT_LIT_KW); // eat the number
+
+          // Eat the number.
+          //
+          // FIXME: This is wrong if the number literal is too long. Need to change the
+          // tokenizer to not parse numbers.
+          let mut chars = 0;
+          while chars < 4 {
+            chars += p.slice().len();
+            p.bump();
+          }
         }
-        "\\" => {
-          p.bump(); // eat `\`
-        }
-        "\'" => {
-          p.bump(); // eat `'`
+        "\"" | "'" | "\\" | "n" | "r" | "t" | "b" | "f" => {
+          p.bump(); // eat the escape
         }
         _ => {
           p.error("unknown escape code");
@@ -846,18 +852,24 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
       // test ok
       // "hello\"world"
       // "\\\""
-      T![ident] if p.slice() == "\\" => {
+      T![ident] if p.slice() == "\\" && !is_tripple_quote => {
         p.eat(T![ident]);
         match p.slice() {
           "u" => {
             p.bump(); // eat `u`
-            p.expect(INT_LIT_KW); // eat the number
+
+            // Eat the number.
+            //
+            // FIXME: This is wrong if the number literal is too long. Need to change the
+            // tokenizer to not parse numbers.
+            let mut chars = 0;
+            while chars < 4 {
+              chars += p.slice().len();
+              p.bump();
+            }
           }
-          "\\" => {
-            p.bump(); // eat `\`
-          }
-          "\"" => {
-            p.bump(); // eat `"`
+          "\"" | "'" | "\\" | "n" | "r" | "t" | "b" | "f" => {
+            p.bump(); // eat the escape
           }
           _ => {
             p.error("unknown escape code");
