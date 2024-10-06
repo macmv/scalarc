@@ -64,8 +64,13 @@ fn items(p: &mut Parser, terminator: BlockTerminator) {
             break 'items;
           }
         }
-      } else if p.at(T![')']) && terminator == BlockTerminator::Lambda {
-        break 'items;
+      } else if terminator == BlockTerminator::Lambda {
+        // test ok
+        // println(() => 2, () => 3)
+        match p.current() {
+          T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | T![else] | EOF => break 'items,
+          _ => break,
+        }
       } else {
         break;
       }
