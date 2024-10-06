@@ -7,13 +7,18 @@ use crate::{
 };
 
 pub fn simple_type_expr(p: &mut Parser) -> Option<CompletedMarker> {
-  simple_type_expr_0(p, false, false)
+  simple_type_expr_0(p, false, false, false)
 }
 pub fn simple_type_expr_is_case(p: &mut Parser, is_case: bool) {
-  simple_type_expr_0(p, is_case, true);
+  simple_type_expr_0(p, is_case, true, false);
 }
 
-fn simple_type_expr_0(p: &mut Parser, is_case: bool, allow_with: bool) -> Option<CompletedMarker> {
+fn simple_type_expr_0(
+  p: &mut Parser,
+  is_case: bool,
+  allow_with: bool,
+  is_nested_params: bool,
+) -> Option<CompletedMarker> {
   let mut m = p.start();
   if p.at(T![=>]) && !is_case {
     // test ok
@@ -84,7 +89,11 @@ fn simple_type_expr_0(p: &mut Parser, is_case: bool, allow_with: bool) -> Option
         let m = lhs.precede(p);
         {
           let m = p.start();
-          type_args(p, T!['['], T![']']);
+          if is_nested_params {
+            type_params(p, T!['['], T![']']);
+          } else {
+            type_args(p, T!['['], T![']']);
+          }
           m.complete(p, TYPE_ARGS);
         }
         lhs = m.complete(p, GENERIC_TYPE);
@@ -97,7 +106,7 @@ fn simple_type_expr_0(p: &mut Parser, is_case: bool, allow_with: bool) -> Option
         } else {
           let m = lhs.precede(p);
           p.eat(T![=>]);
-          simple_type_expr_0(p, is_case, allow_with);
+          simple_type_expr_0(p, is_case, allow_with, is_nested_params);
           lhs = m.complete(p, LAMBDA_TYPE);
         }
       }
@@ -107,7 +116,7 @@ fn simple_type_expr_0(p: &mut Parser, is_case: bool, allow_with: bool) -> Option
       T![with] if allow_with => {
         let m = lhs.precede(p);
         p.eat(T![with]);
-        simple_type_expr_0(p, is_case, allow_with);
+        simple_type_expr_0(p, is_case, allow_with, is_nested_params);
         lhs = m.complete(p, WITH_TYPE);
       }
 
@@ -129,8 +138,10 @@ fn simple_type_expr_0(p: &mut Parser, is_case: bool, allow_with: bool) -> Option
 }
 
 // A type parameter on a definition, like `A <: B`.
-pub fn type_expr(p: &mut Parser) -> Option<CompletedMarker> {
-  let mut lhs = simple_type_expr(p)?;
+pub fn type_expr(p: &mut Parser) -> Option<CompletedMarker> { type_expr_0(p, false) }
+
+fn type_expr_0(p: &mut Parser, is_nested_params: bool) -> Option<CompletedMarker> {
+  let mut lhs = simple_type_expr_0(p, false, false, is_nested_params)?;
 
   loop {
     match p.current() {
@@ -172,19 +183,19 @@ pub fn type_param(p: &mut Parser) -> Option<CompletedMarker> {
     // def foo[+A] = 3
     let m = p.start();
     p.eat(T![ident]);
-    type_expr(p);
+    type_expr_0(p, true);
     m.complete(p, COVARIANT_PARAM)
   } else if p.at(T![ident]) && p.slice() == "-" {
     // test ok
     // def foo[-A] = 3
     let m = p.start();
     p.eat(T![ident]);
-    type_expr(p);
+    type_expr_0(p, true);
     m.complete(p, CONTRAVARIANT_PARAM)
   } else {
     // test ok
     // def foo[A] = 3
-    type_expr(p)?
+    type_expr_0(p, true)?
   };
 
   while p.at(T![:]) {
