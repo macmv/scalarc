@@ -217,10 +217,13 @@ impl<'a> Lexer<'a> {
         self.tok.eat()?;
 
         loop {
-          match self.tok.eat() {
+          match self.tok.peek() {
             Err(LexError::EOF) => break,
-            Ok(InnerToken::Newline) => break,
-            Ok(_) => {}
+            Ok(Some(InnerToken::Newline)) => break,
+            Ok(None) => break,
+            Ok(_) => {
+              self.tok.eat()?;
+            }
             Err(e) => return Err(e),
           }
         }
@@ -690,7 +693,8 @@ mod tests {
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), " ");
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
-    assert_eq!(lexer.slice(), "// hi\n");
+    assert_eq!(lexer.slice(), "// hi");
+    assert_eq!(lexer.next(), Ok(Token::Newline));
     assert_eq!(lexer.next(), Ok(Token::Whitespace));
     assert_eq!(lexer.slice(), "       ");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
@@ -703,6 +707,15 @@ mod tests {
     assert_eq!(lexer.slice(), " ");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
     assert_eq!(lexer.slice(), "3");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("3 // works at end");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "3");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), " ");
+    assert_eq!(lexer.next(), Ok(Token::Whitespace));
+    assert_eq!(lexer.slice(), "// works at end");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 

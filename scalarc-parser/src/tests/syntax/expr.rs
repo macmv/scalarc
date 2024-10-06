@@ -119,6 +119,22 @@ fn whitespace() {
         NL_KW '\n'
     "#],
   );
+
+  check_expr(
+    r#"2 + // comment before nl still counts
+      // comment before nl still counts
+      3
+    "#,
+    expect![@r#"
+      POSTFIX_EXPR
+        LIT_EXPR
+          INT_LIT_KW '2'
+        WHITESPACE ' '
+        IDENT '+'
+        WHITESPACE ' // comment before nl still counts'
+        NL_KW '\n'
+    "#],
+  );
 }
 
 #[test]
