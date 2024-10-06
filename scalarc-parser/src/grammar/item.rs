@@ -399,15 +399,9 @@ fn class_def(p: &mut Parser, m: Marker) {
   }
 
   // test ok
-  // class Foo private {}
   // class Bar protected {}
-  match p.current() {
-    T![private] | T![protected] => {
-      p.bump();
-      p.eat_newlines();
-    }
-    _ => {}
-  }
+  // class Foo private[foo] {}
+  access_modifier(p);
 
   // test ok
   // class Foo {}
