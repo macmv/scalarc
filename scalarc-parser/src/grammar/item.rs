@@ -490,12 +490,6 @@ fn fun_params(p: &mut Parser, is_class: bool) {
   }
 
   // test ok
-  // class Foo(val a: Int) {}
-  if is_class && p.at(T![val]) {
-    p.eat(T![val]);
-  }
-
-  // test ok
   // def foo() = 3
   if p.at(T![')']) {
     p.eat(T![')']);
@@ -504,6 +498,12 @@ fn fun_params(p: &mut Parser, is_class: bool) {
   }
 
   loop {
+    // test ok
+    // class Foo(val a: Int, val b: Int) {}
+    if is_class && p.at(T![val]) {
+      p.eat(T![val]);
+    }
+
     fun_param(p);
     p.eat_newlines();
     // test ok
