@@ -804,9 +804,7 @@ fn for_expr(p: &mut Parser) {
     if !found_newline {
       p.error("expected newline");
       p.recover_until_any(&[T![nl], T![')'], T!['}']]);
-      if p.at(T![')']) || p.at(T!['}']) {
-        break;
-      }
+      break;
     }
   }
 
