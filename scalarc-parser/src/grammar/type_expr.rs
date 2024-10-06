@@ -158,7 +158,7 @@ pub fn type_expr(p: &mut Parser) -> Option<CompletedMarker> {
 }
 
 // A type parameter on a definition, like `A <: B: C`.
-pub fn type_def_param(p: &mut Parser) -> Option<CompletedMarker> {
+pub fn type_param(p: &mut Parser) -> Option<CompletedMarker> {
   let c = if p.at(T![ident]) && p.slice() == "+" {
     // test ok
     // def foo[+A] = 3
@@ -228,43 +228,14 @@ fn type_args_0(p: &mut Parser, start: SyntaxKind, end: SyntaxKind, allow_empty: 
   }
 }
 
-/// Type parameters. These show up in function definitions, like `def foo[A <:
-/// B]`.
+/// Type parameters. These show up where generics are created, like in
+/// `def foo[A <: B: C]`.
 pub fn type_params(p: &mut Parser, start: SyntaxKind, end: SyntaxKind) {
   p.eat(start);
 
   p.eat_newlines();
   loop {
-    type_expr(p);
-    p.eat_newlines();
-
-    // test ok
-    // val f: Foo[Int, String] = 3
-    if p.current() == T![,] {
-      p.eat(T![,]);
-
-      // test ok
-      // def foo(
-      //   a: Int
-      //   ,
-      //   b: Int
-      // ) = 3
-      p.eat_newlines();
-    } else {
-      p.expect(end);
-      break;
-    }
-  }
-}
-
-/// Type parameters. These show up where generics are created, like in
-/// `def foo[A <: B: C]`.
-pub fn type_def_params(p: &mut Parser, start: SyntaxKind, end: SyntaxKind) {
-  p.eat(start);
-
-  p.eat_newlines();
-  loop {
-    type_def_param(p);
+    type_param(p);
     p.eat_newlines();
 
     // test ok

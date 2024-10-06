@@ -404,7 +404,7 @@ fn class_def(p: &mut Parser, m: Marker) {
   p.expect(T![ident]);
 
   // test ok
-  // class Foo[T] {}
+  // class Foo[T: Int] {}
   if p.at(T!['[']) {
     let m = p.start();
     super::type_expr::type_params(p, T!['['], T![']']);
@@ -557,9 +557,9 @@ fn fun_sig(p: &mut Parser) {
 
   if p.at(T!['[']) {
     // test ok
-    // def foo[A <: Int](a: A) = 3
+    // def foo[A <: Int: Foo](a: A) = 3
     let m = p.start();
-    super::type_expr::type_def_params(p, T!['['], T![']']);
+    super::type_expr::type_params(p, T!['['], T![']']);
     m.complete(p, TYPE_PARAMS);
   }
 
