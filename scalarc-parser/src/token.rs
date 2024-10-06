@@ -108,31 +108,30 @@ impl<'a> Tokenizer<'a> {
 
   pub fn pos(&self) -> usize { self.index }
 
-  pub fn peek(&mut self) -> Result<Option<InnerToken>> {
+  pub fn peek(&mut self) -> Option<InnerToken> {
     if self.index >= self.source.len() {
-      Ok(None)
+      None
     } else {
       let chars = self.source[self.index..].chars().take(1);
       let t1 = self.eat();
       for c in chars {
         self.index -= c.len_utf8();
       }
-      Ok(Some(t1?))
+      t1.ok()
     }
   }
 
-  pub fn peek2(&mut self) -> Result<Option<InnerToken>> {
+  pub fn peek2(&mut self) -> Option<InnerToken> {
     if self.index >= self.source.len() {
-      Ok(None)
+      None
     } else {
       let chars = self.source[self.index..].chars().take(2);
-      let t1 = self.eat();
+      let _ = self.eat();
       let t2 = self.eat();
       for c in chars {
         self.index -= c.len_utf8();
       }
-      t1?;
-      Ok(Some(t2?))
+      t2.ok()
     }
   }
 
@@ -192,7 +191,7 @@ impl<'a> Lexer<'a> {
 
   pub fn eat_whitespace(&mut self) -> Result<Option<Token>> {
     loop {
-      match self.tok.peek()? {
+      match self.tok.peek() {
         Some(InnerToken::Whitespace) => {
           self.tok.eat().unwrap();
           return Ok(Some(Token::Whitespace));
@@ -213,18 +212,16 @@ impl<'a> Lexer<'a> {
     let first = self.tok.eat()?;
     match first {
       // Line comments.
-      InnerToken::Delimiter(Delimiter::Slash) if self.tok.peek() == Ok(Some(first)) => {
+      InnerToken::Delimiter(Delimiter::Slash) if self.tok.peek() == Some(first) => {
         self.tok.eat()?;
 
         loop {
           match self.tok.peek() {
-            Err(LexError::EOF) => break,
-            Ok(Some(InnerToken::Newline)) => break,
-            Ok(None) => break,
-            Ok(_) => {
+            Some(InnerToken::Newline) => break,
+            None => break,
+            _ => {
               self.tok.eat()?;
             }
-            Err(e) => return Err(e),
           }
         }
 
@@ -233,7 +230,7 @@ impl<'a> Lexer<'a> {
 
       // Block comments.
       InnerToken::Delimiter(Delimiter::Slash)
-        if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Star))) =>
+        if self.tok.peek() == Some(InnerToken::Delimiter(Delimiter::Star)) =>
       {
         self.tok.eat()?;
 
@@ -243,14 +240,14 @@ impl<'a> Lexer<'a> {
           match self.tok.eat() {
             // `/*`
             Ok(InnerToken::Delimiter(Delimiter::Slash))
-              if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Star))) =>
+              if self.tok.peek() == Some(InnerToken::Delimiter(Delimiter::Star)) =>
             {
               depth += 1;
             }
 
             // `*/`
             Ok(InnerToken::Delimiter(Delimiter::Star))
-              if self.tok.peek() == Ok(Some(InnerToken::Delimiter(Delimiter::Slash))) =>
+              if self.tok.peek() == Some(InnerToken::Delimiter(Delimiter::Slash)) =>
             {
               depth -= 1;
             }
@@ -277,7 +274,7 @@ impl<'a> Lexer<'a> {
         let mut prev_was_underscore = false;
         let mut only_op = false;
         loop {
-          let t = self.tok.peek()?;
+          let t = self.tok.peek();
           match t {
             Some(InnerToken::Letter | InnerToken::Digit) if !only_op => {}
             Some(InnerToken::Underscore) if !only_op => {}
@@ -299,7 +296,7 @@ impl<'a> Lexer<'a> {
       | InnerToken::Delimiter(Delimiter::Star)
       | InnerToken::Delimiter(Delimiter::Backslash) => {
         loop {
-          match self.tok.peek()? {
+          match self.tok.peek() {
             Some(
               InnerToken::Operator
               | InnerToken::Delimiter(Delimiter::Slash)
@@ -331,10 +328,10 @@ impl<'a> Lexer<'a> {
       InnerToken::Digit => {
         let mut is_float = false;
         loop {
-          match self.tok.peek()? {
+          match self.tok.peek() {
             Some(InnerToken::Digit) => {}
             Some(InnerToken::Delimiter(Delimiter::Dot)) => {
-              if !is_float && self.tok.peek2() == Ok(Some(InnerToken::Digit)) {
+              if !is_float && self.tok.peek2() == Some(InnerToken::Digit) {
                 is_float = true;
               } else {
                 break;
@@ -353,7 +350,7 @@ impl<'a> Lexer<'a> {
         let second = self.tok.peek();
         let third = self.tok.peek2();
 
-        if second == Ok(Some(first)) && third == Ok(Some(first)) {
+        if second == Some(first) && third == Some(first) {
           self.tok.eat()?;
           self.tok.eat()?;
           self.ok(start, Token::Delimiter(Delimiter::TrippleQuote))
