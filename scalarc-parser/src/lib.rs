@@ -299,24 +299,8 @@ impl Parser<'_> {
   }
   pub fn bump(&mut self) -> SyntaxKind {
     loop {
-      let res = if let Some((t, r)) = self.peeked.take() {
-        // Push `current`, now that we're pulling an event from `peeked`.
-        self.eat_trivia();
-        self.events.push(Event::Token { kind: self.current, len: self.current_range.len() });
-        self.current = t;
-        self.current_range = r;
-        self.pending_whitespace = self.peeked_whitespace;
-        self.peeked_whitespace = 0;
-        t
-      } else {
-        let kind = self.bump_inner();
-        self.current = kind;
-        self.current_range = self.lexer.range();
-        kind
-      };
-
       if !self.in_string {
-        match res {
+        match self.current {
           T!['('] => self.brace_stack.push(Brace::Paren),
           T![')'] => {
             self.brace_stack.pop();
@@ -332,6 +316,22 @@ impl Parser<'_> {
           _ => {}
         }
       }
+
+      let res = if let Some((t, r)) = self.peeked.take() {
+        // Push `current`, now that we're pulling an event from `peeked`.
+        self.eat_trivia();
+        self.events.push(Event::Token { kind: self.current, len: self.current_range.len() });
+        self.current = t;
+        self.current_range = r;
+        self.pending_whitespace = self.peeked_whitespace;
+        self.peeked_whitespace = 0;
+        t
+      } else {
+        let kind = self.bump_inner();
+        self.current = kind;
+        self.current_range = self.lexer.range();
+        kind
+      };
 
       if !self.newlines_enabled() && res == T![nl] {
         // Skip newlines if they are disabled.

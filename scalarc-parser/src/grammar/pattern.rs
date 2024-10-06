@@ -69,9 +69,6 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
     // test ok
     // case "hello" | "bye" =>
     DOUBLE_QUOTE => {
-      // test ok
-      // case "[im in brackets]" =>
-      p.set_in_string(true);
       p.eat(DOUBLE_QUOTE);
 
       expr::parse_string(p, false);

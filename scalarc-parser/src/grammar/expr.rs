@@ -521,10 +521,6 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
     }
 
     SINGLE_QUOTE => {
-      // test ok
-      // val x = println('[')
-      // val y = 3
-      p.set_in_string(true);
       p.eat(SINGLE_QUOTE);
 
       character_lit(p);
@@ -533,10 +529,6 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
     }
 
     DOUBLE_QUOTE => {
-      // test ok
-      // val x = println("[im in brackets]")
-      // val y = 3
-      p.set_in_string(true);
       p.eat(DOUBLE_QUOTE);
 
       parse_string(p, false);
@@ -552,10 +544,6 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
         // s"hello $world"
         // s"""hello $world"""
         DOUBLE_QUOTE => {
-          // test ok
-          // val x = println(s"[im in brackets]")
-          // val y = 3
-          p.set_in_string(true);
           p.eat(DOUBLE_QUOTE);
 
           parse_string(p, true);
@@ -692,6 +680,11 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
 
 pub fn character_lit(p: &mut Parser) {
   // test ok
+  // val x = println('[')
+  // val y = 3
+  p.set_in_string(true);
+
+  // test ok
   // 'a'
   // '*'
   match p.current() {
@@ -767,6 +760,11 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
   let mut is_start = true;
   let mut is_tripple_quote = false;
   let mut quote_count = 0;
+
+  // test ok
+  // val x = println(s"[im in brackets]")
+  // val y = 3
+  p.set_in_string(true);
 
   loop {
     match p.current() {
