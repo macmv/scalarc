@@ -467,7 +467,7 @@ fn case_item() {
             PATH
               IDENT '_'
           WHITESPACE ' '
-          GUARD
+          CASE_GUARD
             IF_KW 'if'
             WHITESPACE ' '
             INFIX_EXPR

@@ -829,6 +829,18 @@ fn for_expr(p: &mut Parser) {
 fn generator(p: &mut Parser) {
   let m = p.start();
 
+  // test ok
+  // for {
+  //   x <- 1 to 10
+  //   if x % 2 == 2
+  // } yield x
+  if p.at(T![if]) {
+    p.eat(T![if]);
+    super::expr::expr_no_fat_arrow(p);
+    m.complete(p, GUARD_GENERATOR);
+    return;
+  }
+
   super::pattern::pattern_val(p);
 
   // test ok

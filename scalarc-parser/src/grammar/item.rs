@@ -733,7 +733,7 @@ pub fn case_item(p: &mut Parser, m: Marker) {
     let m = p.start();
     p.eat(T![if]);
     super::expr::expr_no_fat_arrow(p);
-    m.complete(p, GUARD);
+    m.complete(p, CASE_GUARD);
   }
 
   p.expect(T![=>]);

@@ -191,9 +191,10 @@ BlockExpr      = '{' (Item (';' Item)*) '}'
 Block          = Item (';' Item)*
 ResultExpr     = Expr
 
-Generator           = FlatmapGenerator | AssignmentGenerator
+Generator           = FlatmapGenerator | AssignmentGenerator | GuardGenerator
 FlatmapGenerator    = 'case'? Pattern '<-' Expr
 AssignmentGenerator = Pattern '=' Expr
+GuardGenerator      = 'if' Expr
 
 // TypeParamClause    = '[' VariantTypeParam (',' VariantTypeParam)* ']'
 // FunTypeParamClause = '[' TypeParam (',' TypeParam)* ']'
@@ -283,8 +284,8 @@ LazyItem = 'lazy' Item
 ImplicitItem = 'implicit' Item
 AnnotatedItem = Annotation* Item
 
-CaseItem = 'case' Pattern Guard? '=>' Block
-Guard    = 'if' Expr
+CaseItem  = 'case' Pattern CaseGuard? '=>' Block
+CaseGuard = 'if' Expr
 
 Pattern = UnionPattern
         | InfixPattern
