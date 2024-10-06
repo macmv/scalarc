@@ -508,6 +508,25 @@ fn item_body(p: &mut Parser) {
   let m = p.start();
   p.eat(T!['{']);
 
+  // test ok
+  // trait Foo { self: Bar with Baz =>
+  //   def foo = 3
+  // }
+  if p.at(T![ident]) && p.peek() == T![:] {
+    let m = p.start();
+    p.eat(T![ident]);
+    p.eat(T![:]);
+    super::type_expr::type_expr_is_case(p, true);
+
+    while p.at(T![with]) {
+      p.eat(T![with]);
+      super::type_expr::type_expr_is_case(p, true);
+    }
+
+    p.expect(T![=>]);
+    m.complete(p, SELF_TYPE);
+  }
+
   items(p, BlockTerminator::Brace);
 
   m.complete(p, ITEM_BODY);
