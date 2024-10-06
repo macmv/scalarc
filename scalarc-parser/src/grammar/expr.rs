@@ -705,26 +705,24 @@ pub fn character_lit(p: &mut Parser) {
     // test ok
     // '\\'
     // '\u0000'
-    T![ident] if p.slice().starts_with("\\") => {
-      let mut is_escape = false;
-      for c in p.slice().chars() {
-        if is_escape {
-          is_escape = false;
-          continue;
+    T![ident] if p.slice() == "\\" => {
+      p.eat(T![ident]);
+      match p.slice() {
+        "u" => {
+          p.bump(); // eat `u`
+          p.expect(INT_LIT_KW); // eat the number
         }
-
-        match c {
-          '\\' => is_escape = true,
-          _ => {}
+        "\\" => {
+          p.bump(); // eat `\`
         }
-      }
-
-      // Skip the `\` and any remaining `\` characters.
-      p.bump();
-
-      // If there was a leftover `\` above, then skip the next token too.
-      if is_escape {
-        p.bump();
+        "\'" => {
+          p.bump(); // eat `'`
+        }
+        _ => {
+          p.error("unknown escape code");
+          // Assume a single letter.
+          p.bump();
+        }
       }
     }
 
@@ -838,26 +836,24 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
       // test ok
       // "hello\"world"
       // "\\\""
-      T![ident] if p.slice().starts_with("\\") => {
-        let mut is_escape = false;
-        for c in p.slice().chars() {
-          if is_escape {
-            is_escape = false;
-            continue;
+      T![ident] if p.slice() == "\\" => {
+        p.eat(T![ident]);
+        match p.slice() {
+          "u" => {
+            p.bump(); // eat `u`
+            p.expect(INT_LIT_KW); // eat the number
           }
-
-          match c {
-            '\\' => is_escape = true,
-            _ => {}
+          "\\" => {
+            p.bump(); // eat `\`
           }
-        }
-
-        // Skip the `\` and any remaining `\` characters.
-        p.bump();
-
-        // If there was a leftover `\` above, then skip the next token too.
-        if is_escape {
-          p.bump();
+          "\"" => {
+            p.bump(); // eat `"`
+          }
+          _ => {
+            p.error("unknown escape code");
+            // Assume a single letter.
+            p.bump();
+          }
         }
       }
 
