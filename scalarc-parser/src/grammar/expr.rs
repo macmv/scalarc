@@ -810,11 +810,11 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
       T![ident] if interpolations && p.slice() == "$" && p.peek() == T!['{'] => {
         let m = p.start();
         p.eat(T![ident]); // The `$`
-        p.set_in_string(false);
         p.eat(T!['{']);
+        p.set_in_string(false);
         expr(p);
-        p.expect(T!['}']);
         p.set_in_string(true);
+        p.expect(T!['}']);
         m.complete(p, INTERPOLATION);
       }
 

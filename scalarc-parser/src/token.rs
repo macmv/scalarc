@@ -181,10 +181,14 @@ impl<'a> Tokenizer<'a> {
 pub struct Lexer<'a> {
   tok:  Tokenizer<'a>,
   span: Range<usize>,
+
+  pub in_string: bool,
 }
 
 impl<'a> Lexer<'a> {
-  pub fn new(input: &'a str) -> Self { Lexer { tok: Tokenizer::new(input), span: 0..0 } }
+  pub fn new(input: &'a str) -> Self {
+    Lexer { tok: Tokenizer::new(input), span: 0..0, in_string: false }
+  }
 
   fn ok(&mut self, start: usize, tok: Token) -> Result<Token> {
     self.span.start = start;
@@ -315,7 +319,7 @@ impl<'a> Lexer<'a> {
       }
 
       // Backtick identifier.
-      InnerToken::Delimiter(Delimiter::Backtick) => {
+      InnerToken::Delimiter(Delimiter::Backtick) if !self.in_string => {
         loop {
           match self.tok.eat() {
             Ok(InnerToken::Delimiter(Delimiter::Backtick)) | Err(LexError::EOF) => break,

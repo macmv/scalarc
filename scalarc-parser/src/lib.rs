@@ -123,6 +123,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
     Token::Whitespace => SyntaxKind::WHITESPACE,
     Token::Delimiter(token::Delimiter::Dot) => T![.],
     Token::Delimiter(token::Delimiter::Comma) => T![,],
+    Token::Delimiter(token::Delimiter::Backtick) => T![ident], // Only shows up in strings.
     Token::Delimiter(token::Delimiter::SingleQuote) => SyntaxKind::SINGLE_QUOTE,
     Token::Delimiter(token::Delimiter::DoubleQuote) => SyntaxKind::DOUBLE_QUOTE,
     Token::Group(token::Group::OpenParen) => T!['('],
@@ -250,7 +251,10 @@ impl Parser<'_> {
     }
   }
 
-  pub fn set_in_string(&mut self, in_string: bool) { self.in_string = in_string; }
+  pub fn set_in_string(&mut self, in_string: bool) {
+    self.in_string = in_string;
+    self.lexer.in_string = in_string;
+  }
 
   fn eat_trivia(&mut self) {
     if self.pending_whitespace > 0 {
