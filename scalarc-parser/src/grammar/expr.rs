@@ -42,7 +42,11 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
   loop {
     // test ok
     // foo = 3
-    if p.current() == T![ident] || p.current() == T![=] || (p.current() == T![=>] && fat_arrow) {
+    if p.current() == T![ident]
+      || p.current() == T![=]
+      || p.current() == T![:]
+      || (p.current() == T![=>] && fat_arrow)
+    {
       let op_tok = p.current();
       let kind = if op_tok == T![=] { ASSIGN_EXPR } else { INFIX_EXPR };
 
@@ -96,6 +100,10 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
 
           m.complete(p, LAMBDA_EXPR);
           return;
+        } else if op_tok == T![:] {
+          ascription(p);
+          m.complete(p, ASCRIPT_EXPR);
+          return;
         } else {
           expr_bp(p, r_bp, fat_arrow);
           lhs = m.complete(p, kind);
@@ -114,6 +122,28 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
         }
       }
     }
+  }
+}
+
+// test ok
+// foo: Int
+// foo: _*
+fn ascription(p: &mut Parser) {
+  let m = p.start();
+
+  if p.at(T![ident]) && p.slice() == "_" {
+    p.eat(T![ident]);
+    if p.at(T![ident]) && p.slice() == "*" {
+      p.eat(T![ident]);
+      m.complete(p, SPREAD_ASCRIPTION);
+    } else {
+      // FIXME: This isn't handled correctly.
+      p.error("expected `*`");
+      m.abandon(p);
+    }
+  } else {
+    type_expr::type_expr(p);
+    m.complete(p, TYPE_ASCRIPTION);
   }
 }
 

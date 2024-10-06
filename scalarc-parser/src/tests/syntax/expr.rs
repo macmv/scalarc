@@ -1256,3 +1256,55 @@ fn postfix_ops() {
     "#],
   );
 }
+
+#[test]
+fn type_ascription() {
+  check(
+    "foo: Int",
+    expect![@r#"
+      SOURCE_FILE
+        EXPR_ITEM
+          ASCRIPT_EXPR
+            IDENT_EXPR
+              IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            TYPE_ASCRIPTION
+              SIMPLE_TYPE
+                IDENT 'Int'
+    "#],
+  );
+
+  check(
+    "foo: _*",
+    expect![@r#"
+      SOURCE_FILE
+        EXPR_ITEM
+          ASCRIPT_EXPR
+            IDENT_EXPR
+              IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            SPREAD_ASCRIPTION
+              IDENT '_'
+              IDENT '*'
+    "#],
+  );
+
+  check(
+    "foo: _ *",
+    expect![@r#"
+      SOURCE_FILE
+        EXPR_ITEM
+          ASCRIPT_EXPR
+            IDENT_EXPR
+              IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            SPREAD_ASCRIPTION
+              IDENT '_'
+              WHITESPACE ' '
+              IDENT '*'
+    "#],
+  );
+}

@@ -107,11 +107,11 @@ Types      = (Type (',' Type)*)
 Refinement = nl? '{' Def (';' Def)* '}'
 TypePat    = Type
 
-Ascription = AscriptionType | AscriptionAnnotation | AscriptionSpread
+Ascription = TypeAscription | AnnotationAscription | SpreadAscription
 
-AscriptionType       = ':' Type
-AscriptionAnnotation = ':' Annotation (Annotation)*
-AscriptionSpread     = ':' '_' '*'
+TypeAscription       = ':' Type
+AnnotationAscription = ':' Annotation (Annotation)*
+SpreadAscription     = ':' '_' '*'
 
 Expr = IfExpr
      | WhileExpr
@@ -125,7 +125,7 @@ Expr = IfExpr
      | PostfixExpr
      | InfixExpr
      | PrefixExpr
-     | PostfixExprAscription
+     | AscriptExpr
      | MatchExpr
      | NewExpr
      | BlockExpr
@@ -153,8 +153,8 @@ LambdaExpr = Expr '=>' Block
 
 AssignExpr = Expr '=' Expr
 
-PostfixExprAscription = PostfixExpr Ascription
-MatchExpr             = Expr 'match' '{' CaseItem (CaseItem)* '}'
+AscriptExpr = Expr Ascription
+MatchExpr   = Expr 'match' '{' CaseItem (CaseItem)* '}'
 
 PostfixExpr    = Expr id
 InfixExpr      = lhs:Expr id rhs:Expr
