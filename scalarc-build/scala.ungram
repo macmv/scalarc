@@ -89,6 +89,7 @@ Type = LambdaType
      | AnonLambdaType
      | LowerBoundType
      | UpperBoundType
+     | InfixType
      | WithType
      | SpreadType
      | GenericType
@@ -106,6 +107,7 @@ LambdaType     = '(' ')' '=>' Type // TODO
 AnonLambdaType = '=>' Type
 LowerBoundType = Type '<:' Type
 UpperBoundType = Type '>:' Type
+InfixType      = Type id Type
 WithType       = Type 'with' Type
 SpreadType     =  Type '*'
 GenericType    = Type TypeArgs

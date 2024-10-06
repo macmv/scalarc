@@ -122,54 +122,46 @@ fn simple_type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) -> Option<
 
       // test ok
       // case v: Int if v > 0 => v
-      T![,]
-      | T![']']
-      | T![')']
-      | T!['}']
-      | T![=]
-      | T![nl]
-      | T![<:]
-      | T![>:]
-      | T![:]
-      | T![if]
-      | EOF => return Some(lhs),
-
-      // This is for class definitions. Not sure if correct or not.
-      T!['{'] | T![with] => return Some(lhs),
-
-      // test ok
       // case _: Int | _: String =>
-      T![ident] if p.slice() == "|" => return Some(lhs),
-
-      _ => {
-        p.error(format!("expected type, got {:?}", p.current()));
-        p.recover_until_any(&[T![nl], T![,], T![')'], T!['}'], T![=]]);
-        return Some(lhs);
-      }
+      _ => return Some(lhs),
     }
   }
 }
 
 // A type parameter on a definition, like `A <: B`.
 pub fn type_expr(p: &mut Parser) -> Option<CompletedMarker> {
-  let lhs = simple_type_expr(p)?;
+  let mut lhs = simple_type_expr(p)?;
 
-  if p.at(T![<:]) {
-    // test ok
-    // def foo[T <: Int] = 3
-    let m = lhs.precede(p);
-    p.eat(T![<:]);
-    simple_type_expr(p);
-    Some(m.complete(p, LOWER_BOUND_TYPE))
-  } else if p.at(T![>:]) {
-    // test ok
-    // def foo[T >: Int] = 3
-    let m = lhs.precede(p);
-    p.eat(T![>:]);
-    simple_type_expr(p);
-    Some(m.complete(p, UPPER_BOUND_TYPE))
-  } else {
-    Some(lhs)
+  loop {
+    match p.current() {
+      T![<:] => {
+        // test ok
+        // def foo[T <: Int] = 3
+        let m = lhs.precede(p);
+        p.eat(T![<:]);
+        simple_type_expr(p);
+        lhs = m.complete(p, LOWER_BOUND_TYPE);
+      }
+      T![>:] => {
+        // test ok
+        // def foo[T >: Int] = 3
+        let m = lhs.precede(p);
+        p.eat(T![>:]);
+        simple_type_expr(p);
+        lhs = m.complete(p, UPPER_BOUND_TYPE);
+      }
+
+      T![ident] => {
+        // test ok
+        // def foo[T](implicit ev: V#T <:< T): T = 3
+        let m = lhs.precede(p);
+        p.eat(T![ident]);
+        simple_type_expr(p);
+        lhs = m.complete(p, INFIX_TYPE);
+      }
+
+      _ => break Some(lhs),
+    }
   }
 }
 
