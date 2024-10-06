@@ -110,8 +110,9 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
           return;
         } else if op_tok == T![:] {
           ascription(p);
-          m.complete(p, ASCRIPT_EXPR);
-          return;
+          // test ok
+          // { foo: Int => foo }
+          lhs = m.complete(p, ASCRIPT_EXPR);
         } else {
           expr_bp(p, r_bp, fat_arrow);
           lhs = m.complete(p, kind);
@@ -150,7 +151,7 @@ fn ascription(p: &mut Parser) {
       m.abandon(p);
     }
   } else {
-    type_expr::type_expr(p);
+    type_expr::type_expr_is_case(p, true);
     m.complete(p, TYPE_ASCRIPTION);
   }
 }

@@ -382,6 +382,46 @@ fn lambda_expr() {
           CLOSE_CURLY '}'
     "#],
   );
+
+  check_expr(
+    "{ x: Int => val foo = 2\nfoo }",
+    expect![@r#"
+      BLOCK_EXPR
+        OPEN_CURLY '{'
+        WHITESPACE ' '
+        EXPR_ITEM
+          LAMBDA_EXPR
+            ASCRIPT_EXPR
+              IDENT_EXPR
+                IDENT 'x'
+              COLON ':'
+              WHITESPACE ' '
+              TYPE_ASCRIPTION
+                SIMPLE_TYPE
+                  IDENT 'Int'
+            WHITESPACE ' '
+            FAT_ARROW '=>'
+            WHITESPACE ' '
+            BLOCK
+              VAL_DEF
+                VAL_KW 'val'
+                WHITESPACE ' '
+                PATH_PATTERN
+                  PATH
+                    IDENT 'foo'
+                WHITESPACE ' '
+                EQ '='
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '2'
+              NL_KW '\n'
+              EXPR_ITEM
+                IDENT_EXPR
+                  IDENT 'foo'
+        WHITESPACE ' '
+        CLOSE_CURLY '}'
+    "#],
+  );
 }
 
 #[test]
