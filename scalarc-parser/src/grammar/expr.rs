@@ -73,7 +73,20 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
 
       // Any of these tokens are a terminator, or a double newline is a terminator.
       let is_at_terminator = match terminator_token {
-        T![,] | T![')'] | T!['}'] | T![else] | T![catch] | T![finally] | T![while] | EOF => true,
+        // test ok
+        // foo match {
+        //   case x => x flatten
+        //   case y => y flatten
+        // }
+        T![,]
+        | T![')']
+        | T!['}']
+        | T![case]
+        | T![else]
+        | T![catch]
+        | T![finally]
+        | T![while]
+        | EOF => true,
         T![nl] if found_newline => true,
 
         // `val` and `var` declare the next statement, but in the case of a lambda, `val` and `var`
@@ -132,6 +145,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
         | T![,]
         | T![')']
         | T!['}']
+        | T![case]
         | T![else]
         | T![catch]
         | T![finally]
@@ -147,6 +161,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
             T![,],
             T![')'],
             T!['}'],
+            T![case],
             T![else],
             T![catch],
             T![finally],
