@@ -834,6 +834,10 @@ fn if_expr(p: &mut Parser) {
   // if (true) 3 else 4
   if p.at(T![else]) {
     p.eat(T![else]);
+    // test ok
+    // if (true) 3 else
+    // 4
+    p.eat_newlines();
     expr(p);
   }
 }
