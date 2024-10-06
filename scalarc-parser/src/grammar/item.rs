@@ -194,6 +194,17 @@ fn package_item(p: &mut Parser, m: Marker) {
         continue;
       }
 
+      // test ok
+      // package foo {
+      //   class Bar {}
+      // }
+      T!['{'] => {
+        path.complete(p, PATH);
+        block_items(p);
+        m.complete(p, PACKAGE);
+        return;
+      }
+
       T![nl] | EOF => {
         path.complete(p, PATH);
         m.complete(p, PACKAGE);
