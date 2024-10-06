@@ -162,7 +162,7 @@ impl<'a> Tokenizer<'a> {
       '*' => InnerToken::Delimiter(Delimiter::Star),
 
       '_' => InnerToken::Underscore,
-      'a'..='z' | 'A'..='Z' => InnerToken::Letter,
+      'a'..='z' | 'A'..='Z' | '$' => InnerToken::Letter,
       '0'..='9' => InnerToken::Digit,
       '\u{0020}'..='\u{007e}' => InnerToken::Operator,
 
@@ -425,6 +425,11 @@ mod tests {
     let mut lexer = Lexer::new("__+");
     assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "__+");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("foo$bar");
+    assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
+    assert_eq!(lexer.slice(), "foo$bar");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
