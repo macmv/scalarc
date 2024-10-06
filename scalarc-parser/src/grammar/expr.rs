@@ -450,8 +450,32 @@ fn postfix_dot_expr(
 fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
   match p.current() {
     // test ok
-    // 2 + 1.0 + true + false
-    INT_LIT_KW | FLOAT_LIT_KW | T![true] | T![false] => {
+    // 2 == 2L
+    INT_LIT_KW => {
+      p.eat(INT_LIT_KW);
+      // TODO: No whitespace here.
+      if p.at(T![ident]) && p.slice() == "L" {
+        p.eat(T![ident]);
+      }
+
+      Some(m.complete(p, LIT_EXPR))
+    }
+
+    // test ok
+    // 2 == 2.0D
+    FLOAT_LIT_KW => {
+      p.bump();
+      // TODO: No whitespace here.
+      if p.at(T![ident]) && p.slice() == "D" {
+        p.eat(T![ident]);
+      }
+
+      Some(m.complete(p, LIT_EXPR))
+    }
+
+    // test ok
+    // true != false
+    T![true] | T![false] => {
       p.bump();
       Some(m.complete(p, LIT_EXPR))
     }
