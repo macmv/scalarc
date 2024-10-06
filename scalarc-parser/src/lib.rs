@@ -75,6 +75,8 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
       "do" => T![do],
       "for" => T![for],
       "yield" => T![yield],
+      "try" => T![try],
+      "catch" => T![catch],
       "macro" => T![macro],
       "=" => T![=],
       ":" => T![:],

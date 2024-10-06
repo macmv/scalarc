@@ -73,7 +73,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
 
       // Any of these tokens are a terminator, or a double newline is a terminator.
       let is_at_terminator = match terminator_token {
-        T![,] | T![')'] | T!['}'] | T![else] | T![while] | EOF => true,
+        T![,] | T![')'] | T!['}'] | T![else] | T![catch] | T![while] | EOF => true,
         T![nl] if found_newline => true,
 
         // `val` and `var` declare the next statement, but in the case of a lambda, `val` and `var`
@@ -127,13 +127,13 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
       }
     } else {
       match p.current() {
-        T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | T![else] | T![while] | EOF => {
+        T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | T![else] | T![catch] | T![while] | EOF => {
           return;
         }
 
         _ => {
           p.error(format!("expected operator, got {:?}", p.current()));
-          p.recover_until_any(&[T![nl], T![,], T![')'], T!['}'], T![else], T![while]]);
+          p.recover_until_any(&[T![nl], T![,], T![')'], T!['}'], T![else], T![catch], T![while]]);
           return;
         }
       }
@@ -636,6 +636,11 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       Some(m.complete(p, FOR_EXPR))
     }
 
+    T![try] => {
+      try_expr(p);
+      Some(m.complete(p, TRY_EXPR))
+    }
+
     // NB: This should only really be allowed as the item of a `def`, but this works well enough.
     T![macro] => {
       macro_expr(p);
@@ -1000,6 +1005,26 @@ fn generator(p: &mut Parser) {
   }
 
   m.complete(p, generator);
+}
+
+// test ok
+// try file.read() catch {
+//   case _ => println(x)
+// }
+fn try_expr(p: &mut Parser) {
+  p.eat(T![try]);
+
+  expr(p);
+
+  p.eat_newlines();
+
+  p.expect(T![catch]);
+
+  if p.at(T!['{']) {
+    super::item::block_items(p);
+  } else {
+    p.error("expected catch block");
+  }
 }
 
 // test ok
