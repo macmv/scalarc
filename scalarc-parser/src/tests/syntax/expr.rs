@@ -29,7 +29,8 @@ fn literals() {
     expect![@r#"
       DOUBLE_QUOTED_STRING
         DOUBLE_QUOTE '"'
-        IDENT 'hi'
+        IDENT 'h'
+        IDENT 'i'
         DOUBLE_QUOTE '"'
     "#],
   );
@@ -39,12 +40,16 @@ fn literals() {
     expect![@r#"
       DOUBLE_QUOTED_STRING
         DOUBLE_QUOTE '"'
-        IDENT 'foo'
+        IDENT 'f'
+        IDENT 'o'
+        IDENT 'o'
         WHITESPACE ' '
         IDENT '\'
         DOUBLE_QUOTE '"'
         WHITESPACE ' '
-        IDENT 'bar'
+        IDENT 'b'
+        IDENT 'a'
+        IDENT 'r'
         WHITESPACE ' '
         OPEN_CURLY '{'
         OPEN_CURLY '{'
@@ -156,14 +161,19 @@ fn binary_op() {
       INFIX_EXPR
         DOUBLE_QUOTED_STRING
           DOUBLE_QUOTE '"'
-          IDENT 'hi'
+          IDENT 'h'
+          IDENT 'i'
           DOUBLE_QUOTE '"'
         WHITESPACE ' '
         IDENT '+'
         WHITESPACE ' '
         DOUBLE_QUOTED_STRING
           DOUBLE_QUOTE '"'
-          IDENT 'there'
+          IDENT 't'
+          IDENT 'h'
+          IDENT 'e'
+          IDENT 'r'
+          IDENT 'e'
           DOUBLE_QUOTE '"'
     "#],
   );
@@ -1631,9 +1641,13 @@ fn interpolated_string() {
             DOUBLE_QUOTE '"'
             INTERPOLATION
               IDENT_EXPR
-                IDENT '$foo'
+                IDENT '$'
+            IDENT 'f'
+            IDENT 'o'
+            IDENT 'o'
             WHITESPACE ' '
-            IDENT 'is'
+            IDENT 'i'
+            IDENT 's'
             COLON ':'
             WHITESPACE ' '
             INTERPOLATION
@@ -1653,7 +1667,10 @@ fn interpolated_string() {
             WHITESPACE ' '
             INTERPOLATION
               IDENT_EXPR
-                IDENT '$bar'
+                IDENT '$'
+            IDENT 'b'
+            IDENT 'a'
+            IDENT 'r'
             DOUBLE_QUOTE '"'
     "#],
   );
@@ -1804,11 +1821,20 @@ fn comments_in_strings() {
               OPEN_PAREN '('
               DOUBLE_QUOTED_STRING
                 DOUBLE_QUOTE '"'
-                IDENT 'hello'
+                IDENT 'h'
+                IDENT 'e'
+                IDENT 'l'
+                IDENT 'l'
+                IDENT 'o'
                 WHITESPACE ' '
-                IDENT '//'
+                IDENT '/'
+                IDENT '/'
                 WHITESPACE ' '
-                IDENT 'world'
+                IDENT 'w'
+                IDENT 'o'
+                IDENT 'r'
+                IDENT 'l'
+                IDENT 'd'
                 DOUBLE_QUOTE '"'
               CLOSE_PAREN ')'
         NL_KW '\n'
@@ -1831,11 +1857,20 @@ fn comments_in_strings() {
               OPEN_PAREN '('
               DOUBLE_QUOTED_STRING
                 DOUBLE_QUOTE '"'
-                IDENT 'hello'
+                IDENT 'h'
+                IDENT 'e'
+                IDENT 'l'
+                IDENT 'l'
+                IDENT 'o'
                 WHITESPACE ' '
-                IDENT '/*'
+                IDENT '/'
+                IDENT '*'
                 WHITESPACE ' '
-                IDENT 'world'
+                IDENT 'w'
+                IDENT 'o'
+                IDENT 'r'
+                IDENT 'l'
+                IDENT 'd'
                 DOUBLE_QUOTE '"'
               CLOSE_PAREN ')'
         NL_KW '\n'

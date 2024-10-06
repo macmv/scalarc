@@ -276,7 +276,7 @@ impl<'a> Lexer<'a> {
       }
 
       // Plain identifier.
-      InnerToken::Underscore | InnerToken::Letter => {
+      InnerToken::Underscore | InnerToken::Letter if !self.in_string => {
         // This is intentionally not `first == InnerToken::Underscore`, to match scala's
         // behavior. Honestly its probably a bug in scala. Ah well. It makes `_+` two
         // identifiers, but `__+` one identifier.
@@ -303,7 +303,9 @@ impl<'a> Lexer<'a> {
       InnerToken::Operator
       | InnerToken::Delimiter(Delimiter::Slash)
       | InnerToken::Delimiter(Delimiter::Star)
-      | InnerToken::Delimiter(Delimiter::Backslash) => {
+      | InnerToken::Delimiter(Delimiter::Backslash)
+        if !self.in_string =>
+      {
         loop {
           match self.tok.peek() {
             Some(
@@ -444,7 +446,11 @@ impl<'a> Lexer<'a> {
       InnerToken::Group(g) => self.ok(start, Token::Group(g)),
       InnerToken::Newline => self.ok(start, Token::Newline),
 
-      _ => unreachable!(),
+      // Only shows up when in a string.
+      InnerToken::Letter => self.ok(start, Token::Ident(Ident::Plain)),
+      InnerToken::Operator => self.ok(start, Token::Ident(Ident::Plain)),
+
+      t => unreachable!("inner token {t:?}"),
     }
   }
 

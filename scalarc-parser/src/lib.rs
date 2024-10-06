@@ -123,9 +123,15 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
     Token::Whitespace => SyntaxKind::WHITESPACE,
     Token::Delimiter(token::Delimiter::Dot) => T![.],
     Token::Delimiter(token::Delimiter::Comma) => T![,],
-    Token::Delimiter(token::Delimiter::Backtick) => T![ident], // Only shows up in strings.
     Token::Delimiter(token::Delimiter::SingleQuote) => SyntaxKind::SINGLE_QUOTE,
     Token::Delimiter(token::Delimiter::DoubleQuote) => SyntaxKind::DOUBLE_QUOTE,
+
+    // Only shows up in strings.
+    Token::Delimiter(token::Delimiter::Backtick) => T![ident],
+    Token::Delimiter(token::Delimiter::Slash) => T![ident],
+    Token::Delimiter(token::Delimiter::Backslash) => T![ident],
+    Token::Delimiter(token::Delimiter::Star) => T![ident],
+
     Token::Group(token::Group::OpenParen) => T!['('],
     Token::Group(token::Group::CloseParen) => T![')'],
     Token::Group(token::Group::OpenBracket) => T!['['],
