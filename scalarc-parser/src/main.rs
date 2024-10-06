@@ -11,6 +11,7 @@ fn main() {
   for file in files {
     if parse_file(&file).is_err() {
       is_err = true;
+      eprintln!("failed to parse file {file}");
       break;
     }
   }
