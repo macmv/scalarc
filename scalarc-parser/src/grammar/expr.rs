@@ -687,7 +687,13 @@ fn if_expr(p: &mut Parser) {
   p.eat(T![if]);
 
   p.expect(T!['(']);
+  // test ok
+  // if (
+  //   true
+  // ) println(3)
+  p.eat_newlines();
   expr(p);
+  p.eat_newlines();
   p.expect(T![')']);
 
   expr(p);
