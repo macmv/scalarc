@@ -643,6 +643,13 @@ fn fun_params(p: &mut Parser, is_class: bool) {
 // def foo(a: Int) = 3
 fn fun_param(p: &mut Parser) {
   let m = p.start();
+
+  // test ok
+  // def foo(@unused a: Int) = 3
+  if p.at(T![@]) {
+    annotation(p);
+  }
+
   p.expect(T![ident]);
 
   p.expect(T![:]);
