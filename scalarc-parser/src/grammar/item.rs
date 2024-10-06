@@ -625,31 +625,7 @@ fn fun_params(p: &mut Parser, is_class: bool) {
   }
 
   loop {
-    // test ok
-    // class Foo(val a: Int, val b: Int) {}
-    if is_class {
-      match p.current() {
-        // test ok
-        // class Foo(private val a: Int) {}
-        // class Foo(override val a: Int) {}
-        // class Foo(final val a: Int) {}
-        T![private] | T![protected] | T![override] | T![final] => {
-          p.bump();
-        }
-        _ => {}
-      }
-
-      match p.current() {
-        // test ok
-        // class Foo(var a: Int) {}
-        T![val] | T![var] => {
-          p.bump();
-        }
-        _ => {}
-      }
-    }
-
-    fun_param(p);
+    fun_param(p, is_class);
     p.eat_newlines();
     // test ok
     // def foo(a: Int, b: String) = 3
@@ -673,13 +649,38 @@ fn fun_params(p: &mut Parser, is_class: bool) {
 
 // test ok
 // def foo(a: Int) = 3
-fn fun_param(p: &mut Parser) {
+fn fun_param(p: &mut Parser, is_class: bool) {
   let m = p.start();
 
   // test ok
   // def foo(@unused a: Int) = 3
+  // class Foo(@volatile var x: Int) {}
   if p.at(T![@]) {
     annotation(p);
+  }
+
+  // test ok
+  // class Foo(val a: Int, val b: Int) {}
+  if is_class {
+    match p.current() {
+      // test ok
+      // class Foo(private val a: Int) {}
+      // class Foo(override val a: Int) {}
+      // class Foo(final val a: Int) {}
+      T![private] | T![protected] | T![override] | T![final] => {
+        p.bump();
+      }
+      _ => {}
+    }
+
+    match p.current() {
+      // test ok
+      // class Foo(var a: Int) {}
+      T![val] | T![var] => {
+        p.bump();
+      }
+      _ => {}
+    }
   }
 
   p.expect(T![ident]);
