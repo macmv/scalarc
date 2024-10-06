@@ -7,6 +7,7 @@ enum BlockTerminator {
   Nothing,
   Brace,
   Case,
+  Lambda,
 }
 
 pub fn mod_items(p: &mut Parser) { items(p, BlockTerminator::Nothing); }
@@ -15,7 +16,7 @@ pub fn block_items(p: &mut Parser) {
   items(p, BlockTerminator::Brace);
 }
 
-pub fn block_items_no_brace(p: &mut Parser) { items(p, BlockTerminator::Case); }
+pub fn lambda_items(p: &mut Parser) { items(p, BlockTerminator::Lambda); }
 
 // test ok
 // class Foo {
@@ -59,10 +60,12 @@ fn items(p: &mut Parser, terminator: BlockTerminator) {
           BlockTerminator::Nothing => {
             p.error_bump("unexpected '}'");
           }
-          BlockTerminator::Case => {
+          BlockTerminator::Case | BlockTerminator::Lambda => {
             break 'items;
           }
         }
+      } else if p.at(T![')']) && terminator == BlockTerminator::Lambda {
+        break 'items;
       } else {
         break;
       }

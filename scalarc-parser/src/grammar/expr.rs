@@ -1,4 +1,4 @@
-use item::{block_items, block_items_no_brace};
+use item::{block_items, lambda_items};
 
 use crate::{CompletedMarker, Marker};
 
@@ -80,9 +80,17 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
         }
       } else {
         if op_tok == T![=>] {
+          // test ok
+          // { foo =>
+          //   val x = foo
+          //   x
+          // }
+          //
+          // test ok
+          // println(foo => 2 + 3)
           {
             let m = p.start();
-            block_items_no_brace(p);
+            lambda_items(p);
             m.complete(p, BLOCK);
           }
 
