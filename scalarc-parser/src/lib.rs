@@ -185,20 +185,18 @@ impl EntryPoint {
 
 impl<'a> Parser<'a> {
   pub fn new(lexer: &'a mut Lexer<'a>) -> Self {
-    let first = match lexer.next() {
-      Ok(t) => token_to_kind(t, lexer.slice()),
-      Err(_) => T![nl], // Empty file
-    };
-
-    Parser {
-      current_range: lexer.range(),
+    let mut p = Parser {
+      current_range: 0..0,
       lexer,
-      current: first,
+      current: SyntaxKind::TOMBSTONE,
       events: Vec::new(),
       pending_whitespace: 0,
       peeked_whitespace: 0,
       peeked: None,
-    }
+    };
+    p.bump();
+    p.events.clear(); // `bump` will push the current token, which we don't want here.
+    p
   }
 }
 
