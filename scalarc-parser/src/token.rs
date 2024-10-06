@@ -345,6 +345,16 @@ impl<'a> Lexer<'a> {
         self.ok(start, Token::Literal(if is_float { Literal::Float } else { Literal::Integer }))
       }
 
+      InnerToken::Delimiter(Delimiter::Dot) if self.tok.peek() == Some(InnerToken::Digit) => loop {
+        match self.tok.peek() {
+          Some(InnerToken::Digit) => {}
+          Some(_) | None => {
+            break self.ok(start, Token::Literal(Literal::Float));
+          }
+        }
+        self.tok.eat().unwrap();
+      },
+
       // Double quoted strings.
       InnerToken::Delimiter(Delimiter::DoubleQuote) => {
         let second = self.tok.peek();
@@ -513,6 +523,11 @@ mod tests {
     let mut lexer = Lexer::new("2.345");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
     assert_eq!(lexer.slice(), "2.345");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new(".25");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
+    assert_eq!(lexer.slice(), ".25");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
