@@ -815,6 +815,14 @@ fn if_expr(p: &mut Parser) {
 
   expr(p);
 
+  // test ok
+  // if (true) 3
+  // else 4
+  if p.at(T![nl]) && p.peek() == T![else] {
+    p.eat(T![nl]);
+  }
+
+  // test ok
   // if (true) 3 else 4
   if p.at(T![else]) {
     p.eat(T![else]);
