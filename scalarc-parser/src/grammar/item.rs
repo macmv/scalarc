@@ -613,8 +613,24 @@ fn fun_params(p: &mut Parser, is_class: bool) {
   loop {
     // test ok
     // class Foo(val a: Int, val b: Int) {}
-    if is_class && p.at(T![val]) {
-      p.eat(T![val]);
+    if is_class {
+      match p.current() {
+        // test ok
+        // class Foo(private val a: Int) {}
+        T![private] | T![protected] => {
+          p.bump();
+        }
+        _ => {}
+      }
+
+      match p.current() {
+        // test ok
+        // class Foo(var a: Int) {}
+        T![val] | T![var] => {
+          p.bump();
+        }
+        _ => {}
+      }
     }
 
     fun_param(p);
