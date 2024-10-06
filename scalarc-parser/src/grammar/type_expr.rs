@@ -13,7 +13,7 @@ pub fn simple_type_expr_is_case(p: &mut Parser, is_case: bool) {
   simple_type_expr_0(p, is_case, true);
 }
 
-fn simple_type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) -> Option<CompletedMarker> {
+fn simple_type_expr_0(p: &mut Parser, is_case: bool, allow_with: bool) -> Option<CompletedMarker> {
   let mut m = p.start();
   if p.at(T![=>]) && !is_case {
     // test ok
@@ -97,17 +97,17 @@ fn simple_type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) -> Option<
         } else {
           let m = lhs.precede(p);
           p.eat(T![=>]);
-          simple_type_expr_0(p, is_case, is_simple);
+          simple_type_expr_0(p, is_case, allow_with);
           lhs = m.complete(p, LAMBDA_TYPE);
         }
       }
 
       // test ok
       // val foo: Int with String = 5
-      T![with] if is_simple => {
+      T![with] if allow_with => {
         let m = lhs.precede(p);
         p.eat(T![with]);
-        simple_type_expr_0(p, is_case, is_simple);
+        simple_type_expr_0(p, is_case, allow_with);
         lhs = m.complete(p, WITH_TYPE);
       }
 
