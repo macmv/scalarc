@@ -32,6 +32,7 @@ struct Parser<'a> {
   current:            SyntaxKind,
   current_range:      Range<usize>,
   pending_whitespace: usize,
+  peeked_whitespace:  usize,
 
   events: Vec<Event>,
 
@@ -193,6 +194,7 @@ impl<'a> Parser<'a> {
       current: first,
       events: Vec::new(),
       pending_whitespace: 0,
+      peeked_whitespace: 0,
       peeked: None,
     }
   }
@@ -225,7 +227,7 @@ impl Parser<'_> {
     } else {
       // Don't push an even here. Instead, we'll push `current` when we consume the
       // peeked token in `bump`.
-      let t = self.bump_inner(false);
+      let t = self.bump_peek();
       self.peeked = Some((t, self.lexer.range()));
       t
     }
@@ -249,23 +251,24 @@ impl Parser<'_> {
   pub fn bump(&mut self) -> SyntaxKind {
     if let Some((t, r)) = self.peeked.take() {
       // Push `current`, now that we're pulling an event from `peeked`.
+      self.eat_trivia();
       self.events.push(Event::Token { kind: self.current, len: self.current_range.len() });
       self.current = t;
       self.current_range = r;
+      self.pending_whitespace = self.peeked_whitespace;
+      self.peeked_whitespace = 0;
       t
     } else {
-      let kind = self.bump_inner(true);
+      let kind = self.bump_inner();
       self.current = kind;
       self.current_range = self.lexer.range();
       kind
     }
   }
 
-  fn bump_inner(&mut self, push: bool) -> SyntaxKind {
+  fn bump_inner(&mut self) -> SyntaxKind {
     self.eat_trivia();
-    if push {
-      self.events.push(Event::Token { kind: self.current, len: self.lexer.slice().len() });
-    }
+    self.events.push(Event::Token { kind: self.current, len: self.lexer.slice().len() });
 
     loop {
       match self.lexer.next() {
@@ -288,6 +291,30 @@ impl Parser<'_> {
       }
     }
   }
+
+  fn bump_peek(&mut self) -> SyntaxKind {
+    loop {
+      match self.lexer.next() {
+        // Ignore whitespace tokens here, because we usually don't care about them when parsing. We
+        // record that they got skipped, so that we can recover them later if we need a concrete
+        // tree.
+        Ok(Token::Whitespace) => {
+          self.peeked_whitespace += self.lexer.slice().len();
+        }
+        Ok(t) => {
+          break token_to_kind(t, self.lexer.slice());
+        }
+        Err(LexError::EOF) => {
+          break SyntaxKind::EOF;
+        }
+        Err(e) => {
+          self.error(e.to_string());
+          break self.current;
+        }
+      }
+    }
+  }
+
   pub fn expect(&mut self, t: SyntaxKind) {
     if self.current() != t {
       self.error(format!("expected {t:?}"));
