@@ -57,6 +57,16 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
     }
 
     // test ok
+    // case '+' | '-' =>
+    SINGLE_QUOTE => {
+      p.eat(SINGLE_QUOTE);
+
+      expr::character_lit(p);
+
+      Some(m.complete(p, CHARACTER_LIT))
+    }
+
+    // test ok
     // case "hello" | "bye" =>
     DOUBLE_QUOTE => {
       p.eat(DOUBLE_QUOTE);
