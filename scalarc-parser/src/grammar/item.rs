@@ -640,6 +640,17 @@ fn fun_params(p: &mut Parser, is_class: bool) {
       //   b: Int
       // ) = 3
       p.eat_newlines();
+
+      // test ok
+      // def foo(
+      //   a: Int,
+      //   b: Int,
+      // ) = 3
+      if p.at(T![')']) {
+        p.eat(T![')']);
+        m.complete(p, FUN_PARAMS);
+        break;
+      }
     } else {
       p.expect(T![')']);
       m.complete(p, FUN_PARAMS);
