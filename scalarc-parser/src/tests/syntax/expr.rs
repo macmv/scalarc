@@ -1639,9 +1639,7 @@ fn interpolated_string() {
           INTERPOLATED_STRING
             IDENT 's'
             DOUBLE_QUOTE '"'
-            INTERPOLATION
-              IDENT_EXPR
-                IDENT '$'
+            IDENT '$'
             IDENT 'f'
             IDENT 'o'
             IDENT 'o'
@@ -1665,9 +1663,7 @@ fn interpolated_string() {
                   INT_LIT_KW '3'
               CLOSE_CURLY '}'
             WHITESPACE ' '
-            INTERPOLATION
-              IDENT_EXPR
-                IDENT '$'
+            IDENT '$'
             IDENT 'b'
             IDENT 'a'
             IDENT 'r'

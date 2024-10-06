@@ -811,35 +811,36 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
         }
       }
 
-      T![ident] if interpolations && p.slice() == "$" && p.peek() == T!['{'] => {
+      T![ident] if interpolations && p.slice() == "$" => {
         let m = p.start();
         p.eat(T![ident]); // The `$`
-        p.set_in_string(false);
-        p.eat(T!['{']);
-        expr(p);
 
-        // HACK: We set this back to `in_string`, so that `p.expect()` can parse the
-        // next token as being inside a string. Then, we also pop the `}`
-        // manually.
-        p.set_in_string(true);
-        if p.current() == T!['}'] {
-          p.brace_stack.pop();
-          p.bump();
-        } else {
-          p.expect(T!['}']);
-        }
-
-        m.complete(p, INTERPOLATION);
-      }
-
-      T![ident] if interpolations && p.slice().starts_with("$") => {
-        let m = p.start();
-        {
-          let m = p.start();
+        if p.at(T![ident]) && p.slice() == "$" {
+          // test ok
+          // val x = println(s"$${im still a string}")
+          m.abandon(p);
           p.eat(T![ident]);
-          m.complete(p, IDENT_EXPR);
+        } else if p.at(T!['{']) {
+          p.set_in_string(false);
+          p.eat(T!['{']);
+          expr(p);
+
+          // HACK: We set this back to `in_string`, so that `p.expect()` can parse the
+          // next token as being inside a string. Then, we also pop the `}`
+          // manually.
+          p.set_in_string(true);
+          if p.current() == T!['}'] {
+            p.brace_stack.pop();
+            p.bump();
+          } else {
+            p.expect(T!['}']);
+          }
+
+          m.complete(p, INTERPOLATION);
+        } else {
+          // TODO: Ident interpolations.
+          m.abandon(p);
         }
-        m.complete(p, INTERPOLATION);
       }
 
       // test err
