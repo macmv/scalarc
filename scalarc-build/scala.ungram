@@ -94,6 +94,7 @@ Type = LambdaType
      | GenericType
      | TupleType
      | PathType
+     | NestedType
      | SimpleType
 
 ImplicitParam = Type ':' Type
@@ -109,6 +110,7 @@ WithType       = Type 'with' Type
 SpreadType     =  Type '*'
 GenericType    = Type TypeArgs
 PathType       = Type '.' id
+NestedType     = Type '#' id
 TupleType      = '(' (Type (',' Type)*)? ')'
 SimpleType     = id
 

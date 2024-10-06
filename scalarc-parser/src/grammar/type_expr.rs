@@ -64,6 +64,22 @@ fn simple_type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) -> Option<
         lhs = m.complete(p, PATH_TYPE);
       }
 
+      T![#] => {
+        let m = lhs.precede(p);
+        p.eat(T![#]);
+
+        match p.current() {
+          // test ok
+          // val foo: Foo#bar = 3
+          T![ident] | T![type] => {
+            p.bump();
+          }
+          _ => p.error("expected identifier"),
+        };
+
+        lhs = m.complete(p, NESTED_TYPE);
+      }
+
       T!['['] => {
         let m = lhs.precede(p);
         {
