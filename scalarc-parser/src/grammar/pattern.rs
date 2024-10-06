@@ -77,6 +77,17 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
     }
 
     // test ok
+    // case s"hello" =>
+    T![ident] if p.peek() == DOUBLE_QUOTE => {
+      p.eat(T![ident]);
+      p.eat(DOUBLE_QUOTE);
+
+      expr::parse_string(p, false);
+
+      Some(m.complete(p, DOUBLE_QUOTED_STRING))
+    }
+
+    // test ok
     // case (x, y) =>
     T!['('] => {
       arg_pattern(p);
