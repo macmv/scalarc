@@ -810,9 +810,19 @@ fn for_expr(p: &mut Parser) {
     }
   }
 
+  // test ok
+  // for (x <- 1 to 10)
+  //   yield x
+  p.eat_newlines();
+
   if p.at(T![yield]) {
     p.eat(T![yield]);
   }
+
+  // test ok
+  // for (x <- 1 to 10) yield
+  //   x
+  p.eat_newlines();
 
   expr(p);
 }
