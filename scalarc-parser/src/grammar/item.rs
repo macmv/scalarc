@@ -150,6 +150,7 @@ fn item(p: &mut Parser) {
     T![import] => import_item(p, m),
     T![def] => fun_def(p, m),
     T![val] | T![var] => val_def(p, m),
+    T![type] => type_def(p, m),
 
     T![class] | T![trait] | T![object] => class_def(p, m),
     T![case] if matches!(p.peek(), T![class] | T![object]) => class_def(p, m),
@@ -690,4 +691,27 @@ pub fn case_item(p: &mut Parser, m: Marker) {
   }
 
   m.complete(p, CASE_ITEM);
+}
+
+fn type_def(p: &mut Parser, m: Marker) {
+  p.eat(T![type]);
+  p.expect(T![ident]);
+
+  // test ok
+  // type Foo[T] = Seq[T]
+  if p.at(T!['[']) {
+    let m = p.start();
+    super::type_expr::type_params(p, T!['['], T![']']);
+    m.complete(p, TYPE_PARAMS);
+  }
+
+  // test ok
+  // type Foo = Int
+  // type Bar = String
+  if p.at(T![=]) {
+    p.eat(T![=]);
+    super::type_expr::type_expr(p);
+  }
+
+  m.complete(p, TYPE_DEF);
 }
