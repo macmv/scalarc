@@ -425,7 +425,8 @@ fn class_def(p: &mut Parser, m: Marker) {
   // test ok
   // class Foo {}
   // class Foo() {}
-  if p.current() == T!['('] {
+  // class Foo(val foo: Int)(val bar: String) {}
+  while p.current() == T!['('] {
     fun_params(p, true);
   }
 
