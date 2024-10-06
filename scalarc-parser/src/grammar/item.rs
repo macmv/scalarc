@@ -802,6 +802,10 @@ fn type_def(p: &mut Parser, m: Marker) {
   // type Bar = String
   if p.at(T![=]) {
     p.eat(T![=]);
+    // test ok
+    // type Foo =
+    //   Bar
+    p.eat_newlines();
     super::type_expr::type_expr(p);
   }
 
