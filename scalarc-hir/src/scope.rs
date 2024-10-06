@@ -156,10 +156,23 @@ fn item_definition(
       }
     }
     ast::Item::ValDef(d) => {
-      if let Some(id) = d.id_token() {
-        if id.text_range().contains_inclusive(pos) {
-          return item_definition_real(db, file_id, stmt);
+      match d.pattern()? {
+        ast::Pattern::PathPattern(p) => {
+          if let Some(id) = p.path()?.ids().next() {
+            if id.text_range().contains_inclusive(pos) {
+              return item_definition_real(db, file_id, stmt);
+            }
+          }
         }
+        ast::Pattern::TypePattern(t) => {
+          if let Some(id) = t.id_token() {
+            if id.text_range().contains_inclusive(pos) {
+              return item_definition_real(db, file_id, stmt);
+            }
+          }
+        }
+        // TODO: Handle patterns like `val (x, y) = ...`
+        _ => {}
       }
     }
     _ => {}

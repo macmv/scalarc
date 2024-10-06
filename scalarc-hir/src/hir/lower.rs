@@ -208,26 +208,52 @@ impl BlockLower<'_> {
         Some(stmt_id)
       }
 
-      ast::Item::ValDef(def) => {
-        let name = def.id_token()?.text().to_string();
-        let expr_id = match def.expr() {
-          Some(e) => Some(self.walk_expr(&e)?),
-          None => None,
-        };
+      ast::Item::ValDef(def) => match def.pattern()? {
+        ast::Pattern::PathPattern(path) => {
+          let name = path.path()?.ids().next().unwrap().text().to_string();
+          let expr_id = match def.expr() {
+            Some(e) => Some(self.walk_expr(&e)?),
+            None => None,
+          };
 
-        let stmt_id = self.alloc_stmt(
-          Stmt::Binding(Binding {
-            implicit: false,
-            kind: BindingKind::Val,
-            name,
-            ty: None,
-            expr: expr_id,
-          }),
-          item,
-        );
+          let stmt_id = self.alloc_stmt(
+            Stmt::Binding(Binding {
+              implicit: false,
+              kind: BindingKind::Val,
+              name,
+              ty: None,
+              expr: expr_id,
+            }),
+            item,
+          );
 
-        Some(stmt_id)
-      }
+          Some(stmt_id)
+        }
+        ast::Pattern::TypePattern(p) => {
+          let name = p.id_token()?.text().to_string();
+          let expr_id = match def.expr() {
+            Some(e) => Some(self.walk_expr(&e)?),
+            None => None,
+          };
+          let ty = self.lower_type(p.ty());
+
+          let stmt_id = self.alloc_stmt(
+            Stmt::Binding(Binding {
+              implicit: false,
+              kind: BindingKind::Val,
+              name,
+              ty,
+              expr: expr_id,
+            }),
+            item,
+          );
+
+          Some(stmt_id)
+        }
+
+        // TODO: Produce multiple bindings for cases like `val (x, y) = (1, 2)`.
+        _ => None,
+      },
 
       ast::Item::Import(i) => {
         for import_expr in i.import_exprs() {

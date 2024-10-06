@@ -240,8 +240,8 @@ Def = ValDef
     | FunDef
     | TypeDef
 
-ValDef  = Modifier* 'val' id (':' Type)? '=' Expr
-VarDef  = Modifier* 'var' id (':' Type)? '=' Expr
+ValDef  = Modifier* 'val' Pattern (':' Type)? '=' Expr
+VarDef  = Modifier* 'var' Pattern (':' Type)? '=' Expr
 FunDef  = Modifier* 'def' FunSig '=' Expr
 FunSig  = id TypeParams? FunParams* (':' Type)?
 TypeDec = Modifier* 'type' id Type
