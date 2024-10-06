@@ -800,6 +800,13 @@ fn if_expr(p: &mut Parser) {
   p.eat_newlines();
   p.expect(T![')']);
 
+  // test ok
+  // if (true)
+  //   println("hi")
+  if p.at(T![nl]) {
+    p.eat(T![nl]);
+  }
+
   expr(p);
 
   // if (true) 3 else 4
