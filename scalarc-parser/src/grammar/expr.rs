@@ -1,4 +1,4 @@
-use item::{block_items, lambda_items};
+use item::lambda_items;
 
 use crate::{CompletedMarker, Marker};
 

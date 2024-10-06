@@ -3,7 +3,7 @@ use scalarc_syntax::SyntaxNodePtr;
 use super::{BlockId, ExprId, UnresolvedPath};
 use crate::{
   hir, DefinitionKey, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile,
-  InFileExt, Name, Path,
+  InFileExt, Path,
 };
 
 pub fn def_for_expr(
