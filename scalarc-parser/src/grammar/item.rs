@@ -97,6 +97,12 @@ fn items(p: &mut Parser, terminator: BlockTerminator) {
 fn item(p: &mut Parser) {
   let m = p.start();
 
+  if p.at(T![@]) {
+    let m = p.start();
+    annotation(p);
+    m.complete(p, ANNOTATION);
+  }
+
   // Scala doesn't define an order to these, so we just parse all of them.
   loop {
     // test ok
@@ -145,6 +151,17 @@ fn item(p: &mut Parser) {
       m.complete(p, EXPR_ITEM);
     }
   };
+}
+
+// test ok
+// @volatile private var foo = 3
+fn annotation(p: &mut Parser) {
+  p.eat(T![@]);
+  p.expect(T![ident]);
+
+  if p.at(T!['(']) {
+    super::expr::call_paren_expr(p);
+  }
 }
 
 fn package_item(p: &mut Parser, m: Marker) {
