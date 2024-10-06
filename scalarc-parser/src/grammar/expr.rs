@@ -775,7 +775,6 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
   loop {
     match p.current() {
       DOUBLE_QUOTE if is_tripple_quote => {
-        p.set_in_string(false);
         p.eat(DOUBLE_QUOTE);
         quote_count += 1;
 
@@ -785,10 +784,10 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
         // """"hello""""
         dbg!(quote_count);
         if quote_count >= 3 && !p.at(DOUBLE_QUOTE) {
+          p.set_in_string(false);
           break;
         }
 
-        p.set_in_string(true);
         continue;
       }
       _ => quote_count = 0,
@@ -886,6 +885,12 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
     }
 
     is_start = false;
+  }
+
+  // This is dumb, but changing the parser mode is difficult with tripple quoted
+  // strings, so this is the easiest way to handle it.
+  while p.at(WHITESPACE) {
+    p.bump();
   }
 }
 
