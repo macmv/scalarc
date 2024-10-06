@@ -145,8 +145,6 @@ fn item(p: &mut Parser) {
   }
 
   match p.current() {
-    T![package] => package_item(p, m),
-
     T![import] => import_item(p, m),
     T![def] => fun_def(p, m),
     T![val] | T![var] => val_def(p, m),
@@ -154,8 +152,11 @@ fn item(p: &mut Parser) {
 
     T![class] | T![trait] | T![object] => class_def(p, m),
     T![case] if matches!(p.peek(), T![class] | T![object]) => class_def(p, m),
+    T![package] if p.peek() == T![object] => class_def(p, m),
 
     T![case] => case_item(p, m),
+
+    T![package] => package_item(p, m),
 
     _ => {
       expr::expr(p);
@@ -361,6 +362,14 @@ fn class_def(p: &mut Parser, m: Marker) {
   // case object Foo {}
   if p.current() == T![case] {
     p.eat(T![case]);
+  }
+
+  // test ok
+  // package object foo {
+  //   def x = 3
+  // }
+  if p.at(T![package]) {
+    p.eat(T![package]);
   }
 
   let kind = match p.current() {
