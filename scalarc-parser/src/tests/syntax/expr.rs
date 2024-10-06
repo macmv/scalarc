@@ -1695,3 +1695,33 @@ fn tripple_quoted_strings() {
     "#],
   );
 }
+
+#[test]
+fn newline_disabling() {
+  // Newlines get disabled in `()` and `[]` blocks, so this should parse.
+  check(
+    r#"
+      (foo
+      || bar)
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          TUPLE_EXPR
+            OPEN_PAREN '('
+            INFIX_EXPR
+              IDENT_EXPR
+                IDENT 'foo'
+                NL_KW '\n'
+              WHITESPACE '      '
+              IDENT '||'
+              WHITESPACE ' '
+              IDENT_EXPR
+                IDENT 'bar'
+            CLOSE_PAREN ')'
+        NL_KW '\n'
+    "#],
+  );
+}

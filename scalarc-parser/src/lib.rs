@@ -37,6 +37,23 @@ struct Parser<'a> {
   events: Vec<Event>,
 
   peeked: Option<(SyntaxKind, Range<usize>)>,
+
+  // Tracks the current stack of braces. This is used to disabled newlines in areas surrounded by
+  // `(` and `)`, or `[` and `]`.
+  //
+  // NB: Braces are not matched, so if the source file has mismatched braces, then this will stop
+  // working! Additionally, this operates above `peek()`, so `peek()` will still incorrectly see
+  // newline tokens.
+  brace_stack: Vec<Brace>,
+}
+
+enum Brace {
+  /// `(` and `)`
+  Paren,
+  /// `[` and `]`
+  Bracket,
+  /// `{` and `}` (poorly named, I know).
+  Brace,
 }
 
 fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
@@ -202,6 +219,7 @@ impl<'a> Parser<'a> {
       pending_whitespace: 0,
       peeked_whitespace: 0,
       peeked: None,
+      brace_stack: vec![],
     };
     p.bump();
     p.events.clear(); // `bump` will push the current token, which we don't want here.
@@ -220,6 +238,13 @@ struct CompletedMarker {
 
 impl Parser<'_> {
   pub fn finish(self) -> Vec<Event> { self.events }
+
+  pub fn newlines_enabled(&self) -> bool {
+    match self.brace_stack.last() {
+      Some(Brace::Paren | Brace::Bracket) => false,
+      Some(Brace::Brace) | None => true,
+    }
+  }
 
   fn eat_trivia(&mut self) {
     if self.pending_whitespace > 0 {
@@ -267,20 +292,45 @@ impl Parser<'_> {
     self.bump();
   }
   pub fn bump(&mut self) -> SyntaxKind {
-    if let Some((t, r)) = self.peeked.take() {
-      // Push `current`, now that we're pulling an event from `peeked`.
-      self.eat_trivia();
-      self.events.push(Event::Token { kind: self.current, len: self.current_range.len() });
-      self.current = t;
-      self.current_range = r;
-      self.pending_whitespace = self.peeked_whitespace;
-      self.peeked_whitespace = 0;
-      t
-    } else {
-      let kind = self.bump_inner();
-      self.current = kind;
-      self.current_range = self.lexer.range();
-      kind
+    loop {
+      let res = if let Some((t, r)) = self.peeked.take() {
+        // Push `current`, now that we're pulling an event from `peeked`.
+        self.eat_trivia();
+        self.events.push(Event::Token { kind: self.current, len: self.current_range.len() });
+        self.current = t;
+        self.current_range = r;
+        self.pending_whitespace = self.peeked_whitespace;
+        self.peeked_whitespace = 0;
+        t
+      } else {
+        let kind = self.bump_inner();
+        self.current = kind;
+        self.current_range = self.lexer.range();
+        kind
+      };
+
+      match res {
+        T!['('] => self.brace_stack.push(Brace::Paren),
+        T![')'] => {
+          self.brace_stack.pop();
+        }
+        T!['['] => self.brace_stack.push(Brace::Bracket),
+        T![']'] => {
+          self.brace_stack.pop();
+        }
+        T!['{'] => self.brace_stack.push(Brace::Brace),
+        T!['}'] => {
+          self.brace_stack.pop();
+        }
+        _ => {}
+      };
+
+      if !self.newlines_enabled() && res == T![nl] {
+        // Skip newlines if they are disabled.
+        continue;
+      } else {
+        break res;
+      }
     }
   }
 
