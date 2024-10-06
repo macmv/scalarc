@@ -45,6 +45,9 @@ struct Parser<'a> {
   // working! Additionally, this operates above `peek()`, so `peek()` will still incorrectly see
   // newline tokens.
   brace_stack: Vec<Brace>,
+
+  // If set, then braces will not be matched.
+  in_string: bool,
 }
 
 enum Brace {
@@ -219,6 +222,7 @@ impl<'a> Parser<'a> {
       pending_whitespace: 0,
       peeked_whitespace: 0,
       peeked: None,
+      in_string: false,
       brace_stack: vec![],
     };
     p.bump();
@@ -245,6 +249,8 @@ impl Parser<'_> {
       Some(Brace::Brace) | None => true,
     }
   }
+
+  pub fn set_in_string(&mut self, in_string: bool) { self.in_string = in_string; }
 
   fn eat_trivia(&mut self) {
     if self.pending_whitespace > 0 {
@@ -309,21 +315,23 @@ impl Parser<'_> {
         kind
       };
 
-      match res {
-        T!['('] => self.brace_stack.push(Brace::Paren),
-        T![')'] => {
-          self.brace_stack.pop();
+      if !self.in_string {
+        match res {
+          T!['('] => self.brace_stack.push(Brace::Paren),
+          T![')'] => {
+            self.brace_stack.pop();
+          }
+          T!['['] => self.brace_stack.push(Brace::Bracket),
+          T![']'] => {
+            self.brace_stack.pop();
+          }
+          T!['{'] => self.brace_stack.push(Brace::Brace),
+          T!['}'] => {
+            self.brace_stack.pop();
+          }
+          _ => {}
         }
-        T!['['] => self.brace_stack.push(Brace::Bracket),
-        T![']'] => {
-          self.brace_stack.pop();
-        }
-        T!['{'] => self.brace_stack.push(Brace::Brace),
-        T!['}'] => {
-          self.brace_stack.pop();
-        }
-        _ => {}
-      };
+      }
 
       if !self.newlines_enabled() && res == T![nl] {
         // Skip newlines if they are disabled.

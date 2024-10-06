@@ -523,7 +523,9 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
     SINGLE_QUOTE => {
       p.eat(SINGLE_QUOTE);
 
+      p.set_in_string(true);
       character_lit(p);
+      p.set_in_string(false);
 
       Some(m.complete(p, CHARACTER_LIT))
     }
@@ -531,7 +533,9 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
     DOUBLE_QUOTE => {
       p.eat(DOUBLE_QUOTE);
 
+      p.set_in_string(true);
       parse_string(p, false);
+      p.set_in_string(false);
 
       Some(m.complete(p, DOUBLE_QUOTED_STRING))
     }
@@ -546,7 +550,9 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
         DOUBLE_QUOTE => {
           p.eat(DOUBLE_QUOTE);
 
+          p.set_in_string(true);
           parse_string(p, true);
+          p.set_in_string(false);
 
           Some(m.complete(p, INTERPOLATED_STRING))
         }
@@ -787,9 +793,11 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
       T![ident] if interpolations && p.slice() == "$" && p.peek() == T!['{'] => {
         let m = p.start();
         p.eat(T![ident]); // The `$`
+        p.set_in_string(false);
         p.eat(T!['{']);
         expr(p);
         p.expect(T!['}']);
+        p.set_in_string(true);
         m.complete(p, INTERPOLATION);
       }
 
