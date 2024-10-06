@@ -307,12 +307,14 @@ fn lambda_expr() {
       LAMBDA_EXPR
         TUPLE_EXPR
           OPEN_PAREN '('
-          IDENT_EXPR
-            IDENT 'x'
-          error: expected operator, got COLON
-          COLON ':'
-          WHITESPACE ' '
-          IDENT 'Int'
+          ASCRIPT_EXPR
+            IDENT_EXPR
+              IDENT 'x'
+            COLON ':'
+            WHITESPACE ' '
+            TYPE_ASCRIPTION
+              SIMPLE_TYPE
+                IDENT 'Int'
           CLOSE_PAREN ')'
         WHITESPACE ' '
         FAT_ARROW '=>'
