@@ -175,7 +175,7 @@ pub fn type_expr(p: &mut Parser) -> Option<CompletedMarker> {
 
 // A type parameter on a definition, like `A <: B: C`.
 pub fn type_param(p: &mut Parser) -> Option<CompletedMarker> {
-  let c = if p.at(T![ident]) && p.slice() == "+" {
+  let mut c = if p.at(T![ident]) && p.slice() == "+" {
     // test ok
     // def foo[+A] = 3
     let m = p.start();
@@ -195,16 +195,16 @@ pub fn type_param(p: &mut Parser) -> Option<CompletedMarker> {
     type_expr(p)?
   };
 
-  if p.at(T![:]) {
+  while p.at(T![:]) {
     // test ok
-    // def foo[T: Int] = 3
+    // def foo[T: Int: String] = 3
     let m = c.precede(p);
     p.eat(T![:]);
     type_expr(p);
-    Some(m.complete(p, IMPLICIT_PARAM))
-  } else {
-    Some(c)
+    c = m.complete(p, IMPLICIT_PARAM);
   }
+
+  Some(c)
 }
 
 /// Type arguments. These show up in function calls, like `foo[Int, String]`.
