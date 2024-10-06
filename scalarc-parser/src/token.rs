@@ -357,18 +357,39 @@ impl<'a> Lexer<'a> {
 
         _ => {
           let mut is_float = false;
+          let mut is_exponent = false;
           loop {
-            match self.tok.peek() {
-              Some(InnerToken::Digit) => {}
-              Some(InnerToken::Delimiter(Delimiter::Dot)) => {
+            match self.tok.peek_char() {
+              Some('0'..='9') => {}
+              Some('.') => {
                 if !is_float && self.tok.peek2() == Some(InnerToken::Digit) {
                   is_float = true;
                 } else {
                   break;
                 }
               }
+
+              Some('e' | 'E') if is_float => {
+                if is_exponent {
+                  break;
+                } else {
+                  is_exponent = true;
+                  self.tok.eat().unwrap();
+                  match self.tok.peek_char() {
+                    Some('+') | Some('-') => {
+                      self.tok.eat().unwrap();
+                    }
+                    Some('0'..='9') => {}
+                    Some(_) | None => break,
+                  }
+                }
+
+                continue;
+              }
+
               Some(_) | None => break,
             }
+
             self.tok.eat().unwrap();
           }
 
@@ -376,15 +397,35 @@ impl<'a> Lexer<'a> {
         }
       },
 
-      InnerToken::Delimiter(Delimiter::Dot) if self.tok.peek() == Some(InnerToken::Digit) => loop {
-        match self.tok.peek() {
-          Some(InnerToken::Digit) => {}
-          Some(_) | None => {
-            break self.ok(start, Token::Literal(Literal::Float));
+      InnerToken::Delimiter(Delimiter::Dot) if self.tok.peek() == Some(InnerToken::Digit) => {
+        let mut is_exponent = false;
+        loop {
+          match self.tok.peek_char() {
+            Some('0'..='9') => {}
+
+            Some('e' | 'E') => {
+              if is_exponent {
+                break self.ok(start, Token::Literal(Literal::Float));
+              } else {
+                is_exponent = true;
+                self.tok.eat().unwrap();
+                match self.tok.peek_char() {
+                  Some('+') | Some('-') => {
+                    self.tok.eat().unwrap();
+                  }
+                  Some('0'..='9') => {}
+                  Some(_) | None => break self.ok(start, Token::Literal(Literal::Float)),
+                }
+              }
+            }
+
+            Some(_) | None => {
+              break self.ok(start, Token::Literal(Literal::Float));
+            }
           }
+          self.tok.eat().unwrap();
         }
-        self.tok.eat().unwrap();
-      },
+      }
 
       // Double quoted strings.
       InnerToken::Delimiter(Delimiter::DoubleQuote) => {
@@ -562,6 +603,16 @@ mod tests {
     let mut lexer = Lexer::new(".25");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
     assert_eq!(lexer.slice(), ".25");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("2.5e5");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
+    assert_eq!(lexer.slice(), "2.5e5");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new(".5e5");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
+    assert_eq!(lexer.slice(), ".5e5");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
