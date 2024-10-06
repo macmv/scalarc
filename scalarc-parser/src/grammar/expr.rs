@@ -434,17 +434,10 @@ fn postfix_dot_expr(
 // Expressions like `1` or "hi"
 fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
   match p.current() {
-    INT_LIT_KW => {
-      p.eat(INT_LIT_KW);
-      Some(m.complete(p, LIT_EXPR))
-    }
-
-    T![true] => {
-      p.eat(T![true]);
-      Some(m.complete(p, LIT_EXPR))
-    }
-    T![false] => {
-      p.eat(T![false]);
+    // test ok
+    // 2 + 1.0 + true + false
+    INT_LIT_KW | FLOAT_LIT_KW | T![true] | T![false] => {
+      p.bump();
       Some(m.complete(p, LIT_EXPR))
     }
 
