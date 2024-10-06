@@ -865,5 +865,16 @@ fn generator(p: &mut Parser) {
 
   expr(p);
 
+  // This is allowed, for some reason.
+  //
+  // test ok
+  // for {
+  //   x <- 1 to 10
+  //   foo = 3,
+  // } yield x
+  if p.at(T![,]) && p.peek() == T![nl] {
+    p.eat(T![,]);
+  }
+
   m.complete(p, generator);
 }
