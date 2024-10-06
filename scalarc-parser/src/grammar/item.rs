@@ -126,7 +126,17 @@ fn item(p: &mut Parser) {
       | T![override]
       | T![lazy] => {
         let m = p.start();
-        p.bump();
+
+        match p.current() {
+          T![private] | T![protected] => {
+            p.bump();
+            access_qualifier(p)
+          }
+          _ => {
+            p.bump();
+          }
+        }
+
         p.eat_newlines();
         m.complete(p, MODIFIER);
       }
@@ -151,6 +161,19 @@ fn item(p: &mut Parser) {
       m.complete(p, EXPR_ITEM);
     }
   };
+}
+
+// test ok
+// private[this] def foo = 3
+fn access_qualifier(p: &mut Parser) {
+  if p.at(T!['[']) {
+    let m = p.start();
+    p.eat(T!['[']);
+    // FIXME: Parse a path.
+    p.expect(T![ident]);
+    p.expect(T![']']);
+    m.complete(p, ACCESS_QUALIFIER);
+  }
 }
 
 // test ok
