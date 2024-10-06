@@ -498,8 +498,8 @@ fn extends_item(p: &mut Parser) {
   }
 
   // test ok
-  // class Foo extends Bar(2, 3) {}
-  if p.at(T!['(']) {
+  // class Foo extends Bar(2, 3)(4, 5) {}
+  while p.at(T!['(']) {
     super::expr::call_paren_expr(p);
   }
 }
