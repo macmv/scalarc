@@ -68,6 +68,10 @@ fn type_expr_0(p: &mut Parser, pattern: bool) {
       // This is for class definitions. Not sure if correct or not.
       T!['{'] | T![with] => return,
 
+      // test ok
+      // case _: Int | _: String =>
+      T![ident] if p.slice() == "|" => return,
+
       _ => {
         p.error(format!("expected type, got {:?}", p.current()));
         p.recover_until_any(&[T![nl], T![,], T![')'], T!['}'], T![=]]);
