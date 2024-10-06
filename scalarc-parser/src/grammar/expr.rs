@@ -69,14 +69,17 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
       //
       //   3
       let found_newline = p.at(T![nl]);
-      if found_newline {
-        p.eat(T![nl]);
-      }
+      let terminator_token = if found_newline { p.peek() } else { p.current() };
 
       // Any of these tokens are a terminator, or a double newline is a terminator.
-      let is_at_terminator = match p.current() {
+      let is_at_terminator = match terminator_token {
         T![,] | T![')'] | T!['}'] | T![else] | EOF => true,
         T![nl] if found_newline => true,
+
+        // `val` and `var` declare the next statement, but in the case of a lambda, `val` and `var`
+        // are just part of the block.
+        T![val] | T![var] if op_tok != T![=>] => true,
+
         _ => false,
       };
 
@@ -91,6 +94,10 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
           return;
         }
       } else {
+        if found_newline {
+          p.eat(T![nl]);
+        }
+
         if op_tok == T![=>] {
           // test ok
           // { foo =>

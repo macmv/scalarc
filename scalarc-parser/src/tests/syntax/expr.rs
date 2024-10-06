@@ -116,7 +116,6 @@ fn whitespace() {
           INT_LIT_KW '2'
         WHITESPACE ' '
         IDENT '+'
-        NL_KW '\n'
     "#],
   );
 
@@ -131,8 +130,6 @@ fn whitespace() {
           INT_LIT_KW '2'
         WHITESPACE ' '
         IDENT '+'
-        WHITESPACE ' // comment before nl still counts'
-        NL_KW '\n'
     "#],
   );
 }
@@ -463,9 +460,66 @@ fn lambda_with_postfix_op() {
                         CLOSE_PAREN ')'
                     WHITESPACE ' '
                     IDENT 'flatten'
-                    NL_KW '\n'
+                NL_KW '\n'
           WHITESPACE '    '
           CLOSE_CURLY '}'
+    "#],
+  );
+}
+
+#[test]
+fn postfix_terminators() {
+  check_expr(
+    "{
+      val foo = Seq() flatten
+      val bar = Seq() flatten
+    }",
+    expect![@r#"
+      BLOCK_EXPR
+        OPEN_CURLY '{'
+        NL_KW '\n'
+        WHITESPACE '      '
+        VAL_DEF
+          VAL_KW 'val'
+          WHITESPACE ' '
+          PATH_PATTERN
+            PATH
+              IDENT 'foo'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          POSTFIX_EXPR
+            CALL_EXPR
+              IDENT_EXPR
+                IDENT 'Seq'
+              PAREN_ARGUMENTS
+                OPEN_PAREN '('
+                CLOSE_PAREN ')'
+            WHITESPACE ' '
+            IDENT 'flatten'
+        NL_KW '\n'
+        WHITESPACE '      '
+        VAL_DEF
+          VAL_KW 'val'
+          WHITESPACE ' '
+          PATH_PATTERN
+            PATH
+              IDENT 'bar'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          POSTFIX_EXPR
+            CALL_EXPR
+              IDENT_EXPR
+                IDENT 'Seq'
+              PAREN_ARGUMENTS
+                OPEN_PAREN '('
+                CLOSE_PAREN ')'
+            WHITESPACE ' '
+            IDENT 'flatten'
+        NL_KW '\n'
+        WHITESPACE '    '
+        CLOSE_CURLY '}'
     "#],
   );
 }
@@ -1289,7 +1343,7 @@ fn postfix_ops() {
                 CLOSE_PAREN ')'
             WHITESPACE ' '
             IDENT 'flatten'
-            NL_KW '\n'
+        NL_KW '\n'
         NL_KW '\n'
         WHITESPACE '      '
         EXPR_ITEM
