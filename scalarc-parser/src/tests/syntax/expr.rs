@@ -1775,8 +1775,7 @@ fn newline_disabling() {
             INFIX_EXPR
               IDENT_EXPR
                 IDENT 'foo'
-                NL_KW '\n'
-              WHITESPACE '      '
+              WHITESPACE '\n      '
               IDENT '||'
               WHITESPACE ' '
               IDENT_EXPR

@@ -118,7 +118,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
     Token::Literal(token::Literal::Float) => SyntaxKind::FLOAT_LIT_KW,
 
     Token::Newline => T![nl],
-    Token::Delimiter(token::Delimiter::Semicolon) => T![;],
+    Token::Delimiter(token::Delimiter::Semicolon) => T![nl],
 
     Token::Whitespace => SyntaxKind::WHITESPACE,
     Token::Delimiter(token::Delimiter::Dot) => T![.],
@@ -298,54 +298,39 @@ impl Parser<'_> {
     self.bump();
   }
   pub fn bump(&mut self) -> SyntaxKind {
-    loop {
-      if !self.in_string {
-        match self.current {
-          T!['('] => self.brace_stack.push(Brace::Paren),
-          T![')'] => {
-            self.brace_stack.pop();
-          }
-          T!['['] => self.brace_stack.push(Brace::Bracket),
-          T![']'] => {
-            self.brace_stack.pop();
-          }
-          T!['{'] => self.brace_stack.push(Brace::Brace),
-          T!['}'] => {
-            self.brace_stack.pop();
-          }
-          _ => {}
+    if !self.in_string {
+      match self.current {
+        T!['('] => self.brace_stack.push(Brace::Paren),
+        T![')'] => {
+          self.brace_stack.pop();
         }
+        T!['['] => self.brace_stack.push(Brace::Bracket),
+        T![']'] => {
+          self.brace_stack.pop();
+        }
+        T!['{'] => self.brace_stack.push(Brace::Brace),
+        T!['}'] => {
+          self.brace_stack.pop();
+        }
+        _ => {}
       }
+    }
 
-      let res = if let Some((t, r)) = self.peeked.take() {
-        // Push `current`, now that we're pulling an event from `peeked`.
-        self.eat_trivia();
-        self.events.push(Event::Token { kind: self.current, len: self.current_range.len() });
-        // TODO: Handle `semi` and `nl` correctly here.
-        self.current = t;
-        self.current_range = r;
-        self.pending_whitespace = self.peeked_whitespace;
-        self.peeked_whitespace = 0;
-        t
-      } else {
-        let kind = self.bump_inner();
-        let kind = match kind {
-          T![nl] if !self.newlines_enabled() => {
-            // Skip newlines if they are disabled.
-            self.current = kind;
-            self.current_range = self.lexer.range();
-            continue;
-          }
-          // `;` always acts like a newline, even if newlines are disabled.
-          T![;] => T![nl],
-          v => v,
-        };
-        self.current = kind;
-        self.current_range = self.lexer.range();
-        kind
-      };
-
-      break res;
+    if let Some((t, r)) = self.peeked.take() {
+      // Push `current`, now that we're pulling an event from `peeked`.
+      self.eat_trivia();
+      self.events.push(Event::Token { kind: self.current, len: self.current_range.len() });
+      // TODO: Handle `semi` and `nl` correctly here.
+      self.current = t;
+      self.current_range = r;
+      self.pending_whitespace = self.peeked_whitespace;
+      self.peeked_whitespace = 0;
+      t
+    } else {
+      let kind = self.bump_inner();
+      self.current = kind;
+      self.current_range = self.lexer.range();
+      kind
     }
   }
 
@@ -359,6 +344,9 @@ impl Parser<'_> {
         // record that they got skipped, so that we can recover them later if we need a concrete
         // tree.
         Ok(Token::Whitespace) => {
+          self.pending_whitespace += self.lexer.slice().len();
+        }
+        Ok(Token::Newline) if !self.newlines_enabled() => {
           self.pending_whitespace += self.lexer.slice().len();
         }
         Ok(t) => {
@@ -382,6 +370,9 @@ impl Parser<'_> {
         // record that they got skipped, so that we can recover them later if we need a concrete
         // tree.
         Ok(Token::Whitespace) => {
+          self.peeked_whitespace += self.lexer.slice().len();
+        }
+        Ok(Token::Newline) if !self.newlines_enabled() => {
           self.peeked_whitespace += self.lexer.slice().len();
         }
         Ok(t) => {
