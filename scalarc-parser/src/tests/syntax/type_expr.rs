@@ -316,3 +316,45 @@ fn lambda() {
     "#],
   );
 }
+
+#[test]
+fn implicit_type_params() {
+  check(
+    "def foo[A <: Seq[B]: C] = 3",
+    expect![@r#"
+      SOURCE_FILE
+        FUN_DEF
+          DEF_KW 'def'
+          WHITESPACE ' '
+          FUN_SIG
+            IDENT 'foo'
+            TYPE_PARAMS
+              OPEN_BRACKET '['
+              IMPLICIT_PARAM
+                LOWER_BOUND_PARAM
+                  SIMPLE_TYPE
+                    IDENT 'A'
+                  WHITESPACE ' '
+                  LESS_COLON '<:'
+                  WHITESPACE ' '
+                  GENERIC_TYPE
+                    SIMPLE_TYPE
+                      IDENT 'Seq'
+                    TYPE_ARGS
+                      OPEN_BRACKET '['
+                      SIMPLE_TYPE
+                        IDENT 'B'
+                      CLOSE_BRACKET ']'
+                COLON ':'
+                WHITESPACE ' '
+                SIMPLE_TYPE
+                  IDENT 'C'
+              CLOSE_BRACKET ']'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '3'
+    "#],
+  );
+}

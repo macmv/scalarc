@@ -132,26 +132,29 @@ pub fn type_param(p: &mut Parser) {
     type_expr(p);
   }
 
-  if p.at(T![<:]) {
+  let c = if p.at(T![<:]) {
     // test ok
     // def foo[T <: Int] = 3
     p.eat(T![<:]);
     type_expr(p);
-    m.complete(p, LOWER_BOUND_PARAM);
+    m.complete(p, LOWER_BOUND_PARAM)
   } else if p.at(T![>:]) {
     // test ok
     // def foo[T >: Int] = 3
     p.eat(T![>:]);
     type_expr(p);
-    m.complete(p, UPPER_BOUND_PARAM);
-  } else if p.at(T![:]) {
+    m.complete(p, UPPER_BOUND_PARAM)
+  } else {
+    m.complete(p, SIMPLE_PARAM)
+  };
+
+  if p.at(T![:]) {
     // test ok
     // def foo[T: Int] = 3
+    let m = c.precede(p);
     p.eat(T![:]);
     type_expr(p);
     m.complete(p, IMPLICIT_PARAM);
-  } else {
-    m.complete(p, SIMPLE_PARAM);
   }
 }
 
