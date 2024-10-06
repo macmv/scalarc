@@ -69,6 +69,15 @@ fn type_expr_0(p: &mut Parser, is_case: bool) {
         }
       }
 
+      T![ident] if p.slice() == "*" => {
+        // test ok
+        // def foo(x: Int*) = 0
+        let m = lhs.precede(p);
+        p.eat(T![ident]);
+        m.complete(p, SPREAD_TYPE);
+        return;
+      }
+
       T![,] | T![']'] | T![')'] | T!['}'] | T![=] | T![nl] | T![<:] | T![>:] | T![:] | EOF => {
         return
       }

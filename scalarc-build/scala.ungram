@@ -79,6 +79,7 @@ StableId = Path
 
 Type = LambdaType
      | AnonLambdaType
+     | SpreadType
      | GenericType
      | TupleType
      | PathType
@@ -96,6 +97,7 @@ SimpleParam = Type
 
 LambdaType     = '(' ')' '=>' Type // TODO
 AnonLambdaType = '=>' Type
+SpreadType     =  Type '*'
 GenericType    = Type TypeArgs
 PathType       = Type '.' id
 TupleType      = '(' (Type (',' Type)*)? ')'
