@@ -118,7 +118,7 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
     Token::Literal(token::Literal::Float) => SyntaxKind::FLOAT_LIT_KW,
 
     Token::Newline => T![nl],
-    Token::Delimiter(token::Delimiter::Semicolon) => T![nl],
+    Token::Delimiter(token::Delimiter::Semicolon) => T![;],
 
     Token::Whitespace => SyntaxKind::WHITESPACE,
     Token::Delimiter(token::Delimiter::Dot) => T![.],
@@ -321,6 +321,7 @@ impl Parser<'_> {
         // Push `current`, now that we're pulling an event from `peeked`.
         self.eat_trivia();
         self.events.push(Event::Token { kind: self.current, len: self.current_range.len() });
+        // TODO: Handle `semi` and `nl` correctly here.
         self.current = t;
         self.current_range = r;
         self.pending_whitespace = self.peeked_whitespace;
@@ -328,17 +329,21 @@ impl Parser<'_> {
         t
       } else {
         let kind = self.bump_inner();
+        let kind = match kind {
+          T![nl] if !self.newlines_enabled() => {
+            // Skip newlines if they are disabled.
+            continue;
+          }
+          // `;` always acts like a newline, even if newlines are disabled.
+          T![;] => T![nl],
+          v => v,
+        };
         self.current = kind;
         self.current_range = self.lexer.range();
         kind
       };
 
-      if !self.newlines_enabled() && res == T![nl] {
-        // Skip newlines if they are disabled.
-        continue;
-      } else {
-        break res;
-      }
+      break res;
     }
   }
 

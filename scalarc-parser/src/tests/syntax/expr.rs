@@ -1556,6 +1556,67 @@ fn for_expr() {
         NL_KW '\n'
     "#],
   );
+
+  // Semicolons shoudl still work in `()`
+  check(
+    "for (x <- 1 to 10; y <- 1 to 10) println(x * y)",
+    expect![@r#"
+      SOURCE_FILE
+        EXPR_ITEM
+          FOR_EXPR
+            FOR_KW 'for'
+            WHITESPACE ' '
+            OPEN_PAREN '('
+            FLATMAP_GENERATOR
+              PATH_PATTERN
+                PATH
+                  IDENT 'x'
+              WHITESPACE ' '
+              THIN_LEFT_ARROW '<-'
+              WHITESPACE ' '
+              INFIX_EXPR
+                LIT_EXPR
+                  INT_LIT_KW '1'
+                WHITESPACE ' '
+                IDENT 'to'
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '10'
+            NL_KW ';'
+            WHITESPACE ' '
+            FLATMAP_GENERATOR
+              PATH_PATTERN
+                PATH
+                  IDENT 'y'
+              WHITESPACE ' '
+              THIN_LEFT_ARROW '<-'
+              WHITESPACE ' '
+              INFIX_EXPR
+                LIT_EXPR
+                  INT_LIT_KW '1'
+                WHITESPACE ' '
+                IDENT 'to'
+                WHITESPACE ' '
+                LIT_EXPR
+                  INT_LIT_KW '10'
+            CLOSE_PAREN ')'
+            WHITESPACE ' '
+            CALL_EXPR
+              IDENT_EXPR
+                IDENT 'println'
+              PAREN_ARGUMENTS
+                OPEN_PAREN '('
+                INFIX_EXPR
+                  IDENT_EXPR
+                    IDENT 'x'
+                  WHITESPACE ' '
+                  IDENT '*'
+                  WHITESPACE ' '
+                  IDENT_EXPR
+                    IDENT 'y'
+                CLOSE_PAREN ')'
+    "#],
+  );
 }
 
 #[test]
