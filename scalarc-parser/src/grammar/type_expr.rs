@@ -100,8 +100,27 @@ fn type_expr_0(p: &mut Parser, is_case: bool) {
 
 // A type parameter on a definition, like `A <: B`.
 pub fn type_param(p: &mut Parser) {
-  let m = p.start();
-  type_expr(p);
+  let mut m = p.start();
+
+  if p.at(T![ident]) && p.slice() == "+" {
+    // test ok
+    // def foo[+A] = 3
+    p.eat(T![ident]);
+    type_expr(p);
+    let c = m.complete(p, COVARIANT_PARAM);
+    m = c.precede(p);
+  } else if p.at(T![ident]) && p.slice() == "-" {
+    // test ok
+    // def foo[-A] = 3
+    p.eat(T![ident]);
+    type_expr(p);
+    let c = m.complete(p, CONTRAVARIANT_PARAM);
+    m = c.precede(p);
+  } else {
+    // test ok
+    // def foo[A] = 3
+    type_expr(p);
+  }
 
   if p.at(T![<:]) {
     // test ok

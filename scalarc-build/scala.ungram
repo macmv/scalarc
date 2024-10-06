@@ -89,10 +89,14 @@ TypeParam = SimpleParam
           | LowerBoundParam
           | UpperBoundParam
           | ImplicitParam
+          | CovariantParam
+          | ContravariantParam
 
 LowerBoundParam = Type '<:' Type
 UpperBoundParam = Type '>:' Type
 ImplicitParam = Type ':' Type
+CovariantParam = '+' Type
+ContravariantParam = '-' Type
 SimpleParam = Type
 
 LambdaType     = '(' ')' '=>' Type // TODO

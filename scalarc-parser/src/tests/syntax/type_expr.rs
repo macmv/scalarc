@@ -179,6 +179,74 @@ fn type_params() {
             INT_LIT_KW '3'
     "#],
   );
+
+  check(
+    "def foo[+T](a: T) = 3",
+    expect![@r#"
+      SOURCE_FILE
+        FUN_DEF
+          DEF_KW 'def'
+          WHITESPACE ' '
+          FUN_SIG
+            IDENT 'foo'
+            TYPE_PARAMS
+              OPEN_BRACKET '['
+              SIMPLE_PARAM
+                COVARIANT_PARAM
+                  IDENT '+'
+                  SIMPLE_TYPE
+                    IDENT 'T'
+              CLOSE_BRACKET ']'
+            FUN_PARAMS
+              OPEN_PAREN '('
+              FUN_PARAM
+                IDENT 'a'
+                COLON ':'
+                WHITESPACE ' '
+                SIMPLE_TYPE
+                  IDENT 'T'
+              CLOSE_PAREN ')'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '3'
+    "#],
+  );
+
+  check(
+    "def foo[-T](a: T) = 3",
+    expect![@r#"
+      SOURCE_FILE
+        FUN_DEF
+          DEF_KW 'def'
+          WHITESPACE ' '
+          FUN_SIG
+            IDENT 'foo'
+            TYPE_PARAMS
+              OPEN_BRACKET '['
+              SIMPLE_PARAM
+                CONTRAVARIANT_PARAM
+                  IDENT '-'
+                  SIMPLE_TYPE
+                    IDENT 'T'
+              CLOSE_BRACKET ']'
+            FUN_PARAMS
+              OPEN_PAREN '('
+              FUN_PARAM
+                IDENT 'a'
+                COLON ':'
+                WHITESPACE ' '
+                SIMPLE_TYPE
+                  IDENT 'T'
+              CLOSE_PAREN ')'
+          WHITESPACE ' '
+          EQ '='
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '3'
+    "#],
+  );
 }
 
 #[test]
