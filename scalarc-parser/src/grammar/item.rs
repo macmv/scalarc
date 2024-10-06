@@ -465,6 +465,17 @@ fn fun_params(p: &mut Parser, is_class: bool) {
   p.eat(T!['(']);
 
   // test ok
+  // def foo(
+  //   a: Int
+  // ) = 3
+  //
+  // test ok
+  // def foo(
+  //   implicit a: Int
+  // ) = 3
+  p.eat_newlines();
+
+  // test ok
   // def foo(implicit a: Int) = 3
   if p.at(T![implicit]) {
     p.eat(T![implicit]);
@@ -483,12 +494,6 @@ fn fun_params(p: &mut Parser, is_class: bool) {
     m.complete(p, FUN_PARAMS);
     return;
   }
-
-  // test ok
-  // def foo(
-  //   a: Int
-  // ) = 3
-  p.eat_newlines();
 
   loop {
     fun_param(p);
