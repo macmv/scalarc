@@ -662,6 +662,11 @@ pub fn case_item(p: &mut Parser, m: Marker) {
   super::pattern::pattern_case(p);
 
   // test ok
+  // case _
+  //   if true =>
+  p.eat_newlines();
+
+  // test ok
   // case _ if true =>
   if p.at(T![if]) {
     let m = p.start();

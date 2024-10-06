@@ -96,6 +96,17 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
           }
         }
       } else {
+        // test ok
+        // case _
+        //   =>
+        //
+        // test ok
+        // case _
+        //   if true =>
+        if p.at(T![nl]) {
+          p.eat(T![nl]);
+        }
+
         match p.current() {
           // test ok
           // case Seq(1, 2) =>
