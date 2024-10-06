@@ -73,7 +73,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
 
       // Any of these tokens are a terminator, or a double newline is a terminator.
       let is_at_terminator = match terminator_token {
-        T![,] | T![')'] | T!['}'] | T![else] | T![catch] | T![while] | EOF => true,
+        T![,] | T![')'] | T!['}'] | T![else] | T![catch] | T![finally] | T![while] | EOF => true,
         T![nl] if found_newline => true,
 
         // `val` and `var` declare the next statement, but in the case of a lambda, `val` and `var`
@@ -127,13 +127,31 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
       }
     } else {
       match p.current() {
-        T![nl] | T![=>] | T![,] | T![')'] | T!['}'] | T![else] | T![catch] | T![while] | EOF => {
+        T![nl]
+        | T![=>]
+        | T![,]
+        | T![')']
+        | T!['}']
+        | T![else]
+        | T![catch]
+        | T![finally]
+        | T![while]
+        | EOF => {
           return;
         }
 
         _ => {
           p.error(format!("expected operator, got {:?}", p.current()));
-          p.recover_until_any(&[T![nl], T![,], T![')'], T!['}'], T![else], T![catch], T![while]]);
+          p.recover_until_any(&[
+            T![nl],
+            T![,],
+            T![')'],
+            T!['}'],
+            T![else],
+            T![catch],
+            T![finally],
+            T![while],
+          ]);
           return;
         }
       }
@@ -1018,12 +1036,32 @@ fn try_expr(p: &mut Parser) {
 
   p.eat_newlines();
 
-  p.expect(T![catch]);
+  // test ok
+  // try file.read() catch {
+  //   file.close()
+  // }
+  if p.at(T![catch]) {
+    p.eat(T![catch]);
 
-  if p.at(T!['{']) {
-    super::item::block_items(p);
-  } else {
-    p.error("expected catch block");
+    if p.at(T!['{']) {
+      super::item::block_items(p);
+    } else {
+      p.error("expected catch block");
+    }
+  }
+
+  // test ok
+  // try file.read() finally {
+  //   file.close()
+  // }
+  if p.at(T![finally]) {
+    p.eat(T![finally]);
+
+    if p.at(T!['{']) {
+      super::item::block_items(p);
+    } else {
+      p.error("expected finally block");
+    }
   }
 }
 
