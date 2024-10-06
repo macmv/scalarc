@@ -34,9 +34,9 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
 
   match p.current() {
     // test ok
-    // case 2 | 5 =>
-    INT_LIT_KW => {
-      p.eat(INT_LIT_KW);
+    // case 2 | 5 | true | false =>
+    INT_LIT_KW | T![true] | T![false] => {
+      p.bump();
       Some(m.complete(p, LIT_PATTERN))
     }
 
