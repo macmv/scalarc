@@ -545,14 +545,8 @@ fn fun_def(p: &mut Parser, m: Marker) {
 
     // test ok
     // def foo =
-    //   2
-    if p.eat_newlines() >= 2 {
-      // test err
-      // def foo =
-      //
-      //   3
-      p.error("expected expr");
-    }
+    //   3
+    p.eat_newlines();
 
     expr::expr(p);
   }
@@ -704,10 +698,6 @@ fn fun_param(p: &mut Parser) {
   // def bar(a: Int = 3) = a + 1
   if p.at(T![=]) {
     p.eat(T![=]);
-    // test ok
-    // def x =
-    //   3
-    p.eat_newlines();
     super::expr::expr(p);
   }
 

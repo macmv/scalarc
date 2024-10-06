@@ -488,3 +488,41 @@ fn case_item() {
     "#],
   );
 }
+
+#[test]
+fn multiline_vals() {
+  check(
+    r#"
+    def x =
+      /* hello world
+       * this is a comment
+       */
+      2 + 3
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '    '
+        FUN_DEF
+          DEF_KW 'def'
+          WHITESPACE ' '
+          FUN_SIG
+            IDENT 'x'
+          WHITESPACE ' '
+          EQ '='
+          NL_KW '\n'
+          WHITESPACE '      /* hello world\n       * this is a comment\n       */'
+          NL_KW '\n'
+          WHITESPACE '      '
+          INFIX_EXPR
+            LIT_EXPR
+              INT_LIT_KW '2'
+            WHITESPACE ' '
+            IDENT '+'
+            WHITESPACE ' '
+            LIT_EXPR
+              INT_LIT_KW '3'
+        NL_KW '\n'
+    "#],
+  );
+}
