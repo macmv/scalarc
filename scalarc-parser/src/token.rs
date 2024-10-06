@@ -417,6 +417,8 @@ impl<'a> Lexer<'a> {
                   Some(_) | None => break self.ok(start, Token::Literal(Literal::Float)),
                 }
               }
+
+              continue;
             }
 
             Some(_) | None => {
@@ -618,6 +620,16 @@ mod tests {
     let mut lexer = Lexer::new(".5e5");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
     assert_eq!(lexer.slice(), ".5e5");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("2.5e+5");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
+    assert_eq!(lexer.slice(), "2.5e+5");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new(".5e+5");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
+    assert_eq!(lexer.slice(), ".5e+5");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
