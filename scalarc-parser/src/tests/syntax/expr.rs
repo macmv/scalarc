@@ -1785,3 +1785,60 @@ fn newline_disabling() {
     "#],
   );
 }
+
+#[test]
+fn comments_in_strings() {
+  check(
+    r#"
+      println("hello // world")
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          CALL_EXPR
+            IDENT_EXPR
+              IDENT 'println'
+            PAREN_ARGUMENTS
+              OPEN_PAREN '('
+              DOUBLE_QUOTED_STRING
+                DOUBLE_QUOTE '"'
+                IDENT 'hello'
+                WHITESPACE ' '
+                IDENT '//'
+                WHITESPACE ' '
+                IDENT 'world'
+                DOUBLE_QUOTE '"'
+              CLOSE_PAREN ')'
+        NL_KW '\n'
+    "#],
+  );
+
+  check(
+    r#"
+      println("hello /* world")
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          CALL_EXPR
+            IDENT_EXPR
+              IDENT 'println'
+            PAREN_ARGUMENTS
+              OPEN_PAREN '('
+              DOUBLE_QUOTED_STRING
+                DOUBLE_QUOTE '"'
+                IDENT 'hello'
+                WHITESPACE ' '
+                IDENT '/*'
+                WHITESPACE ' '
+                IDENT 'world'
+                DOUBLE_QUOTE '"'
+              CLOSE_PAREN ')'
+        NL_KW '\n'
+    "#],
+  );
+}

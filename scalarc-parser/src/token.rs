@@ -219,7 +219,9 @@ impl<'a> Lexer<'a> {
     let first = self.tok.eat()?;
     match first {
       // Line comments.
-      InnerToken::Delimiter(Delimiter::Slash) if self.tok.peek() == Some(first) => {
+      InnerToken::Delimiter(Delimiter::Slash)
+        if !self.in_string && self.tok.peek() == Some(first) =>
+      {
         self.tok.eat()?;
 
         loop {
@@ -237,7 +239,7 @@ impl<'a> Lexer<'a> {
 
       // Block comments.
       InnerToken::Delimiter(Delimiter::Slash)
-        if self.tok.peek() == Some(InnerToken::Delimiter(Delimiter::Star)) =>
+        if !self.in_string && self.tok.peek() == Some(InnerToken::Delimiter(Delimiter::Star)) =>
       {
         self.tok.eat()?;
 
