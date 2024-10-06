@@ -97,7 +97,11 @@ fn items(p: &mut Parser, terminator: BlockTerminator) {
 fn item(p: &mut Parser) {
   let m = p.start();
 
-  if p.at(T![@]) {
+  // test ok
+  // @foo
+  // @bar
+  // def foo = 3
+  while p.at(T![@]) {
     let m = p.start();
     annotation(p);
     m.complete(p, ANNOTATION);
@@ -652,7 +656,7 @@ fn fun_param(p: &mut Parser, is_class: bool) {
   // test ok
   // def foo(@unused a: Int) = 3
   // class Foo(@volatile var x: Int) {}
-  if p.at(T![@]) {
+  while p.at(T![@]) {
     annotation(p);
   }
 
