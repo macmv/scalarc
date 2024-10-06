@@ -78,9 +78,19 @@ fn type_expr_0(p: &mut Parser, is_case: bool) {
         return;
       }
 
-      T![,] | T![']'] | T![')'] | T!['}'] | T![=] | T![nl] | T![<:] | T![>:] | T![:] | EOF => {
-        return
-      }
+      // test ok
+      // case v: Int if v > 0 => v
+      T![,]
+      | T![']']
+      | T![')']
+      | T!['}']
+      | T![=]
+      | T![nl]
+      | T![<:]
+      | T![>:]
+      | T![:]
+      | T![if]
+      | EOF => return,
 
       // This is for class definitions. Not sure if correct or not.
       T!['{'] | T![with] => return,
