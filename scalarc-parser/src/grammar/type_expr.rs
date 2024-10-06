@@ -1,12 +1,19 @@
 use crate::{
-  syntax_kind::{SyntaxKind, SyntaxKind::*, T},
-  Parser,
+  syntax_kind::{
+    SyntaxKind::{self, *},
+    T,
+  },
+  CompletedMarker, Parser,
 };
 
-pub fn type_expr(p: &mut Parser) { type_expr_0(p, false, false); }
-pub fn type_expr_is_case(p: &mut Parser, is_case: bool) { type_expr_0(p, is_case, true); }
+pub fn simple_type_expr(p: &mut Parser) -> Option<CompletedMarker> {
+  simple_type_expr_0(p, false, false)
+}
+pub fn simple_type_expr_is_case(p: &mut Parser, is_case: bool) {
+  simple_type_expr_0(p, is_case, true);
+}
 
-fn type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) {
+fn simple_type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) -> Option<CompletedMarker> {
   let mut m = p.start();
   if p.at(T![=>]) && !is_case {
     // test ok
@@ -34,7 +41,7 @@ fn type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) {
       p.error("expected type");
       m.abandon(p);
 
-      return;
+      return None;
     }
   };
 
@@ -70,11 +77,11 @@ fn type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) {
       T![=>] => {
         if is_case {
           // This is not a lambda, its a pattern guard.
-          return;
+          return Some(lhs);
         } else {
           let m = lhs.precede(p);
           p.eat(T![=>]);
-          type_expr_0(p, is_case, is_simple);
+          simple_type_expr_0(p, is_case, is_simple);
           lhs = m.complete(p, LAMBDA_TYPE);
         }
       }
@@ -84,7 +91,7 @@ fn type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) {
       T![with] if is_simple => {
         let m = lhs.precede(p);
         p.eat(T![with]);
-        type_expr_0(p, is_case, is_simple);
+        simple_type_expr_0(p, is_case, is_simple);
         lhs = m.complete(p, WITH_TYPE);
       }
 
@@ -93,8 +100,8 @@ fn type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) {
         // def foo(x: Int*) = 0
         let m = lhs.precede(p);
         p.eat(T![ident]);
-        m.complete(p, SPREAD_TYPE);
-        return;
+        lhs = m.complete(p, SPREAD_TYPE);
+        return Some(lhs);
       }
 
       // test ok
@@ -109,62 +116,67 @@ fn type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) {
       | T![>:]
       | T![:]
       | T![if]
-      | EOF => return,
+      | EOF => return Some(lhs),
 
       // This is for class definitions. Not sure if correct or not.
-      T!['{'] | T![with] => return,
+      T!['{'] | T![with] => return Some(lhs),
 
       // test ok
       // case _: Int | _: String =>
-      T![ident] if p.slice() == "|" => return,
+      T![ident] if p.slice() == "|" => return Some(lhs),
 
       _ => {
         p.error(format!("expected type, got {:?}", p.current()));
         p.recover_until_any(&[T![nl], T![,], T![')'], T!['}'], T![=]]);
-        return;
+        return Some(lhs);
       }
     }
   }
 }
 
 // A type parameter on a definition, like `A <: B`.
-pub fn type_param(p: &mut Parser) {
-  let mut m = p.start();
+pub fn type_expr(p: &mut Parser) -> Option<CompletedMarker> {
+  let lhs = simple_type_expr(p)?;
 
-  if p.at(T![ident]) && p.slice() == "+" {
-    // test ok
-    // def foo[+A] = 3
-    p.eat(T![ident]);
-    type_expr(p);
-    let c = m.complete(p, COVARIANT_PARAM);
-    m = c.precede(p);
-  } else if p.at(T![ident]) && p.slice() == "-" {
-    // test ok
-    // def foo[-A] = 3
-    p.eat(T![ident]);
-    type_expr(p);
-    let c = m.complete(p, CONTRAVARIANT_PARAM);
-    m = c.precede(p);
-  } else {
-    // test ok
-    // def foo[A] = 3
-    type_expr(p);
-  }
-
-  let c = if p.at(T![<:]) {
+  if p.at(T![<:]) {
     // test ok
     // def foo[T <: Int] = 3
+    let m = lhs.precede(p);
     p.eat(T![<:]);
-    type_expr(p);
-    m.complete(p, LOWER_BOUND_PARAM)
+    simple_type_expr(p);
+    Some(m.complete(p, LOWER_BOUND_TYPE))
   } else if p.at(T![>:]) {
     // test ok
     // def foo[T >: Int] = 3
+    let m = lhs.precede(p);
     p.eat(T![>:]);
-    type_expr(p);
-    m.complete(p, UPPER_BOUND_PARAM)
+    simple_type_expr(p);
+    Some(m.complete(p, UPPER_BOUND_TYPE))
   } else {
-    m.complete(p, SIMPLE_PARAM)
+    Some(lhs)
+  }
+}
+
+// A type parameter on a definition, like `A <: B: C`.
+pub fn type_def_param(p: &mut Parser) -> Option<CompletedMarker> {
+  let c = if p.at(T![ident]) && p.slice() == "+" {
+    // test ok
+    // def foo[+A] = 3
+    let m = p.start();
+    p.eat(T![ident]);
+    type_expr(p);
+    m.complete(p, COVARIANT_PARAM)
+  } else if p.at(T![ident]) && p.slice() == "-" {
+    // test ok
+    // def foo[-A] = 3
+    let m = p.start();
+    p.eat(T![ident]);
+    type_expr(p);
+    m.complete(p, CONTRAVARIANT_PARAM)
+  } else {
+    // test ok
+    // def foo[A] = 3
+    type_expr(p)?
   };
 
   if p.at(T![:]) {
@@ -173,7 +185,9 @@ pub fn type_param(p: &mut Parser) {
     let m = c.precede(p);
     p.eat(T![:]);
     type_expr(p);
-    m.complete(p, IMPLICIT_PARAM);
+    Some(m.complete(p, IMPLICIT_PARAM))
+  } else {
+    Some(c)
   }
 }
 
@@ -221,7 +235,36 @@ pub fn type_params(p: &mut Parser, start: SyntaxKind, end: SyntaxKind) {
 
   p.eat_newlines();
   loop {
-    type_param(p);
+    type_expr(p);
+    p.eat_newlines();
+
+    // test ok
+    // val f: Foo[Int, String] = 3
+    if p.current() == T![,] {
+      p.eat(T![,]);
+
+      // test ok
+      // def foo(
+      //   a: Int
+      //   ,
+      //   b: Int
+      // ) = 3
+      p.eat_newlines();
+    } else {
+      p.expect(end);
+      break;
+    }
+  }
+}
+
+/// Type parameters. These show up where generics are created, like in
+/// `def foo[A <: B: C]`.
+pub fn type_def_params(p: &mut Parser, start: SyntaxKind, end: SyntaxKind) {
+  p.eat(start);
+
+  p.eat_newlines();
+  loop {
+    type_def_param(p);
     p.eat_newlines();
 
     // test ok

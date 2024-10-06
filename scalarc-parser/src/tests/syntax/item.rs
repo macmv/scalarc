@@ -162,7 +162,7 @@ fn fun_dec() {
             IDENT 'foo'
             TYPE_PARAMS
               OPEN_BRACKET '['
-              LOWER_BOUND_PARAM
+              LOWER_BOUND_TYPE
                 SIMPLE_TYPE
                   IDENT 'a'
                 WHITESPACE ' '

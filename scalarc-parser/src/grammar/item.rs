@@ -517,7 +517,7 @@ fn item_body(p: &mut Parser) {
     let m = p.start();
     p.eat(T![ident]);
     p.eat(T![:]);
-    super::type_expr::type_expr_is_case(p, true);
+    super::type_expr::simple_type_expr_is_case(p, true);
 
     p.expect(T![=>]);
     m.complete(p, SELF_TYPE);
@@ -559,7 +559,7 @@ fn fun_sig(p: &mut Parser) {
     // test ok
     // def foo[A <: Int](a: A) = 3
     let m = p.start();
-    super::type_expr::type_params(p, T!['['], T![']']);
+    super::type_expr::type_def_params(p, T!['['], T![']']);
     m.complete(p, TYPE_PARAMS);
   }
 
@@ -688,6 +688,8 @@ fn fun_param(p: &mut Parser, is_class: bool) {
   // ) = 3
   p.eat_newlines();
 
+  // test ok
+  // def foo(a: Seq[_ <: Int]) = 3
   super::type_expr::type_expr(p);
 
   // test ok

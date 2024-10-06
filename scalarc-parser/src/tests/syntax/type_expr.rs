@@ -154,7 +154,7 @@ fn type_params() {
             IDENT 'foo'
             TYPE_PARAMS
               OPEN_BRACKET '['
-              LOWER_BOUND_PARAM
+              LOWER_BOUND_TYPE
                 SIMPLE_TYPE
                   IDENT 'A'
                 WHITESPACE ' '
@@ -191,11 +191,10 @@ fn type_params() {
             IDENT 'foo'
             TYPE_PARAMS
               OPEN_BRACKET '['
-              SIMPLE_PARAM
-                COVARIANT_PARAM
-                  IDENT '+'
-                  SIMPLE_TYPE
-                    IDENT 'T'
+              COVARIANT_PARAM
+                IDENT '+'
+                SIMPLE_TYPE
+                  IDENT 'T'
               CLOSE_BRACKET ']'
             FUN_PARAMS
               OPEN_PAREN '('
@@ -225,11 +224,10 @@ fn type_params() {
             IDENT 'foo'
             TYPE_PARAMS
               OPEN_BRACKET '['
-              SIMPLE_PARAM
-                CONTRAVARIANT_PARAM
-                  IDENT '-'
-                  SIMPLE_TYPE
-                    IDENT 'T'
+              CONTRAVARIANT_PARAM
+                IDENT '-'
+                SIMPLE_TYPE
+                  IDENT 'T'
               CLOSE_BRACKET ']'
             FUN_PARAMS
               OPEN_PAREN '('
@@ -331,7 +329,7 @@ fn implicit_type_params() {
             TYPE_PARAMS
               OPEN_BRACKET '['
               IMPLICIT_PARAM
-                LOWER_BOUND_PARAM
+                LOWER_BOUND_TYPE
                   SIMPLE_TYPE
                     IDENT 'A'
                   WHITESPACE ' '

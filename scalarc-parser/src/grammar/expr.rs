@@ -158,7 +158,7 @@ fn ascription(p: &mut Parser) {
       m.abandon(p);
     }
   } else {
-    type_expr::type_expr_is_case(p, true);
+    type_expr::simple_type_expr_is_case(p, true);
     m.complete(p, TYPE_ASCRIPTION);
   }
 }

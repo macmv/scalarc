@@ -80,8 +80,15 @@ StableId = Path
 //                   | Path '.' 'type'
 //                   | '(' Types ')'
 
+TypeParam = SimpleParam
+          | ImplicitParam
+          | CovariantParam
+          | ContravariantParam
+
 Type = LambdaType
      | AnonLambdaType
+     | LowerBoundType
+     | UpperBoundType
      | WithType
      | SpreadType
      | GenericType
@@ -89,15 +96,6 @@ Type = LambdaType
      | PathType
      | SimpleType
 
-TypeParam = SimpleParam
-          | LowerBoundParam
-          | UpperBoundParam
-          | ImplicitParam
-          | CovariantParam
-          | ContravariantParam
-
-LowerBoundParam = Type '<:' Type
-UpperBoundParam = Type '>:' Type
 ImplicitParam = Type ':' Type
 CovariantParam = '+' Type
 ContravariantParam = '-' Type
@@ -105,6 +103,8 @@ SimpleParam = Type
 
 LambdaType     = '(' ')' '=>' Type // TODO
 AnonLambdaType = '=>' Type
+LowerBoundType = Type '<:' Type
+UpperBoundType = Type '>:' Type
 WithType       = Type 'with' Type
 SpreadType     =  Type '*'
 GenericType    = Type TypeArgs

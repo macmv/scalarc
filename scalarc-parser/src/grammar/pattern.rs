@@ -115,7 +115,7 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
           m2.abandon(p);
 
           p.eat(T![:]);
-          super::type_expr::type_expr_is_case(p, is_case);
+          super::type_expr::simple_type_expr_is_case(p, is_case);
           Some(m.complete(p, TYPE_PATTERN))
         }
 
