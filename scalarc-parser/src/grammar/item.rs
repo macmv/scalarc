@@ -366,6 +366,15 @@ fn class_def(p: &mut Parser, m: Marker) {
   }
 
   // test ok
+  // class Foo
+  //   extends Bar {}
+  if p.at(T![nl]) && p.peek() == T![extends] {
+    // NB: Don't eat multiple newlines, as that'll break parsing of blank classes
+    // like `class Foo`.
+    p.eat(T![nl]);
+  }
+
+  // test ok
   // class Foo extends AnyVal {}
   if p.current() == T![extends] {
     p.eat(T![extends]);
@@ -376,9 +385,22 @@ fn class_def(p: &mut Parser, m: Marker) {
   // test ok
   // class foo extends AnyVal with Bar
   // class foo extends AnyVal with Bar with Baz
-  while p.current() == T![with] {
-    p.eat(T![with]);
-    super::type_expr::type_expr(p);
+  loop {
+    if p.at(T![with]) {
+      p.eat(T![with]);
+      super::type_expr::type_expr(p);
+    } else if p.at(T![nl]) && p.peek() == T![with] {
+      // test ok
+      // class Foo
+      //   extends Foo
+      //   with Bar
+      //   with Baz
+      p.eat(T![nl]);
+      p.eat(T![with]);
+      super::type_expr::type_expr(p);
+    } else {
+      break;
+    }
   }
 
   // test ok
