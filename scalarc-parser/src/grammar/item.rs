@@ -634,20 +634,11 @@ fn val_def(p: &mut Parser, m: Marker) {
     _ => panic!("expected val or var"),
   };
   p.bump();
-  p.expect(T![ident]);
-
-  let mut found_type = false;
-  let mut found_expr = false;
 
   // test ok
   // val foo: Int
   // val bar: String
-  if p.at(T![:]) {
-    p.eat(T![:]);
-
-    found_type = true;
-    super::type_expr::type_expr(p);
-  }
+  super::pattern::pattern_val(p);
 
   if p.at(T![=]) {
     p.eat(T![=]);
@@ -657,12 +648,7 @@ fn val_def(p: &mut Parser, m: Marker) {
     //   3
     p.eat_newlines();
 
-    found_expr = true;
     expr::expr(p);
-  }
-
-  if !found_type && !found_expr {
-    p.error("expected type or expr");
   }
 
   m.complete(p, kind);
@@ -670,7 +656,7 @@ fn val_def(p: &mut Parser, m: Marker) {
 
 pub fn case_item(p: &mut Parser, m: Marker) {
   p.expect(T![case]);
-  super::pattern::pattern(p);
+  super::pattern::pattern_case(p);
 
   // test ok
   // case _ if true =>

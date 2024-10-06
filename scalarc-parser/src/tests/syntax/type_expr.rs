@@ -9,14 +9,15 @@ fn type_paths() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          IDENT 'foo'
-          COLON ':'
-          WHITESPACE ' '
-          PATH_TYPE
-            SIMPLE_TYPE
-              IDENT 'Foo'
-            DOT '.'
-            IDENT 'Bar'
+          TYPE_PATTERN
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            PATH_TYPE
+              SIMPLE_TYPE
+                IDENT 'Foo'
+              DOT '.'
+              IDENT 'Bar'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -32,17 +33,18 @@ fn type_paths() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          IDENT 'foo'
-          COLON ':'
-          WHITESPACE ' '
-          PATH_TYPE
+          TYPE_PATTERN
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
             PATH_TYPE
-              SIMPLE_TYPE
-                IDENT 'Foo'
+              PATH_TYPE
+                SIMPLE_TYPE
+                  IDENT 'Foo'
+                DOT '.'
+                IDENT 'Bar'
               DOT '.'
-              IDENT 'Bar'
-            DOT '.'
-            IDENT 'Baz'
+              IDENT 'Baz'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -61,16 +63,17 @@ fn type_args() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          IDENT 'foo'
-          COLON ':'
-          WHITESPACE ' '
-          GENERIC_TYPE
-            SIMPLE_TYPE
-              IDENT 'Foo'
-            TYPE_ARGS
-              OPEN_BRACKET '['
-              error: expected type
-              CLOSE_BRACKET ']'
+          TYPE_PATTERN
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            GENERIC_TYPE
+              SIMPLE_TYPE
+                IDENT 'Foo'
+              TYPE_ARGS
+                OPEN_BRACKET '['
+                error: expected type
+                CLOSE_BRACKET ']'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -86,17 +89,18 @@ fn type_args() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          IDENT 'foo'
-          COLON ':'
-          WHITESPACE ' '
-          GENERIC_TYPE
-            SIMPLE_TYPE
-              IDENT 'Foo'
-            TYPE_ARGS
-              OPEN_BRACKET '['
+          TYPE_PATTERN
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            GENERIC_TYPE
               SIMPLE_TYPE
-                IDENT 'Int'
-              CLOSE_BRACKET ']'
+                IDENT 'Foo'
+              TYPE_ARGS
+                OPEN_BRACKET '['
+                SIMPLE_TYPE
+                  IDENT 'Int'
+                CLOSE_BRACKET ']'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -112,21 +116,22 @@ fn type_args() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          IDENT 'foo'
-          COLON ':'
-          WHITESPACE ' '
-          GENERIC_TYPE
-            SIMPLE_TYPE
-              IDENT 'Foo'
-            TYPE_ARGS
-              OPEN_BRACKET '['
+          TYPE_PATTERN
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            GENERIC_TYPE
               SIMPLE_TYPE
-                IDENT 'Int'
-              COMMA ','
-              WHITESPACE ' '
-              SIMPLE_TYPE
-                IDENT 'String'
-              CLOSE_BRACKET ']'
+                IDENT 'Foo'
+              TYPE_ARGS
+                OPEN_BRACKET '['
+                SIMPLE_TYPE
+                  IDENT 'Int'
+                COMMA ','
+                WHITESPACE ' '
+                SIMPLE_TYPE
+                  IDENT 'String'
+                CLOSE_BRACKET ']'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -185,18 +190,19 @@ fn tuple() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          IDENT 'foo'
-          COLON ':'
-          WHITESPACE ' '
-          TUPLE_TYPE
-            OPEN_PAREN '('
-            SIMPLE_TYPE
-              IDENT 'Int'
-            COMMA ','
+          TYPE_PATTERN
+            IDENT 'foo'
+            COLON ':'
             WHITESPACE ' '
-            SIMPLE_TYPE
-              IDENT 'String'
-            CLOSE_PAREN ')'
+            TUPLE_TYPE
+              OPEN_PAREN '('
+              SIMPLE_TYPE
+                IDENT 'Int'
+              COMMA ','
+              WHITESPACE ' '
+              SIMPLE_TYPE
+                IDENT 'String'
+              CLOSE_PAREN ')'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -215,24 +221,25 @@ fn lambda() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          IDENT 'foo'
-          COLON ':'
-          WHITESPACE ' '
-          LAMBDA_TYPE
-            TUPLE_TYPE
-              OPEN_PAREN '('
-              SIMPLE_TYPE
-                IDENT 'Int'
-              COMMA ','
+          TYPE_PATTERN
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            LAMBDA_TYPE
+              TUPLE_TYPE
+                OPEN_PAREN '('
+                SIMPLE_TYPE
+                  IDENT 'Int'
+                COMMA ','
+                WHITESPACE ' '
+                SIMPLE_TYPE
+                  IDENT 'String'
+                CLOSE_PAREN ')'
+              WHITESPACE ' '
+              FAT_ARROW '=>'
               WHITESPACE ' '
               SIMPLE_TYPE
-                IDENT 'String'
-              CLOSE_PAREN ')'
-            WHITESPACE ' '
-            FAT_ARROW '=>'
-            WHITESPACE ' '
-            SIMPLE_TYPE
-              IDENT 'Int'
+                IDENT 'Int'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '

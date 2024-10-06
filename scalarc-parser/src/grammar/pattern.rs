@@ -2,11 +2,14 @@ use crate::CompletedMarker;
 
 use super::*;
 
-pub fn pattern(p: &mut Parser) { pattern_inner(p); }
+/// A pattern terminated by `=` or `)`.
+pub fn pattern_val(p: &mut Parser) { pattern_inner(p, false); }
+/// A pattern terminated by `=>`.
+pub fn pattern_case(p: &mut Parser) { pattern_inner(p, true); }
 
 // Patterns like `1 | 2`
-fn pattern_inner(p: &mut Parser) -> Option<CompletedMarker> {
-  let mut lhs = atom_pattern(p)?;
+fn pattern_inner(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
+  let mut lhs = atom_pattern(p, is_case)?;
 
   // test ok
   // case 1 | Seq(2, 3) | foo | bar =>
@@ -14,7 +17,7 @@ fn pattern_inner(p: &mut Parser) -> Option<CompletedMarker> {
     let m = lhs.precede(p);
     p.eat(IDENT);
     p.eat_newlines();
-    match atom_pattern(p) {
+    match atom_pattern(p, is_case) {
       Some(_) => lhs = m.complete(p, UNION_PATTERN),
       None => {
         m.abandon(p);
@@ -26,7 +29,7 @@ fn pattern_inner(p: &mut Parser) -> Option<CompletedMarker> {
 }
 
 // Paterns like `Seq(1)` or `Nil`
-fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
+fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
   let m = p.start();
 
   match p.current() {
@@ -111,7 +114,7 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
             m2.abandon(p);
 
             p.eat(T![:]);
-            super::type_expr::type_expr_pattern(p);
+            super::type_expr::type_expr_is_case(p, is_case);
             Some(m.complete(p, TYPE_PATTERN))
           }
 
@@ -121,7 +124,7 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
             m2.abandon(p);
 
             p.eat(T![@]);
-            pattern(p);
+            pattern_inner(p, is_case);
             Some(m.complete(p, AT_PATTERN))
           }
 
@@ -133,7 +136,7 @@ fn atom_pattern(p: &mut Parser) -> Option<CompletedMarker> {
           //
           // test ok
           // case Seq(foo, bar) =>
-          T![=>] | T![if] | T![,] | T![')'] => {
+          T![=>] | T![=] | T![if] | T![,] | T![')'] => {
             m2.complete(p, PATH);
 
             Some(m.complete(p, PATH_PATTERN))
@@ -185,7 +188,7 @@ fn arg_pattern(p: &mut Parser) {
   }
 
   loop {
-    pattern(p);
+    pattern_val(p);
     // test ok
     // case Seq(
     //   3

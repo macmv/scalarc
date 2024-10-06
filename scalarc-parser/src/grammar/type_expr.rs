@@ -4,9 +4,9 @@ use crate::{
 };
 
 pub fn type_expr(p: &mut Parser) { type_expr_0(p, false); }
-pub fn type_expr_pattern(p: &mut Parser) { type_expr_0(p, true); }
+pub fn type_expr_is_case(p: &mut Parser, is_case: bool) { type_expr_0(p, is_case); }
 
-fn type_expr_0(p: &mut Parser, pattern: bool) {
+fn type_expr_0(p: &mut Parser, is_case: bool) {
   let m = p.start();
   let mut lhs = match p.current() {
     // test ok
@@ -50,7 +50,7 @@ fn type_expr_0(p: &mut Parser, pattern: bool) {
       }
 
       T![=>] => {
-        if pattern {
+        if is_case {
           // This is not a lambda, its a pattern guard.
           return;
         } else {

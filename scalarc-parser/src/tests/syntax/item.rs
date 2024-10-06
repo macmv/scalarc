@@ -236,7 +236,9 @@ fn val_def() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          IDENT 'foo'
+          PATH_PATTERN
+            PATH
+              IDENT 'foo'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -252,11 +254,12 @@ fn val_def() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          IDENT 'foo'
-          COLON ':'
-          WHITESPACE ' '
-          SIMPLE_TYPE
-            IDENT 'Int'
+          TYPE_PATTERN
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            SIMPLE_TYPE
+              IDENT 'Int'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -275,7 +278,9 @@ fn var_def() {
         VAR_DEF
           VAR_KW 'var'
           WHITESPACE ' '
-          IDENT 'foo'
+          PATH_PATTERN
+            PATH
+              IDENT 'foo'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -291,11 +296,12 @@ fn var_def() {
         VAR_DEF
           VAR_KW 'var'
           WHITESPACE ' '
-          IDENT 'foo'
-          COLON ':'
-          WHITESPACE ' '
-          SIMPLE_TYPE
-            IDENT 'Int'
+          TYPE_PATTERN
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            SIMPLE_TYPE
+              IDENT 'Int'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -313,11 +319,12 @@ fn var_def() {
         VAR_DEF
           VAR_KW 'var'
           WHITESPACE ' '
-          IDENT 'foo'
-          COLON ':'
-          WHITESPACE ' '
-          SIMPLE_TYPE
-            IDENT 'Int'
+          TYPE_PATTERN
+            IDENT 'foo'
+            COLON ':'
+            WHITESPACE ' '
+            SIMPLE_TYPE
+              IDENT 'Int'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '

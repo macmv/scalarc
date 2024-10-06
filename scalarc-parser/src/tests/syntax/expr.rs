@@ -359,7 +359,9 @@ fn lambda_expr() {
                 VAL_DEF
                   VAL_KW 'val'
                   WHITESPACE ' '
-                  IDENT 'foo'
+                  PATH_PATTERN
+                    PATH
+                      IDENT 'foo'
                   WHITESPACE ' '
                   EQ '='
                   WHITESPACE ' '
