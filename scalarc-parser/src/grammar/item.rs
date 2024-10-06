@@ -637,7 +637,8 @@ fn fun_params(p: &mut Parser, is_class: bool) {
         // test ok
         // class Foo(private val a: Int) {}
         // class Foo(override val a: Int) {}
-        T![private] | T![protected] | T![override] => {
+        // class Foo(final val a: Int) {}
+        T![private] | T![protected] | T![override] | T![final] => {
           p.bump();
         }
         _ => {}
