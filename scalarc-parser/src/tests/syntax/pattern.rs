@@ -276,3 +276,33 @@ fn tuple_patterns() {
     "#],
   );
 }
+
+#[test]
+fn infix_patterns() {
+  check(
+    "case x :: xs => 1",
+    expect![@r#"
+      SOURCE_FILE
+        CASE_ITEM
+          CASE_KW 'case'
+          WHITESPACE ' '
+          INFIX_PATTERN
+            PATH_PATTERN
+              PATH
+                IDENT 'x'
+            WHITESPACE ' '
+            IDENT '::'
+            WHITESPACE ' '
+            PATH_PATTERN
+              PATH
+                IDENT 'xs'
+          WHITESPACE ' '
+          FAT_ARROW '=>'
+          WHITESPACE ' '
+          BLOCK
+            EXPR_ITEM
+              LIT_EXPR
+                INT_LIT_KW '1'
+    "#],
+  );
+}

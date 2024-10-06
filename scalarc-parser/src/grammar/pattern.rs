@@ -11,20 +11,36 @@ pub fn pattern_case(p: &mut Parser) { pattern_inner(p, true); }
 fn pattern_inner(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
   let mut lhs = atom_pattern(p, is_case)?;
 
-  // test ok
-  // case 1 | Seq(2, 3) | foo | bar =>
-  while p.slice() == "|" {
-    let m = lhs.precede(p);
-    p.eat(IDENT);
-    p.eat_newlines();
-    match atom_pattern(p, is_case) {
-      Some(_) => lhs = m.complete(p, UNION_PATTERN),
-      None => {
-        m.abandon(p);
-        break;
+  while p.at(T![ident]) {
+    if p.slice() == "|" {
+      // test ok
+      // case 1 | Seq(2, 3) | foo | bar =>
+      let m = lhs.precede(p);
+      p.eat(T![ident]);
+      p.eat_newlines();
+      match atom_pattern(p, is_case) {
+        Some(_) => lhs = m.complete(p, UNION_PATTERN),
+        None => {
+          m.abandon(p);
+          break;
+        }
+      }
+    } else {
+      // test ok
+      // case 1 :: 2 :: Nil =>
+      let m = lhs.precede(p);
+      p.eat(T![ident]);
+      p.eat_newlines();
+      match atom_pattern(p, is_case) {
+        Some(_) => lhs = m.complete(p, INFIX_PATTERN),
+        None => {
+          m.abandon(p);
+          break;
+        }
       }
     }
   }
+
   None
 }
 
@@ -121,25 +137,10 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
         //
         // test ok
         // case Seq(foo, bar) =>
-        T![=>] | T![=] | T![<-] | T![if] | T![,] | T![')'] => {
-          m2.complete(p, PATH);
-
-          Some(m.complete(p, PATH_PATTERN))
-        }
-
-        // `|` is a valid terminator, for union patterns.
-        T![ident] if p.slice() == "|" => {
-          m2.complete(p, PATH);
-
-          Some(m.complete(p, PATH_PATTERN))
-        }
-
         _ => {
-          m2.abandon(p);
-          m.abandon(p);
+          m2.complete(p, PATH);
 
-          p.error(format!("expected pattern, got {:?}", p.current()));
-          None
+          Some(m.complete(p, PATH_PATTERN))
         }
       }
     }
