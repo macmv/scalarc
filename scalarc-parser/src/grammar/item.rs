@@ -15,6 +15,8 @@ pub fn block_items(p: &mut Parser) {
   items(p, BlockTerminator::Brace);
 }
 
+pub fn block_items_no_brace(p: &mut Parser) { items(p, BlockTerminator::Case); }
+
 // test ok
 // class Foo {
 //   def foo

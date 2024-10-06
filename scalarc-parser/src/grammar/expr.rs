@@ -1,3 +1,5 @@
+use item::{block_items, block_items_no_brace};
+
 use crate::{CompletedMarker, Marker};
 
 use super::*;
@@ -41,7 +43,8 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
     // test ok
     // foo = 3
     if p.current() == T![ident] || p.current() == T![=] || (p.current() == T![=>] && fat_arrow) {
-      let kind = if p.current() == T![=] { ASSIGN_EXPR } else { INFIX_EXPR };
+      let op_tok = p.current();
+      let kind = if op_tok == T![=] { ASSIGN_EXPR } else { INFIX_EXPR };
 
       let op = p.slice();
       let (l_bp, r_bp) = op_bp(op);
@@ -76,8 +79,19 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
           return;
         }
       } else {
-        expr_bp(p, r_bp, fat_arrow);
-        lhs = m.complete(p, kind);
+        if op_tok == T![=>] {
+          {
+            let m = p.start();
+            block_items_no_brace(p);
+            m.complete(p, BLOCK);
+          }
+
+          m.complete(p, LAMBDA_EXPR);
+          return;
+        } else {
+          expr_bp(p, r_bp, fat_arrow);
+          lhs = m.complete(p, kind);
+        }
       }
     } else {
       match p.current() {

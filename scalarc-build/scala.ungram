@@ -149,7 +149,7 @@ ForExpr     = 'for' ('(' Enumerators ')' | '{' Enumerators '}') (nl)* ('yield')?
 ThrowExpr   = 'throw' Expr
 ReturnExpr  = 'return' Expr?
 
-LambdaExpr = ('todo') '=>' Expr
+LambdaExpr = Expr '=>' Block
 
 AssignExpr = Expr '=' Expr
 

@@ -280,20 +280,22 @@ fn lambda_expr() {
   check_expr(
     "x => x + 3",
     expect![@r#"
-      INFIX_EXPR
+      LAMBDA_EXPR
         IDENT_EXPR
           IDENT 'x'
         WHITESPACE ' '
         FAT_ARROW '=>'
         WHITESPACE ' '
-        INFIX_EXPR
-          IDENT_EXPR
-            IDENT 'x'
-          WHITESPACE ' '
-          IDENT '+'
-          WHITESPACE ' '
-          LIT_EXPR
-            INT_LIT_KW '3'
+        BLOCK
+          EXPR_ITEM
+            INFIX_EXPR
+              IDENT_EXPR
+                IDENT 'x'
+              WHITESPACE ' '
+              IDENT '+'
+              WHITESPACE ' '
+              LIT_EXPR
+                INT_LIT_KW '3'
     "#],
   );
 
@@ -302,7 +304,7 @@ fn lambda_expr() {
   check_expr(
     "(x: Int) => x + 3",
     expect![@r#"
-      INFIX_EXPR
+      LAMBDA_EXPR
         TUPLE_EXPR
           OPEN_PAREN '('
           IDENT_EXPR
@@ -315,14 +317,65 @@ fn lambda_expr() {
         WHITESPACE ' '
         FAT_ARROW '=>'
         WHITESPACE ' '
-        INFIX_EXPR
+        BLOCK
+          EXPR_ITEM
+            INFIX_EXPR
+              IDENT_EXPR
+                IDENT 'x'
+              WHITESPACE ' '
+              IDENT '+'
+              WHITESPACE ' '
+              LIT_EXPR
+                INT_LIT_KW '3'
+    "#],
+  );
+
+  check_expr(
+    "Seq() foreach { x => val foo = x + 3\n foo }",
+    expect![@r#"
+      INFIX_EXPR
+        CALL_EXPR
           IDENT_EXPR
-            IDENT 'x'
+            IDENT 'Seq'
+          PAREN_ARGUMENTS
+            OPEN_PAREN '('
+            CLOSE_PAREN ')'
+        WHITESPACE ' '
+        IDENT 'foreach'
+        WHITESPACE ' '
+        BLOCK_EXPR
+          OPEN_CURLY '{'
           WHITESPACE ' '
-          IDENT '+'
+          EXPR_ITEM
+            LAMBDA_EXPR
+              IDENT_EXPR
+                IDENT 'x'
+              WHITESPACE ' '
+              FAT_ARROW '=>'
+              WHITESPACE ' '
+              BLOCK
+                VAL_DEF
+                  VAL_KW 'val'
+                  WHITESPACE ' '
+                  IDENT 'foo'
+                  WHITESPACE ' '
+                  EQ '='
+                  WHITESPACE ' '
+                  INFIX_EXPR
+                    IDENT_EXPR
+                      IDENT 'x'
+                    WHITESPACE ' '
+                    IDENT '+'
+                    WHITESPACE ' '
+                    LIT_EXPR
+                      INT_LIT_KW '3'
+                NL_KW '\n'
+                WHITESPACE ' '
+                EXPR_ITEM
+                  IDENT_EXPR
+                    IDENT 'foo'
           WHITESPACE ' '
-          LIT_EXPR
-            INT_LIT_KW '3'
+          CLOSE_CURLY '}'
     "#],
   );
 }
