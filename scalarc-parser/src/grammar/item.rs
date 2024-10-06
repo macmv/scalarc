@@ -183,9 +183,21 @@ fn annotation(p: &mut Parser) {
   p.eat(T![@]);
   p.expect(T![ident]);
 
+  // test ok
+  // @annotation.nowarn("cat=unused") def foo = 3
+  while p.at(T![.]) {
+    p.eat(T![.]);
+    p.expect(T![ident]);
+  }
+
   if p.at(T!['(']) {
     super::expr::call_paren_expr(p);
   }
+
+  // test ok
+  // @annotation.nowarn("cat=unused")
+  // def foo = 3
+  p.eat_newlines();
 }
 
 fn package_item(p: &mut Parser, m: Marker) {
