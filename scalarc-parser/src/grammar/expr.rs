@@ -872,7 +872,10 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
             p.bump(); // eat the escape
           }
           _ => {
-            p.error("unknown escape code");
+            // When there are interpolations, escapes can be whatever.
+            if !interpolations {
+              p.error("unknown escape code");
+            }
             // Assume a single letter.
             p.bump();
           }
