@@ -694,11 +694,29 @@ pub fn character_lit(p: &mut Parser) {
     }
 
     // test ok
+    // '\\'
     // '\u0000'
-    T![ident] if p.slice() == "\\" => {
-      p.eat(T![ident]);
-      // TODO: Read escape parsing.
+    T![ident] if p.slice().starts_with("\\") => {
+      let mut is_escape = false;
+      for c in p.slice().chars() {
+        if is_escape {
+          is_escape = false;
+          continue;
+        }
+
+        match c {
+          '\\' => is_escape = true,
+          _ => {}
+        }
+      }
+
+      // Skip the `\` and any remaining `\` characters.
       p.bump();
+
+      // If there was a leftover `\` above, then skip the next token too.
+      if is_escape {
+        p.bump();
+      }
     }
 
     // test ok
@@ -740,14 +758,33 @@ pub fn double_quote_string(p: &mut Parser) {
         p.error("unexpected end of file");
         break;
       }
+
       // test ok
       // "hello\"world"
-      IDENT if p.slice() == "\\" => {
+      // "\\\""
+      T![ident] if p.slice().starts_with("\\") => {
+        let mut is_escape = false;
+        for c in p.slice().chars() {
+          if is_escape {
+            is_escape = false;
+            continue;
+          }
+
+          match c {
+            '\\' => is_escape = true,
+            _ => {}
+          }
+        }
+
+        // Skip the `\` and any remaining `\` characters.
         p.bump();
 
-        // TODO: Parse unicode escapes and such.
-        p.bump();
+        // If there was a leftover `\` above, then skip the next token too.
+        if is_escape {
+          p.bump();
+        }
       }
+
       _ => {
         p.bump();
       }
