@@ -590,6 +590,11 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
       Some(m.complete(p, IF_EXPR))
     }
 
+    T![while] => {
+      while_expr(p);
+      Some(m.complete(p, WHILE_EXPR))
+    }
+
     T![for] => {
       for_expr(p);
       Some(m.complete(p, FOR_EXPR))
@@ -773,6 +778,24 @@ fn if_expr(p: &mut Parser) {
     p.eat(T![else]);
     expr(p);
   }
+}
+
+// test ok
+// while (true) 3
+fn while_expr(p: &mut Parser) {
+  p.eat(T![while]);
+
+  p.expect(T!['(']);
+  // test ok
+  // if (
+  //   true
+  // ) println(3)
+  p.eat_newlines();
+  expr(p);
+  p.eat_newlines();
+  p.expect(T![')']);
+
+  expr(p);
 }
 
 // test ok
