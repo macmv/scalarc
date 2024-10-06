@@ -43,7 +43,17 @@ fn type_expr_0(p: &mut Parser, is_case: bool, is_simple: bool) {
       T![.] => {
         let m = lhs.precede(p);
         p.eat(T![.]);
-        p.expect(T![ident]);
+
+        match p.current() {
+          // test ok
+          // val foo: Bar.Baz = 3
+          // val bar: this.type = 3
+          T![ident] | T![type] => {
+            p.bump();
+          }
+          _ => p.error("expected identifier"),
+        };
+
         lhs = m.complete(p, PATH_TYPE);
       }
 
