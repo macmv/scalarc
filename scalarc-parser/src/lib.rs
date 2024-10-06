@@ -234,10 +234,19 @@ impl Parser<'_> {
   }
 
   pub fn start(&mut self) -> Marker {
-    self.eat_trivia();
+    // Special case for the first marker: put whitespace after the start, so that we
+    // get a single root node.
+    if !self.events.is_empty() {
+      self.eat_trivia();
+    }
 
     let i = self.events.len() as u32;
     self.events.push(Event::Start { kind: SyntaxKind::TOMBSTONE, forward_parent: None });
+
+    if self.events.len() == 1 {
+      self.eat_trivia();
+    }
+
     Marker { pos: i, bomb: DropBomb::new("Marker must be either completed or abandoned") }
   }
   pub fn at(&mut self, t: SyntaxKind) -> bool { self.current() == t }
