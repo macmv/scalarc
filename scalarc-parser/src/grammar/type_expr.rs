@@ -42,6 +42,31 @@ fn simple_type_expr_0(
       m.complete(p, SIMPLE_TYPE)
     }
 
+    // I cannot figure out the grammar for this, so we're guessing here.
+    // test ok
+    // val foo: ({ type T = Int }) = 3
+    T!['{'] => {
+      p.eat(T!['{']);
+      loop {
+        match p.current() {
+          T![type] => {
+            let m = p.start();
+            super::item::type_def(p, m);
+          }
+          T!['}'] => {
+            p.eat(T!['}']);
+            break;
+          }
+          _ => {
+            p.error("expected type definition");
+            p.recover_until(T!['}']);
+          }
+        }
+      }
+
+      m.complete(p, BLOCK_TYPE)
+    }
+
     _ => {
       p.error("expected type");
       m.abandon(p);

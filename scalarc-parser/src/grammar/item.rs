@@ -796,7 +796,7 @@ pub fn case_item(p: &mut Parser, m: Marker) {
   m.complete(p, CASE_ITEM);
 }
 
-fn type_def(p: &mut Parser, m: Marker) {
+pub fn type_def(p: &mut Parser, m: Marker) {
   p.eat(T![type]);
   p.expect(T![ident]);
 

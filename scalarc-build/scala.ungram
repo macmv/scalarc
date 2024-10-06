@@ -94,6 +94,7 @@ Type = LambdaType
      | SpreadType
      | GenericType
      | TupleType
+     | BlockType
      | PathType
      | NestedType
      | SimpleType
@@ -114,6 +115,7 @@ GenericType    = Type TypeArgs
 PathType       = Type '.' id
 NestedType     = Type '#' id
 TupleType      = '(' (Type (',' Type)*)? ')'
+BlockType      = '{' TypeDef* '}'
 SimpleType     = id
 
 // Type parameters: `[T <: Ordering]`, like in a declaration.
