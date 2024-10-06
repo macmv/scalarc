@@ -80,10 +80,12 @@ fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
     },
     Token::Literal(token::Literal::Integer) => SyntaxKind::INT_LIT_KW,
     Token::Literal(token::Literal::Float) => SyntaxKind::FLOAT_LIT_KW,
+
     Token::Newline => T![nl],
+    Token::Delimiter(token::Delimiter::Semicolon) => T![nl],
+
     Token::Whitespace => SyntaxKind::WHITESPACE,
     Token::Delimiter(token::Delimiter::Dot) => T![.],
-    Token::Delimiter(token::Delimiter::Semicolon) => T![;],
     Token::Delimiter(token::Delimiter::Comma) => T![,],
     Token::Delimiter(token::Delimiter::SingleQuote) => SyntaxKind::SINGLE_QUOTE,
     Token::Delimiter(token::Delimiter::DoubleQuote) => SyntaxKind::DOUBLE_QUOTE,
