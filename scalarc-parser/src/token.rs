@@ -35,6 +35,8 @@ pub enum Ident {
 pub enum Literal {
   Integer,
   Float,
+  HexInteger,
+  BinaryInteger,
 }
 
 pub type Result<T> = std::result::Result<T, LexError>;
@@ -134,6 +136,8 @@ impl<'a> Tokenizer<'a> {
       t2.ok()
     }
   }
+
+  pub fn peek_char(&self) -> Option<char> { self.source[self.index..].chars().next() }
 
   pub fn eat(&mut self) -> Result<InnerToken> {
     let Some(c) = self.source[self.index..].chars().next() else {
@@ -325,25 +329,53 @@ impl<'a> Lexer<'a> {
       }
 
       // Numbers.
-      InnerToken::Digit => {
-        let mut is_float = false;
-        loop {
-          match self.tok.peek() {
-            Some(InnerToken::Digit) => {}
-            Some(InnerToken::Delimiter(Delimiter::Dot)) => {
-              if !is_float && self.tok.peek2() == Some(InnerToken::Digit) {
-                is_float = true;
-              } else {
-                break;
-              }
-            }
-            Some(_) | None => break,
-          }
+      InnerToken::Digit => match self.tok.peek_char() {
+        Some('x' | 'X') => {
           self.tok.eat().unwrap();
+          loop {
+            match self.tok.peek_char() {
+              Some('0'..='9') | Some('a'..='f') | Some('A'..='F') => {}
+              Some(_) | None => break,
+            }
+            self.tok.eat().unwrap();
+          }
+
+          self.ok(start, Token::Literal(Literal::HexInteger))
         }
 
-        self.ok(start, Token::Literal(if is_float { Literal::Float } else { Literal::Integer }))
-      }
+        Some('b' | 'B') => {
+          self.tok.eat().unwrap();
+          loop {
+            match self.tok.peek_char() {
+              Some('0'..='1') => {}
+              Some(_) | None => break,
+            }
+            self.tok.eat().unwrap();
+          }
+
+          self.ok(start, Token::Literal(Literal::BinaryInteger))
+        }
+
+        _ => {
+          let mut is_float = false;
+          loop {
+            match self.tok.peek() {
+              Some(InnerToken::Digit) => {}
+              Some(InnerToken::Delimiter(Delimiter::Dot)) => {
+                if !is_float && self.tok.peek2() == Some(InnerToken::Digit) {
+                  is_float = true;
+                } else {
+                  break;
+                }
+              }
+              Some(_) | None => break,
+            }
+            self.tok.eat().unwrap();
+          }
+
+          self.ok(start, Token::Literal(if is_float { Literal::Float } else { Literal::Integer }))
+        }
+      },
 
       InnerToken::Delimiter(Delimiter::Dot) if self.tok.peek() == Some(InnerToken::Digit) => loop {
         match self.tok.peek() {
@@ -515,6 +547,18 @@ mod tests {
     assert_eq!(lexer.slice(), "123");
     assert_eq!(lexer.next(), Ok(Token::Ident(Ident::Plain)));
     assert_eq!(lexer.slice(), "foo");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("0xff");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::HexInteger)));
+    assert_eq!(lexer.slice(), "0xff");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("0b012");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::BinaryInteger)));
+    assert_eq!(lexer.slice(), "0b01");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Integer)));
+    assert_eq!(lexer.slice(), "2");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
