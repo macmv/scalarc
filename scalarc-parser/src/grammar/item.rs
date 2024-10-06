@@ -180,7 +180,7 @@ fn access_qualifier(p: &mut Parser) {
 
 // test ok
 // @volatile private var foo = 3
-fn annotation(p: &mut Parser) {
+pub fn annotation(p: &mut Parser) {
   p.eat(T![@]);
   p.expect(T![ident]);
 

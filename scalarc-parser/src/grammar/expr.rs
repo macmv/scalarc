@@ -157,6 +157,13 @@ fn ascription(p: &mut Parser) {
       p.error("expected `*`");
       m.abandon(p);
     }
+  } else if p.at(T![@]) {
+    // test ok
+    // (foo: @unchecked) match {
+    //   case _ => ()
+    // }
+    super::item::annotation(p);
+    m.complete(p, ANNOTATION_ASCRIPTION);
   } else {
     type_expr::simple_type_expr_is_case(p, true);
     m.complete(p, TYPE_ASCRIPTION);
