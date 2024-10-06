@@ -792,13 +792,13 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
         // test ok
         // val x = println("hello")
         // val y = 3
-        p.set_in_string(false);
         p.eat(DOUBLE_QUOTE);
 
         if is_start && p.at(DOUBLE_QUOTE) {
           p.eat(DOUBLE_QUOTE);
           is_tripple_quote = true;
         } else {
+          p.set_in_string(false);
           break;
         }
       }
