@@ -424,6 +424,11 @@ fn class_def(p: &mut Parser, m: Marker) {
     fun_params(p, true);
   }
 
+  // Eat enough newlines so that we can see the next token.
+  while p.at(T![nl]) && p.peek() == T![nl] {
+    p.eat(T![nl]);
+  }
+
   // test ok
   // class Foo
   //   extends Bar {}
