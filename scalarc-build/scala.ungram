@@ -42,9 +42,7 @@ any = 'any'
 CharacterLit = '\'' any '\''
 DoubleQuotedString = '"' any* '"'
 TrippleQuotedString = '"""' any* '"""'
-InterpolatedString = '"' any* Interpolation* '"'
-// NB: The `id` is `$`, we just parse it as an identifier.
-Interpolation = id '{' Expr '}'
+InterpolatedString = '"' any* BlockExpr* '"'
 
 id = 'ident'
 nl = 'nl'

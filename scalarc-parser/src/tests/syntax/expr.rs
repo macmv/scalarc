@@ -1651,7 +1651,7 @@ fn interpolated_string() {
             IDENT 's'
             COLON ':'
             WHITESPACE ' '
-            INTERPOLATION
+            BLOCK_EXPR
               IDENT '$'
               OPEN_CURLY '{'
               EXPR_ITEM
@@ -1756,7 +1756,7 @@ fn tripple_quoted_strings() {
             DOUBLE_QUOTE '"'
             IDENT '\'
             DOUBLE_QUOTE '"'
-            INTERPOLATION
+            BLOCK_EXPR
               IDENT '$'
               OPEN_CURLY '{'
               EXPR_ITEM

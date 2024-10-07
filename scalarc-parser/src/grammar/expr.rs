@@ -868,7 +868,7 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
             p.expect(T!['}']);
           }
 
-          m.complete(p, INTERPOLATION);
+          m.complete(p, BLOCK_EXPR);
         } else {
           // TODO: Ident interpolations.
           m.abandon(p);

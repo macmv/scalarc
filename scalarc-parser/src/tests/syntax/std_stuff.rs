@@ -241,7 +241,7 @@ fn string_ctx_invalid_escape() {
             IDENT 'p'
             IDENT 'e'
             WHITESPACE ' '
-            INTERPOLATION
+            BLOCK_EXPR
               IDENT '$'
               OPEN_CURLY '{'
               NL_KW '\n'
@@ -392,7 +392,7 @@ fn string_ctx_invalid_escape() {
                     SINGLE_QUOTE '''
                     IDENT '\'
                     IDENT '\'
-                    INTERPOLATION
+                    BLOCK_EXPR
                       IDENT '$'
                       OPEN_CURLY '{'
                       EXPR_ITEM
