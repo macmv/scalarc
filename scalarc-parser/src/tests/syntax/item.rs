@@ -368,7 +368,8 @@ fn class_def() {
           WHITESPACE ' '
           EXTENDS_KW 'extends'
           WHITESPACE ' '
-          IDENT 'AnyVal'
+          SIMPLE_TYPE
+            IDENT 'AnyVal'
           WHITESPACE ' '
           ITEM_BODY
             OPEN_CURLY '{'
@@ -390,7 +391,8 @@ fn class_def() {
           WHITESPACE ' '
           EXTENDS_KW 'extends'
           WHITESPACE ' '
-          IDENT 'AnyVal'
+          SIMPLE_TYPE
+            IDENT 'AnyVal'
           WHITESPACE ' '
           WITH_KW 'with'
           WHITESPACE ' '
@@ -417,7 +419,8 @@ fn class_def() {
           WHITESPACE ' '
           EXTENDS_KW 'extends'
           WHITESPACE ' '
-          IDENT 'AnyVal'
+          SIMPLE_TYPE
+            IDENT 'AnyVal'
           WHITESPACE ' '
           WITH_KW 'with'
           WHITESPACE ' '

@@ -484,22 +484,11 @@ fn access_modifier(p: &mut Parser) -> Option<CompletedMarker> {
 // test ok
 // class Foo extends foo.bar.Baz[Int, String](2, 3) {}
 fn extends_item(p: &mut Parser) {
-  p.expect(T![ident]);
-
   // test ok
   // class Foo extends foo.bar.Baz {}
-  while p.at(T![.]) {
-    p.bump();
-    p.expect(T![ident]);
-  }
-
-  // test ok
   // class Foo extends Seq[Int] {}
-  if p.at(T!['[']) {
-    let m = p.start();
-    super::type_expr::type_args(p, T!['['], T![']']);
-    m.complete(p, TYPE_ARGS);
-  }
+  // class Foo extends (A => B) {}
+  super::type_expr::simple_type_expr(p);
 
   // test ok
   // class Foo extends Bar(2, 3)(4, 5) {}
