@@ -5,15 +5,15 @@ use std::sync::Arc;
 
 use crate::{
   hir::{
-    AstIdMap, Binding, BindingKind, Block, BlockId, BlockSourceMap, Expr, ExprId, Import, Literal,
-    Pattern, PatternId, Stmt, StmtId, Type, UnresolvedPath,
+    AstIdMap, Binding, BindingKind, Block, BlockId, BlockSourceMap, Expr, ExprId, Import,
+    Interpolation, Literal, Pattern, PatternId, Stmt, StmtId, Type, UnresolvedPath,
   },
   HirDatabase, InFile, InFileExt, Name, Path, Signature,
 };
 use la_arena::Arena;
 use scalarc_syntax::{
   ast::{self, AstNode},
-  AstPtr, SyntaxNodePtr,
+  AstPtr, SyntaxNodePtr, TextSize,
 };
 
 pub fn block_for_node(db: &dyn HirDatabase, ptr: InFile<SyntaxNodePtr>) -> InFile<BlockId> {
@@ -384,6 +384,36 @@ impl Lower for ast::Expr {
         let string = string.syntax().text().to_string();
 
         Some(lower.alloc(self, Expr::Literal(Literal::String(string))))
+      }
+
+      ast::Expr::InterpolatedString(string) => {
+        let mut interpolations = vec![];
+
+        let start = string.syntax().text_range().start();
+        let mut prev_offset = TextSize::from(0);
+
+        for intp in string.block_exprs() {
+          if intp.syntax().text_range().start() - start != prev_offset {
+            let string = string
+              .syntax()
+              .text()
+              .slice(prev_offset..intp.syntax().text_range().start() - start)
+              .to_string();
+            interpolations.push(Interpolation::Lit(string));
+          }
+
+          let id = lower.id_map.ast_id(&intp).into();
+          interpolations.push(Interpolation::Block(id));
+
+          prev_offset = intp.syntax().text_range().end() - start;
+        }
+
+        if prev_offset != string.syntax().text_range().end() {
+          let string = string.syntax().text().slice(prev_offset..).to_string();
+          interpolations.push(Interpolation::Lit(string));
+        }
+
+        Some(lower.alloc(self, Expr::InterpolatedString(interpolations)))
       }
 
       ast::Expr::InfixExpr(infix) => {
@@ -813,6 +843,67 @@ mod tests {
                 [
                   Idx::<Expr>(0),
                   Idx::<Expr>(1),
+                ],
+              ),
+            ],
+          },
+          patterns: Arena {
+            len: 0,
+            data: [],
+          },
+          params: Arena {
+            len: 0,
+            data: [],
+          },
+          imports: Arena {
+            len: 0,
+            data: [],
+          },
+          items: [
+            Idx::<Stmt>(0),
+          ],
+        }"#
+      ],
+    );
+  }
+
+  #[test]
+  fn interpolated_string() {
+    check(
+      r#"
+      {
+        s"hello${world}!"
+      }
+      "#,
+      expect![@r#"
+        Block {
+          stmts: Arena {
+            len: 1,
+            data: [
+              Expr(
+                Idx::<Expr>(0),
+              ),
+            ],
+          },
+          exprs: Arena {
+            len: 1,
+            data: [
+              InterpolatedString(
+                [
+                  Lit(
+                    "s\"hello",
+                  ),
+                  Block(
+                    BlockExpr(
+                      AstId {
+                        raw: Idx::<Scala>>(2),
+                        phantom: PhantomData<fn() -> scalarc_syntax::ast::generated::nodes::BlockExpr>,
+                      },
+                    ),
+                  ),
+                  Lit(
+                    "!\"",
+                  ),
                 ],
               ),
             ],

@@ -90,6 +90,7 @@ pub enum Expr {
   Block(BlockId),
 
   Literal(Literal),
+  InterpolatedString(Vec<Interpolation>),
   Name(UnresolvedPath),
   Underscore,
   Tuple(Vec<ExprId>),
@@ -101,6 +102,12 @@ pub enum Expr {
 
   If(ExprId, ExprId, Option<ExprId>),
   Match(ExprId, Vec<(PatternId, ExprId)>),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Interpolation {
+  Lit(String),
+  Block(BlockId),
 }
 
 #[derive(Debug, PartialEq, Eq)]
