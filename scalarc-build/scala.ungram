@@ -118,6 +118,7 @@ PathType       = Type '.' id
 NestedType     = Type '#' id
 TupleType      = '(' (Type (',' Type)*)? ')'
 BlockType      = '{' TypeDef* '}'
+LitType        = id // FIXME
 SimpleType     = id
 
 // Type parameters: `[T <: Ordering]`, like in a declaration.

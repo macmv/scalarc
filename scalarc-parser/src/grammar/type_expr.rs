@@ -42,6 +42,13 @@ fn simple_type_expr_0(
       m.complete(p, SIMPLE_TYPE)
     }
 
+    // test ok
+    // def foo: true = true
+    T![true] | T![false] => {
+      p.bump();
+      m.complete(p, LIT_TYPE)
+    }
+
     // I cannot figure out the grammar for this, so we're guessing here.
     // test ok
     // val foo: ({ type T = Int }) = 3
