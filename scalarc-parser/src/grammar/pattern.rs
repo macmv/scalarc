@@ -57,6 +57,22 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
     }
 
     // test ok
+    // case -5 =>
+    T![ident] if p.slice() == "-" && p.peek() == INT_LIT_KW => {
+      p.eat(T![ident]); // The `-`
+      p.eat(INT_LIT_KW);
+      Some(m.complete(p, LIT_PATTERN))
+    }
+
+    // test ok
+    // case +5 =>
+    T![ident] if p.slice() == "+" && p.peek() == INT_LIT_KW => {
+      p.eat(T![ident]); // The `+`
+      p.eat(INT_LIT_KW);
+      Some(m.complete(p, LIT_PATTERN))
+    }
+
+    // test ok
     // case '+' | '-' =>
     SINGLE_QUOTE => {
       expr::character_lit(p);
