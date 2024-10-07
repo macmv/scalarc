@@ -173,23 +173,11 @@ fn access_qualifier(p: &mut Parser) {
 // @volatile private var foo = 3
 pub fn annotation(p: &mut Parser) {
   p.eat(T![@]);
-  p.expect(T![ident]);
 
   // test ok
   // @annotation.nowarn("cat=unused") def foo = 3
-  while p.at(T![.]) {
-    p.eat(T![.]);
-    p.expect(T![ident]);
-  }
-
-  // test ok
-  // @throws[Foo]
-  // def foo = 3
-  if p.at(T!['[']) {
-    let m = p.start();
-    super::type_expr::type_args(p, T!['['], T![']']);
-    m.complete(p, TYPE_ARGS);
-  }
+  // @throws[Foo] def bar = 3
+  super::type_expr::simple_type_expr_no_arrow(p);
 
   if p.at(T!['(']) {
     super::expr::call_paren_expr(p);

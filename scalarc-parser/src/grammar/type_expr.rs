@@ -9,6 +9,14 @@ use crate::{
 pub fn simple_type_expr(p: &mut Parser) -> Option<CompletedMarker> {
   simple_type_expr_0(p, false, false, false)
 }
+
+// test ok
+// x match {
+//   case foo: Int @ unchecked =>
+// }
+pub fn simple_type_expr_no_arrow(p: &mut Parser) -> Option<CompletedMarker> {
+  simple_type_expr_0(p, true, false, false)
+}
 pub fn simple_type_expr_is_case(p: &mut Parser, is_case: bool) {
   simple_type_expr_0(p, is_case, true, false);
 }
