@@ -192,7 +192,9 @@ fn type_expr_0(p: &mut Parser, is_nested_params: bool) -> Option<CompletedMarker
         // def foo[T <: Int] = 3
         let m = lhs.precede(p);
         p.eat(T![<:]);
-        simple_type_expr(p);
+        // test ok
+        // trait Foo[+C <: Set with SetOps[C]]
+        type_expr(p);
         lhs = m.complete(p, LOWER_BOUND_TYPE);
       }
       T![>:] => {
@@ -200,7 +202,7 @@ fn type_expr_0(p: &mut Parser, is_nested_params: bool) -> Option<CompletedMarker
         // def foo[T >: Int] = 3
         let m = lhs.precede(p);
         p.eat(T![>:]);
-        simple_type_expr(p);
+        type_expr(p);
         lhs = m.complete(p, UPPER_BOUND_TYPE);
       }
 
@@ -240,7 +242,7 @@ fn type_expr_0(p: &mut Parser, is_nested_params: bool) -> Option<CompletedMarker
         // def foo[T](implicit ev: V#T <:< T): T = 3
         let m = lhs.precede(p);
         p.eat(T![ident]);
-        simple_type_expr(p);
+        type_expr(p);
         lhs = m.complete(p, INFIX_TYPE);
       }
 
