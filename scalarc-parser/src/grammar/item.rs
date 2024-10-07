@@ -749,17 +749,18 @@ fn val_def(p: &mut Parser, m: Marker) {
       p.eat(T![,]);
       p.expect(T![ident]);
     }
-
-    if p.at(T![:]) {
-      // test ok
-      // val foo, bar: Int = 3
-      p.eat(T![:]);
-      super::type_expr::simple_type_expr_is_case(p, false);
-    }
   } else {
     // test ok
     // val (foo, bar) = 3
     super::pattern::pattern_val(p);
+  }
+
+  if p.at(T![:]) {
+    // test ok
+    // val foo, bar: Int = 3
+    // val (foo, bar): Int = 3
+    p.eat(T![:]);
+    super::type_expr::simple_type_expr_is_case(p, false);
   }
 
   if p.at(T![=]) {
