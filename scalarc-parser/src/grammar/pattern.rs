@@ -109,12 +109,16 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
       let m2 = p.start();
       p.eat(IDENT);
 
+      p.eat_newlines();
+
       let mut is_path = false;
       while p.at(T![.]) {
         // test ok
         // case foo.bar =>
         p.eat(T![.]);
+        p.eat_newlines();
         p.expect(T![ident]);
+        p.eat_newlines();
         is_path = true;
       }
 
@@ -125,9 +129,7 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
       // test ok
       // case _
       //   if true =>
-      if p.at(T![nl]) {
-        p.eat(T![nl]);
-      }
+      p.eat_newlines();
 
       match p.current() {
         // test ok
