@@ -967,6 +967,13 @@ fn while_expr(p: &mut Parser) {
   p.eat_newlines();
   p.expect(T![')']);
 
+  // test ok
+  // while (true)
+  //   println("hi")
+  if p.at(T![nl]) {
+    p.eat(T![nl]);
+  }
+
   expr(p);
 }
 
