@@ -150,23 +150,13 @@ trait Lower {
   fn lower(&self, lower: &mut BlockLower) -> Option<Self::Output>;
 }
 
+trait Alloc: Lower {
+  type Hir;
+
+  fn alloc(&self, lower: &mut BlockLower, hir: Self::Hir) -> Self::Output;
+}
+
 impl BlockLower<'_> {
-  fn alloc_expr(&mut self, hir: Expr, ast: &ast::Expr) -> ExprId {
-    let id = self.block.exprs.alloc(hir);
-
-    self.source_map.expr.insert(AstPtr::new(ast), id);
-    self.source_map.expr_back.insert(id, AstPtr::new(ast));
-
-    id
-  }
-  fn alloc_stmt(&mut self, hir: Stmt, ast: &ast::Item) -> StmtId {
-    let id = self.block.stmts.alloc(hir);
-
-    self.source_map.stmt.insert(AstPtr::new(ast), id);
-    self.source_map.stmt_back.insert(id, AstPtr::new(ast));
-
-    id
-  }
   fn alloc_pattern(&mut self, hir: Pattern, ast: &ast::Pattern) -> PatternId {
     let id = self.block.patterns.alloc(hir);
 
@@ -185,6 +175,20 @@ impl BlockLower<'_> {
   }
 
   fn walk<T: Lower>(&mut self, item: &T) -> Option<T::Output> { item.lower(self) }
+  fn alloc<T: Alloc>(&mut self, item: &T, hir: T::Hir) -> T::Output { item.alloc(self, hir) }
+}
+
+impl Alloc for ast::Item {
+  type Hir = Stmt;
+
+  fn alloc(&self, lower: &mut BlockLower, hir: Stmt) -> StmtId {
+    let id = lower.block.stmts.alloc(hir);
+
+    lower.source_map.stmt.insert(AstPtr::new(self), id);
+    lower.source_map.stmt_back.insert(id, AstPtr::new(self));
+
+    id
+  }
 }
 
 impl Lower for ast::Item {
@@ -194,7 +198,7 @@ impl Lower for ast::Item {
     match self {
       ast::Item::ExprItem(expr) => {
         let expr_id = lower.walk(&expr.expr()?)?;
-        let stmt_id = lower.alloc_stmt(Stmt::Expr(expr_id), self);
+        let stmt_id = lower.alloc(self, Stmt::Expr(expr_id));
 
         Some(stmt_id)
       }
@@ -208,7 +212,8 @@ impl Lower for ast::Item {
           None => None,
         };
 
-        let stmt_id = lower.alloc_stmt(
+        let stmt_id = lower.alloc(
+          self,
           Stmt::Binding(Binding {
             implicit: false,
             kind: BindingKind::Def(sig),
@@ -216,7 +221,6 @@ impl Lower for ast::Item {
             ty: None,
             expr: expr_id,
           }),
-          self,
         );
 
         Some(stmt_id)
@@ -279,7 +283,8 @@ impl Lower for ast::Item {
         };
         let ty = lower.lower_type(def.ty());
 
-        let stmt_id = lower.alloc_stmt(
+        let stmt_id = lower.alloc(
+          self,
           Stmt::Binding(Binding {
             implicit: false,
             kind: BindingKind::Val,
@@ -287,7 +292,6 @@ impl Lower for ast::Item {
             ty,
             expr: expr_id,
           }),
-          self,
         );
 
         Some(stmt_id)
@@ -347,6 +351,19 @@ impl Lower for ast::Item {
   }
 }
 
+impl Alloc for ast::Expr {
+  type Hir = Expr;
+
+  fn alloc(&self, lower: &mut BlockLower, hir: Expr) -> ExprId {
+    let id = lower.block.exprs.alloc(hir);
+
+    lower.source_map.expr.insert(AstPtr::new(self), id);
+    lower.source_map.expr_back.insert(id, AstPtr::new(self));
+
+    id
+  }
+}
+
 impl Lower for ast::Expr {
   type Output = ExprId;
 
@@ -355,18 +372,18 @@ impl Lower for ast::Expr {
       ast::Expr::BlockExpr(block) => {
         let id = lower.id_map.ast_id(block).into();
 
-        Some(lower.alloc_expr(Expr::Block(id), self))
+        Some(lower.alloc(self, Expr::Block(id)))
       }
 
       ast::Expr::IdentExpr(ident) => {
         let ident = ident.id_token()?.text().to_string();
 
-        Some(lower.alloc_expr(Expr::Name(UnresolvedPath { segments: vec![ident] }), self))
+        Some(lower.alloc(self, Expr::Name(UnresolvedPath { segments: vec![ident] })))
       }
 
       ast::Expr::LitExpr(lit) => {
         if let Some(int) = lit.int_lit_token() {
-          Some(lower.alloc_expr(Expr::Literal(Literal::Int(int.text().parse().unwrap())), self))
+          Some(lower.alloc(self, Expr::Literal(Literal::Int(int.text().parse().unwrap()))))
         } else {
           None
         }
@@ -375,7 +392,7 @@ impl Lower for ast::Expr {
       ast::Expr::DoubleQuotedString(string) => {
         let string = string.syntax().text().to_string();
 
-        Some(lower.alloc_expr(Expr::Literal(Literal::String(string)), self))
+        Some(lower.alloc(self, Expr::Literal(Literal::String(string))))
       }
 
       ast::Expr::InfixExpr(infix) => {
@@ -385,8 +402,8 @@ impl Lower for ast::Expr {
 
         // FIXME: This shouldn't be in the source map? Need to think through if this is
         // allowed.
-        let lhs_wrapped = lower.alloc_expr(Expr::FieldAccess(lhs, name.clone()), self);
-        Some(lower.alloc_expr(Expr::Call(lhs_wrapped, vec![rhs]), self))
+        let lhs_wrapped = lower.alloc(self, Expr::FieldAccess(lhs, name.clone()));
+        Some(lower.alloc(self, Expr::Call(lhs_wrapped, vec![rhs])))
       }
 
       ast::Expr::FieldExpr(field) => {
@@ -398,7 +415,7 @@ impl Lower for ast::Expr {
           None => String::new(),
         };
 
-        Some(lower.alloc_expr(Expr::FieldAccess(lhs, name), self))
+        Some(lower.alloc(self, Expr::FieldAccess(lhs, name)))
       }
 
       ast::Expr::CallExpr(call) => {
@@ -414,7 +431,7 @@ impl Lower for ast::Expr {
           _ => {}
         }
 
-        Some(lower.alloc_expr(Expr::Call(lhs, res), self))
+        Some(lower.alloc(self, Expr::Call(lhs, res)))
       }
 
       ast::Expr::TupleExpr(tup) => {
@@ -433,7 +450,7 @@ impl Lower for ast::Expr {
 
           Some(id)
         } else {
-          Some(lower.alloc_expr(Expr::Tuple(items), self))
+          Some(lower.alloc(self, Expr::Tuple(items)))
         }
       }
 
@@ -446,7 +463,7 @@ impl Lower for ast::Expr {
           }
         }
 
-        Some(lower.alloc_expr(Expr::New(name, args), self))
+        Some(lower.alloc(self, Expr::New(name, args)))
       }
 
       ast::Expr::IfExpr(if_expr) => {
@@ -454,7 +471,7 @@ impl Lower for ast::Expr {
         let then = lower.walk(&if_expr.then()?)?;
         let els = if_expr.els().and_then(|e| lower.walk(&e));
 
-        Some(lower.alloc_expr(Expr::If(cond, then, els), self))
+        Some(lower.alloc(self, Expr::If(cond, then, els)))
       }
 
       ast::Expr::MatchExpr(match_expr) => {
@@ -469,7 +486,7 @@ impl Lower for ast::Expr {
           cases.push((pattern, block));
         }
 
-        Some(lower.alloc_expr(Expr::Match(lhs, cases), self))
+        Some(lower.alloc(self, Expr::Match(lhs, cases)))
       }
 
       _ => {
