@@ -166,7 +166,9 @@ fn simple_type_expr_0(
 pub fn type_expr(p: &mut Parser) -> Option<CompletedMarker> { type_expr_0(p, false) }
 
 fn type_expr_0(p: &mut Parser, is_nested_params: bool) -> Option<CompletedMarker> {
-  let mut lhs = simple_type_expr_0(p, false, false, is_nested_params)?;
+  // test ok
+  // type Foo = Bar with Seq[Int]
+  let mut lhs = simple_type_expr_0(p, false, true, is_nested_params)?;
 
   loop {
     match p.current() {
