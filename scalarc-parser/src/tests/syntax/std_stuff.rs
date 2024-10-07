@@ -138,3 +138,38 @@ fn duration_words() {
     "#],
   );
 }
+
+#[test]
+fn duration_micros() {
+  check(
+    r#"
+      private[this] final val ns_per_µs  = 1000L
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        VAL_DEF
+          MODIFIER
+            PRIVATE_KW 'private'
+            ACCESS_QUALIFIER
+              OPEN_BRACKET '['
+              IDENT 'this'
+              CLOSE_BRACKET ']'
+          WHITESPACE ' '
+          MODIFIER
+            FINAL_KW 'final'
+          WHITESPACE ' '
+          VAL_KW 'val'
+          WHITESPACE ' '
+          IDENT 'ns_per_µs'
+          WHITESPACE '  '
+          EQ '='
+          WHITESPACE ' '
+          LIT_EXPR
+            INT_LIT_KW '1000'
+            IDENT 'L'
+        NL_KW '\n'
+    "#],
+  );
+}

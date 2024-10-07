@@ -2,6 +2,7 @@ use std::ops::Range;
 
 use scalarc_ast::Span;
 use thiserror::Error;
+use unicode_categories::UnicodeCategories;
 
 // Scala's grammar is quite finicky. We expose a `Token` enum that is a
 // parser-usable version of a token. It contains high level concepts like
@@ -168,6 +169,16 @@ impl<'a> Tokenizer<'a> {
       'a'..='z' | 'A'..='Z' | '$' => InnerToken::Letter,
       '0'..='9' => InnerToken::Digit,
       '\u{0020}'..='\u{007e}' => InnerToken::Operator,
+
+      // Lowercase letters.
+      c if c.is_letter_lowercase() => InnerToken::Letter,
+      // Uppercase letters.
+      c if c.is_letter_uppercase() => InnerToken::Letter,
+      c if c.is_letter_titlecase() => InnerToken::Letter,
+      c if c.is_number_letter() => InnerToken::Letter,
+      // Either lowercase or uppercase.
+      c if c.is_letter_other() => InnerToken::Letter,
+      c if c.is_letter_modifier() => InnerToken::Letter,
 
       // TODO: What to do with non-ascii characters?
       _ => InnerToken::Operator,
