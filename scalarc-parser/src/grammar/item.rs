@@ -591,7 +591,6 @@ fn fun_params(p: &mut Parser, is_class: bool) {
   // def foo(
   //   implicit a: Int
   // ) = 3
-  p.eat_newlines();
 
   // test ok
   // def foo() = 3
@@ -658,7 +657,6 @@ fn fun_param(p: &mut Parser, is_class: bool) {
   //   implicit
   //   a: Int
   // ) = 3
-  p.eat_newlines();
 
   // test ok
   // class Foo(val a: Int, val b: Int) {}
