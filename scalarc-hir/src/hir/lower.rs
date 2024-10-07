@@ -208,6 +208,8 @@ impl BlockLower<'_> {
         Some(stmt_id)
       }
 
+      // FIXME: Re-implement pattern vals.
+      /*
       ast::Item::ValDef(def) => match def.pattern()? {
         ast::Pattern::PathPattern(path) => {
           let name = path.path()?.ids().next().unwrap().text().to_string();
@@ -254,6 +256,28 @@ impl BlockLower<'_> {
         // TODO: Produce multiple bindings for cases like `val (x, y) = (1, 2)`.
         _ => None,
       },
+      */
+      ast::Item::ValDef(def) => {
+        let name = def.id_token()?.text().to_string();
+        let expr_id = match def.expr() {
+          Some(e) => Some(self.walk_expr(&e)?),
+          None => None,
+        };
+        let ty = self.lower_type(def.ty());
+
+        let stmt_id = self.alloc_stmt(
+          Stmt::Binding(Binding {
+            implicit: false,
+            kind: BindingKind::Val,
+            name,
+            ty,
+            expr: expr_id,
+          }),
+          item,
+        );
+
+        Some(stmt_id)
+      }
 
       ast::Item::Import(i) => {
         for import_expr in i.import_exprs() {

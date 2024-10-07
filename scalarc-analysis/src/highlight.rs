@@ -173,7 +173,7 @@ impl Highlightable for ast::Item {
           h.highlight_opt(modifier.implicit_token(), HighlightKind::Keyword);
         }
         h.highlight_opt(d.val_token(), HighlightKind::Keyword);
-        h.visit(d.pattern());
+        h.highlight_opt(d.id_token(), HighlightKind::Variable);
         h.highlight_opt(d.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
 
         h.visit(d.expr());

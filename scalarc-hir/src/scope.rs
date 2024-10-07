@@ -155,7 +155,9 @@ fn item_definition(
         }
       }
     }
-    ast::Item::ValDef(d) => {
+    ast::Item::ValDef(def) => {
+      // FIXME: Re-implement pattern vals.
+      /*
       match d.pattern()? {
         ast::Pattern::PathPattern(p) => {
           if let Some(id) = p.path()?.ids().next() {
@@ -173,6 +175,12 @@ fn item_definition(
         }
         // TODO: Handle patterns like `val (x, y) = ...`
         _ => {}
+      }
+      */
+      if let Some(id) = def.id_token() {
+        if id.text_range().contains_inclusive(pos) {
+          return item_definition_real(db, file_id, stmt);
+        }
       }
     }
     _ => {}

@@ -575,26 +575,21 @@ pub fn type_at(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<T
         // FIXME: This needs to search upwards until it finds something interesting.
         // Right now its stuck searching a fixed amount, which doesn't work
         // well.
-        let parent2 = node.parent()?.parent()?;
-        if let Some(pat) = ast::Pattern::cast(parent2) {
-          let parent = pat.syntax().parent()?;
-          if let Some(val_def) = ast::ValDef::cast(parent) {
-            let parent = val_def.syntax().parent()?;
-            let block = db.block_for_node(SyntaxNodePtr::new(&parent).in_file(file_id));
+        let parent = node.parent()?;
+        if let Some(val_def) = ast::ValDef::cast(parent) {
+          let parent = val_def.syntax().parent()?;
+          let block = db.block_for_node(SyntaxNodePtr::new(&parent).in_file(file_id));
 
-            let (hir_ast, source_map) = db.hir_ast_with_source_for_block(block);
-            let stmt_id = source_map.stmt(AstPtr::new(&val_def.into()))?;
-            let stmt = &hir_ast.stmts[stmt_id];
+          let (hir_ast, source_map) = db.hir_ast_with_source_for_block(block);
+          let stmt_id = source_map.stmt(AstPtr::new(&val_def.into()))?;
+          let stmt = &hir_ast.stmts[stmt_id];
 
-            match stmt {
-              crate::hir::Stmt::Binding(b) => match b.expr {
-                Some(expr) => db.type_of_expr(block, expr),
-                None => None,
-              },
-              _ => None,
-            }
-          } else {
-            None
+          match stmt {
+            crate::hir::Stmt::Binding(b) => match b.expr {
+              Some(expr) => db.type_of_expr(block, expr),
+              None => None,
+            },
+            _ => None,
           }
         } else {
           None
