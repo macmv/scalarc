@@ -541,7 +541,7 @@ fn item_body(p: &mut Parser) {
 // test ok
 // def bar
 // def foo = 3
-fn fun_def(p: &mut Parser, m: Marker) {
+pub fn fun_def(p: &mut Parser, m: Marker) {
   p.eat(T![def]);
   fun_sig(p);
 
@@ -732,7 +732,7 @@ fn fun_param(p: &mut Parser, is_class: bool) {
 
 // test ok
 // val foo = 3
-fn val_def(p: &mut Parser, m: Marker) {
+pub fn val_def(p: &mut Parser, m: Marker) {
   let kind = match p.current() {
     T![val] => VAL_DEF,
     T![var] => VAR_DEF,
