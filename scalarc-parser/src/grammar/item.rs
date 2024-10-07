@@ -680,28 +680,29 @@ fn fun_param(p: &mut Parser, is_class: bool) {
   // test ok
   // class Foo(val a: Int, val b: Int) {}
   if is_class {
-    // test ok
-    // class Foo(protected val a: Int) {}
-    // class Foo(private[this] val a: Int) {}
-    access_modifier(p);
+    loop {
+      match p.current() {
+        // test ok
+        // class Foo(protected val a: Int) {}
+        // class Foo(private[this] val a: Int) {}
+        _ if access_modifier(p).is_some() => {}
 
-    match p.current() {
-      // test ok
-      // class Foo(override val a: Int) {}
-      // class Foo(final val a: Int) {}
-      T![override] | T![final] => {
-        p.bump();
-      }
-      _ => {}
-    }
+        // test ok
+        // class Foo(override val a: Int) {}
+        // class Foo(final val a: Int) {}
+        T![override] | T![final] => {
+          p.bump();
+        }
 
-    match p.current() {
-      // test ok
-      // class Foo(var a: Int) {}
-      T![val] | T![var] => {
-        p.bump();
+        // test ok
+        // class Foo(var a: Int) {}
+        T![val] | T![var] => {
+          p.bump();
+          break;
+        }
+
+        _ => break,
       }
-      _ => {}
     }
   }
 
