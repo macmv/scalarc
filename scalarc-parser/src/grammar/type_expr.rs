@@ -161,6 +161,14 @@ fn simple_type_expr_0(
         return Some(lhs);
       }
 
+      T![@] => {
+        // test ok
+        // (x: Int @unchecked) match {
+        //   case 1 => 2
+        // }
+        super::item::annotation(p);
+      }
+
       // test ok
       // case v: Int if v > 0 => v
       // case _: Int | _: String =>
