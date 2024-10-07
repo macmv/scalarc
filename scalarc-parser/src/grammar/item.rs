@@ -420,7 +420,11 @@ fn class_def(p: &mut Parser, m: Marker) {
   // class Foo {}
   // class Foo() {}
   // class Foo(val foo: Int)(val bar: String) {}
-  while p.current() == T!['('] {
+  // class Foo
+  //   (val foo: Int)
+  //   (val bar: String) {}
+  while p.at(T!['(']) || (p.at(T![nl]) && p.peek() == T!['(']) {
+    p.eat_newlines();
     fun_params(p, true);
   }
 
