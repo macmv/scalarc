@@ -182,6 +182,15 @@ pub fn annotation(p: &mut Parser) {
     p.expect(T![ident]);
   }
 
+  // test ok
+  // @throws[Foo]
+  // def foo = 3
+  if p.at(T!['[']) {
+    let m = p.start();
+    super::type_expr::type_args(p, T!['['], T![']']);
+    m.complete(p, TYPE_ARGS);
+  }
+
   if p.at(T!['(']) {
     super::expr::call_paren_expr(p);
   }
