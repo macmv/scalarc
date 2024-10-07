@@ -512,10 +512,6 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
     // 2 == 2L == 3l
     INT_LIT_KW => {
       p.eat(INT_LIT_KW);
-      // TODO: No whitespace here.
-      if p.at(T![ident]) && (p.slice() == "l" || p.slice() == "L") {
-        p.eat(T![ident]);
-      }
 
       Some(m.complete(p, LIT_EXPR))
     }
@@ -524,10 +520,6 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
     // 2 == 2.0D == 3d
     FLOAT_LIT_KW => {
       p.bump();
-      // TODO: No whitespace here.
-      if p.at(T![ident]) && (p.slice() == "d" || p.slice() == "D") {
-        p.eat(T![ident]);
-      }
 
       Some(m.complete(p, LIT_EXPR))
     }

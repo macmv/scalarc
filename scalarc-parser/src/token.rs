@@ -407,6 +407,19 @@ impl<'a> Lexer<'a> {
                 continue;
               }
 
+              Some('d' | 'D') => {
+                is_float = true;
+                self.tok.eat().unwrap();
+                break;
+              }
+
+              // TODO: Spit out an error if its already a float!
+              Some('l' | 'L') => {
+                is_float = false;
+                self.tok.eat().unwrap();
+                break;
+              }
+
               Some(_) | None => break,
             }
 
@@ -439,6 +452,17 @@ impl<'a> Lexer<'a> {
               }
 
               continue;
+            }
+
+            Some('d' | 'D') => {
+              self.tok.eat().unwrap();
+              break self.ok(start, Token::Literal(Literal::Float));
+            }
+
+            // TODO: Spit out an error!
+            Some('l' | 'L') => {
+              self.tok.eat().unwrap();
+              break self.ok(start, Token::Literal(Literal::Float));
             }
 
             Some(_) | None => {

@@ -167,8 +167,46 @@ fn duration_micros() {
           EQ '='
           WHITESPACE ' '
           LIT_EXPR
-            INT_LIT_KW '1000'
-            IDENT 'L'
+            INT_LIT_KW '1000L'
+        NL_KW '\n'
+    "#],
+  );
+}
+
+#[test]
+fn duration_multiply() {
+  check(
+    r#"
+      factor == 0d || JDouble.isNaN(factor)
+    "#,
+    expect![@r#"
+      SOURCE_FILE
+        NL_KW '\n'
+        WHITESPACE '      '
+        EXPR_ITEM
+          INFIX_EXPR
+            INFIX_EXPR
+              IDENT_EXPR
+                IDENT 'factor'
+              WHITESPACE ' '
+              IDENT '=='
+              WHITESPACE ' '
+              LIT_EXPR
+                FLOAT_LIT_KW '0d'
+            WHITESPACE ' '
+            IDENT '||'
+            WHITESPACE ' '
+            CALL_EXPR
+              FIELD_EXPR
+                IDENT_EXPR
+                  IDENT 'JDouble'
+                DOT '.'
+                IDENT 'isNaN'
+              PAREN_ARGUMENTS
+                OPEN_PAREN '('
+                IDENT_EXPR
+                  IDENT 'factor'
+                CLOSE_PAREN ')'
         NL_KW '\n'
     "#],
   );
