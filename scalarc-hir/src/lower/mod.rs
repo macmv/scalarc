@@ -78,7 +78,7 @@ pub fn hir_ast_with_source_for_block(
       // Defs are a bit special: they only contain a single expression, but we still
       // need to track it, to go from the CST to the HIR expr. Additionally,
       // defs are the only block with params, so we walk those here.
-      lower.walk_expr(&def.expr().unwrap());
+      lower.walk(&def.expr().unwrap());
       if let Some(sig) = def.fun_sig() {
         for params in sig.fun_paramss() {
           lower.walk_params(params);
@@ -144,6 +144,12 @@ struct BlockLower<'a> {
   id_map: &'a AstIdMap,
 }
 
+trait Lower {
+  type Output;
+
+  fn lower(&self, lower: &mut BlockLower) -> Option<Self::Output>;
+}
+
 impl BlockLower<'_> {
   fn alloc_expr(&mut self, hir: Expr, ast: &ast::Expr) -> ExprId {
     let id = self.block.exprs.alloc(hir);
@@ -172,17 +178,23 @@ impl BlockLower<'_> {
 
   fn walk_items(&mut self, items: impl Iterator<Item = ast::Item>) {
     for item in items {
-      if let Some(id) = self.walk_stmt(&item) {
+      if let Some(id) = self.walk(&item) {
         self.block.items.push(id);
       }
     }
   }
 
-  fn walk_stmt(&mut self, item: &scalarc_syntax::ast::Item) -> Option<StmtId> {
-    match item {
+  fn walk<T: Lower>(&mut self, item: &T) -> Option<T::Output> { item.lower(self) }
+}
+
+impl Lower for ast::Item {
+  type Output = StmtId;
+
+  fn lower(&self, lower: &mut BlockLower) -> Option<StmtId> {
+    match self {
       ast::Item::ExprItem(expr) => {
-        let expr_id = self.walk_expr(&expr.expr()?)?;
-        let stmt_id = self.alloc_stmt(Stmt::Expr(expr_id), item);
+        let expr_id = lower.walk(&expr.expr()?)?;
+        let stmt_id = lower.alloc_stmt(Stmt::Expr(expr_id), self);
 
         Some(stmt_id)
       }
@@ -192,11 +204,11 @@ impl BlockLower<'_> {
         let name = sig.id_token()?.text().to_string();
         let sig = Signature::from_ast(&sig);
         let expr_id = match def.expr() {
-          Some(e) => self.walk_expr(&e),
+          Some(e) => lower.walk(&e),
           None => None,
         };
 
-        let stmt_id = self.alloc_stmt(
+        let stmt_id = lower.alloc_stmt(
           Stmt::Binding(Binding {
             implicit: false,
             kind: BindingKind::Def(sig),
@@ -204,7 +216,7 @@ impl BlockLower<'_> {
             ty: None,
             expr: expr_id,
           }),
-          item,
+          self,
         );
 
         Some(stmt_id)
@@ -262,12 +274,12 @@ impl BlockLower<'_> {
       ast::Item::ValDef(def) => {
         let name = def.id_token()?.text().to_string();
         let expr_id = match def.expr() {
-          Some(e) => Some(self.walk_expr(&e)?),
+          Some(e) => Some(lower.walk(&e)?),
           None => None,
         };
-        let ty = self.lower_type(def.ty());
+        let ty = lower.lower_type(def.ty());
 
-        let stmt_id = self.alloc_stmt(
+        let stmt_id = lower.alloc_stmt(
           Stmt::Binding(Binding {
             implicit: false,
             kind: BindingKind::Val,
@@ -275,7 +287,7 @@ impl BlockLower<'_> {
             ty,
             expr: expr_id,
           }),
-          item,
+          self,
         );
 
         Some(stmt_id)
@@ -291,7 +303,7 @@ impl BlockLower<'_> {
                 path.elems.push(Name::new(id.text().to_string()));
               }
 
-              self.block.imports.alloc(Import { path, rename: None });
+              lower.block.imports.alloc(Import { path, rename: None });
             }
             ast::ImportExpr::ImportSelectors(p) => {
               let mut path = Path::new();
@@ -308,13 +320,13 @@ impl BlockLower<'_> {
                   ast::ImportSelector::ImportSelectorId(sel) => {
                     let id = sel.id_token()?.text().to_string();
                     path.elems.push(Name::new(id));
-                    self.block.imports.alloc(Import { path, rename: None });
+                    lower.block.imports.alloc(Import { path, rename: None });
                   }
                   ast::ImportSelector::ImportSelectorRename(sel) => {
                     let from = sel.from()?.text().to_string();
                     let to = sel.to()?.text().to_string();
                     path.elems.push(Name::new(from));
-                    self.block.imports.alloc(Import { path, rename: Some(Name::new(to)) });
+                    lower.block.imports.alloc(Import { path, rename: Some(Name::new(to)) });
                   }
                   // FIXME: Import all in package is hard.
                   _ => {}
@@ -328,29 +340,33 @@ impl BlockLower<'_> {
       }
 
       _ => {
-        warn!("Unhandled item: {:#?}", item);
+        warn!("Unhandled item: {:#?}", self);
         None
       }
     }
   }
+}
 
-  fn walk_expr(&mut self, expr: &scalarc_syntax::ast::Expr) -> Option<ExprId> {
-    match expr {
+impl Lower for ast::Expr {
+  type Output = ExprId;
+
+  fn lower(&self, lower: &mut BlockLower) -> Option<ExprId> {
+    match self {
       ast::Expr::BlockExpr(block) => {
-        let id = self.id_map.ast_id(block).into();
+        let id = lower.id_map.ast_id(block).into();
 
-        Some(self.alloc_expr(Expr::Block(id), expr))
+        Some(lower.alloc_expr(Expr::Block(id), self))
       }
 
       ast::Expr::IdentExpr(ident) => {
         let ident = ident.id_token()?.text().to_string();
 
-        Some(self.alloc_expr(Expr::Name(UnresolvedPath { segments: vec![ident] }), expr))
+        Some(lower.alloc_expr(Expr::Name(UnresolvedPath { segments: vec![ident] }), self))
       }
 
       ast::Expr::LitExpr(lit) => {
         if let Some(int) = lit.int_lit_token() {
-          Some(self.alloc_expr(Expr::Literal(Literal::Int(int.text().parse().unwrap())), expr))
+          Some(lower.alloc_expr(Expr::Literal(Literal::Int(int.text().parse().unwrap())), self))
         } else {
           None
         }
@@ -359,22 +375,22 @@ impl BlockLower<'_> {
       ast::Expr::DoubleQuotedString(string) => {
         let string = string.syntax().text().to_string();
 
-        Some(self.alloc_expr(Expr::Literal(Literal::String(string)), expr))
+        Some(lower.alloc_expr(Expr::Literal(Literal::String(string)), self))
       }
 
       ast::Expr::InfixExpr(infix) => {
-        let lhs = self.walk_expr(&infix.lhs()?)?;
+        let lhs = lower.walk(&infix.lhs()?)?;
         let name = infix.id_token()?.text().to_string();
-        let rhs = self.walk_expr(&infix.rhs()?)?;
+        let rhs = lower.walk(&infix.rhs()?)?;
 
         // FIXME: This shouldn't be in the source map? Need to think through if this is
         // allowed.
-        let lhs_wrapped = self.alloc_expr(Expr::FieldAccess(lhs, name.clone()), expr);
-        Some(self.alloc_expr(Expr::Call(lhs_wrapped, vec![rhs]), expr))
+        let lhs_wrapped = lower.alloc_expr(Expr::FieldAccess(lhs, name.clone()), self);
+        Some(lower.alloc_expr(Expr::Call(lhs_wrapped, vec![rhs]), self))
       }
 
       ast::Expr::FieldExpr(field) => {
-        let lhs = self.walk_expr(&field.expr()?)?;
+        let lhs = lower.walk(&field.expr()?)?;
         // If there is no ID token, we still act like there's a field access, so that
         // completing `foo.|` works when nothing has been typed yet.
         let name = match field.id_token() {
@@ -382,30 +398,30 @@ impl BlockLower<'_> {
           None => String::new(),
         };
 
-        Some(self.alloc_expr(Expr::FieldAccess(lhs, name), expr))
+        Some(lower.alloc_expr(Expr::FieldAccess(lhs, name), self))
       }
 
       ast::Expr::CallExpr(call) => {
-        let lhs = self.walk_expr(&call.expr()?)?;
+        let lhs = lower.walk(&call.expr()?)?;
 
         let mut res = vec![];
         match call.arguments()? {
           ast::Arguments::ParenArguments(a) => {
             for arg in a.exprs() {
-              res.push(self.walk_expr(&arg)?);
+              res.push(lower.walk(&arg)?);
             }
           }
           _ => {}
         }
 
-        Some(self.alloc_expr(Expr::Call(lhs, res), expr))
+        Some(lower.alloc_expr(Expr::Call(lhs, res), self))
       }
 
       ast::Expr::TupleExpr(tup) => {
         let mut items = vec![];
 
         for expr in tup.exprs() {
-          items.push(self.walk_expr(&expr)?);
+          items.push(lower.walk(&expr)?);
         }
 
         if items.len() == 1 {
@@ -413,11 +429,11 @@ impl BlockLower<'_> {
 
           // This makes looking up the tuple easier. Since its the same expression, we
           // don't actually give it a unique expr ID though.
-          self.source_map.expr.insert(AstPtr::new(expr), id);
+          lower.source_map.expr.insert(AstPtr::new(self), id);
 
           Some(id)
         } else {
-          Some(self.alloc_expr(Expr::Tuple(items), expr))
+          Some(lower.alloc_expr(Expr::Tuple(items), self))
         }
       }
 
@@ -426,43 +442,45 @@ impl BlockLower<'_> {
         let mut args = vec![];
         if let Some(a) = new.paren_arguments() {
           for arg in a.exprs() {
-            args.push(self.walk_expr(&arg)?);
+            args.push(lower.walk(&arg)?);
           }
         }
 
-        Some(self.alloc_expr(Expr::New(name, args), expr))
+        Some(lower.alloc_expr(Expr::New(name, args), self))
       }
 
       ast::Expr::IfExpr(if_expr) => {
-        let cond = self.walk_expr(&if_expr.cond()?)?;
-        let then = self.walk_expr(&if_expr.then()?)?;
-        let els = if let Some(e) = if_expr.els() { Some(self.walk_expr(&e)?) } else { None };
+        let cond = lower.walk(&if_expr.cond()?)?;
+        let then = lower.walk(&if_expr.then()?)?;
+        let els = if_expr.els().and_then(|e| lower.walk(&e));
 
-        Some(self.alloc_expr(Expr::If(cond, then, els), expr))
+        Some(lower.alloc_expr(Expr::If(cond, then, els), self))
       }
 
       ast::Expr::MatchExpr(match_expr) => {
-        let lhs = self.walk_expr(&match_expr.expr()?)?;
+        let lhs = lower.walk(&match_expr.expr()?)?;
 
         let mut cases = vec![];
 
         for case in match_expr.case_items() {
-          let pattern = self.walk_pattern(&case.pattern()?)?;
-          let block = self.block.exprs.alloc(Expr::Block(self.id_map.ast_id(&case).into()));
+          let pattern = lower.walk_pattern(&case.pattern()?)?;
+          let block = lower.block.exprs.alloc(Expr::Block(lower.id_map.ast_id(&case).into()));
 
           cases.push((pattern, block));
         }
 
-        Some(self.alloc_expr(Expr::Match(lhs, cases), expr))
+        Some(lower.alloc_expr(Expr::Match(lhs, cases), self))
       }
 
       _ => {
-        warn!("Unhandled expr: {expr:#?}");
+        warn!("Unhandled expr: {self:#?}");
         None
       }
     }
   }
+}
 
+impl BlockLower<'_> {
   fn walk_params(&mut self, params: ast::FunParams) {
     for param in params.fun_params() {
       let name = param.id_token().unwrap().text().to_string();
