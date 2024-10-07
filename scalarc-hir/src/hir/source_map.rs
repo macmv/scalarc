@@ -7,17 +7,17 @@ use scalarc_syntax::{ast, AstPtr, SyntaxNodePtr};
 #[derive(Debug, PartialEq, Eq)]
 pub struct BlockSourceMap {
   // TODO: These could be a bit more efficient.
-  pub(super) expr:      HashMap<AstPtr<ast::Expr>, ExprId>,
-  pub(super) expr_back: HashMap<ExprId, AstPtr<ast::Expr>>,
+  pub(crate) expr:      HashMap<AstPtr<ast::Expr>, ExprId>,
+  pub(crate) expr_back: HashMap<ExprId, AstPtr<ast::Expr>>,
 
-  pub(super) stmt:      HashMap<AstPtr<ast::Item>, StmtId>,
-  pub(super) stmt_back: HashMap<StmtId, AstPtr<ast::Item>>,
+  pub(crate) stmt:      HashMap<AstPtr<ast::Item>, StmtId>,
+  pub(crate) stmt_back: HashMap<StmtId, AstPtr<ast::Item>>,
 
-  pub(super) pattern:      HashMap<AstPtr<ast::Pattern>, PatternId>,
-  pub(super) pattern_back: HashMap<PatternId, AstPtr<ast::Pattern>>,
+  pub(crate) pattern:      HashMap<AstPtr<ast::Pattern>, PatternId>,
+  pub(crate) pattern_back: HashMap<PatternId, AstPtr<ast::Pattern>>,
 
-  pub(super) param:      HashMap<SyntaxNodePtr, ParamId>,
-  pub(super) param_back: HashMap<ParamId, SyntaxNodePtr>,
+  pub(crate) param:      HashMap<SyntaxNodePtr, ParamId>,
+  pub(crate) param_back: HashMap<ParamId, SyntaxNodePtr>,
 }
 
 impl BlockSourceMap {

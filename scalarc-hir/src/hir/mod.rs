@@ -18,14 +18,12 @@ use crate::HirDatabase;
 
 mod def;
 mod expr;
-mod lower;
 mod source_map;
 
 pub use def::{
   def_for_expr, lookup_name_in_block, parent_block, resolve_path_in_block, ResolutionKind,
 };
 pub use expr::*;
-pub use lower::{block_for_node, hir_ast_with_source_for_block};
 pub use source_map::BlockSourceMap;
 
 #[derive(Default, Debug)]
@@ -40,6 +38,13 @@ pub struct AstId<N: AstItem> {
 
   // fn() -> N so that `AstId` is still Send + Sync.
   phantom: PhantomData<fn() -> N>,
+}
+
+impl<N: AstItem> AstId<N> {
+  #[cfg(test)]
+  pub(crate) fn temp_new() -> Self {
+    AstId { raw: Idx::from_raw(RawIdx::from_u32(1)), phantom: std::marker::PhantomData }
+  }
 }
 
 impl<N: AstItem> Copy for AstId<N> {}

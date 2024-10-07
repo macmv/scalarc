@@ -3,11 +3,13 @@
 
 use std::sync::Arc;
 
-use super::{
-  AstIdMap, Binding, BindingKind, Block, BlockId, BlockSourceMap, Expr, ExprId, Import, Literal,
-  Pattern, PatternId, Stmt, StmtId, Type, UnresolvedPath,
+use crate::{
+  hir::{
+    AstIdMap, Binding, BindingKind, Block, BlockId, BlockSourceMap, Expr, ExprId, Import, Literal,
+    Pattern, PatternId, Stmt, StmtId, Type, UnresolvedPath,
+  },
+  HirDatabase, InFile, InFileExt, Name, Path, Signature,
 };
-use crate::{HirDatabase, InFile, InFileExt, Name, Path, Signature};
 use la_arena::Arena;
 use scalarc_syntax::{
   ast::{self, AstNode},
@@ -558,7 +560,6 @@ impl BlockLower<'_> {
 
 #[cfg(test)]
 mod tests {
-  use la_arena::{Idx, RawIdx};
   use scalarc_source::FileId;
   use scalarc_test::{expect, Expect};
 
@@ -571,13 +572,8 @@ mod tests {
 
     let file_id = FileId::temp_new();
 
-    let (ast, _source_map) = db.hir_ast_with_source_for_block(InFile {
-      file_id,
-      id: BlockId::BlockExpr(AstId {
-        raw:     Idx::from_raw(RawIdx::from_u32(1)),
-        phantom: std::marker::PhantomData,
-      }),
-    });
+    let (ast, _source_map) = db
+      .hir_ast_with_source_for_block(InFile { file_id, id: BlockId::BlockExpr(AstId::temp_new()) });
 
     expect.assert_eq(&format!("{ast:#?}").replace("    ", "  "));
   }

@@ -20,6 +20,8 @@ pub mod hir;
 pub mod scope;
 pub mod types;
 
+mod lower;
+
 mod name;
 pub use name::Name;
 
@@ -209,7 +211,7 @@ pub trait HirDatabase: SourceDatabase {
 
   // This query is unstable, because it contains syntax pointers in the returned
   // source map result. Use `hir_ast_for_block` for a stable result.
-  #[salsa::invoke(hir::hir_ast_with_source_for_block)]
+  #[salsa::invoke(lower::hir_ast_with_source_for_block)]
   fn hir_ast_with_source_for_block(
     &self,
     block: InFile<BlockId>,
@@ -228,7 +230,7 @@ pub trait HirDatabase: SourceDatabase {
 
   // Returns the BlockId of any node in a file. This returns an `InFile` for ease
   // of use, the `file_id` will always be the same as the given file_id.
-  #[salsa::invoke(hir::block_for_node)]
+  #[salsa::invoke(lower::block_for_node)]
   fn block_for_node(&self, block: InFile<SyntaxNodePtr>) -> InFile<BlockId>;
 
   // Returns the parent BlockId of the given block.
