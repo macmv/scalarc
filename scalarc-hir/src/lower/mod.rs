@@ -157,15 +157,6 @@ trait Alloc: Lower {
 }
 
 impl BlockLower<'_> {
-  fn alloc_pattern(&mut self, hir: Pattern, ast: &ast::Pattern) -> PatternId {
-    let id = self.block.patterns.alloc(hir);
-
-    self.source_map.pattern.insert(AstPtr::new(ast), id);
-    self.source_map.pattern_back.insert(id, AstPtr::new(ast));
-
-    id
-  }
-
   fn walk_items(&mut self, items: impl Iterator<Item = ast::Item>) {
     for item in items {
       if let Some(id) = self.walk(&item) {
@@ -480,7 +471,7 @@ impl Lower for ast::Expr {
         let mut cases = vec![];
 
         for case in match_expr.case_items() {
-          let pattern = lower.walk_pattern(&case.pattern()?)?;
+          let pattern = lower.walk(&case.pattern()?)?;
           let block = lower.block.exprs.alloc(Expr::Block(lower.id_map.ast_id(&case).into()));
 
           cases.push((pattern, block));
@@ -491,6 +482,53 @@ impl Lower for ast::Expr {
 
       _ => {
         warn!("Unhandled expr: {self:#?}");
+        None
+      }
+    }
+  }
+}
+
+impl Alloc for ast::Pattern {
+  type Hir = Pattern;
+
+  fn alloc(&self, lower: &mut BlockLower, hir: Pattern) -> PatternId {
+    let id = lower.block.patterns.alloc(hir);
+
+    lower.source_map.pattern.insert(AstPtr::new(self), id);
+    lower.source_map.pattern_back.insert(id, AstPtr::new(self));
+
+    id
+  }
+}
+
+impl Lower for ast::Pattern {
+  type Output = PatternId;
+
+  fn lower(&self, lower: &mut BlockLower) -> Option<PatternId> {
+    match self {
+      ast::Pattern::PathPattern(path) => {
+        let path = path.path()?;
+
+        if path.ids().count() == 1 && path.ids().next().unwrap().text() == "_" {
+          Some(lower.alloc(self, Pattern::Wildcard))
+        } else if path.ids().count() == 1 {
+          Some(lower.alloc(
+            self,
+            Pattern::Binding(Binding {
+              implicit: false,
+              kind:     BindingKind::Pattern,
+              ty:       None,
+              name:     path.ids().next().unwrap().text().to_string(),
+              expr:     None,
+            }),
+          ))
+        } else {
+          None
+        }
+      }
+
+      _ => {
+        warn!("Unhandled pattern: {:#?}", self);
         None
       }
     }
@@ -535,37 +573,9 @@ impl BlockLower<'_> {
 
     Some(Type::Named(path))
   }
+}
 
-  fn walk_pattern(&mut self, pat: &scalarc_syntax::ast::Pattern) -> Option<PatternId> {
-    match pat {
-      ast::Pattern::PathPattern(path) => {
-        let path = path.path()?;
-
-        if path.ids().count() == 1 && path.ids().next().unwrap().text() == "_" {
-          Some(self.alloc_pattern(Pattern::Wildcard, pat))
-        } else if path.ids().count() == 1 {
-          Some(self.alloc_pattern(
-            Pattern::Binding(Binding {
-              implicit: false,
-              kind:     BindingKind::Pattern,
-              ty:       None,
-              name:     path.ids().next().unwrap().text().to_string(),
-              expr:     None,
-            }),
-            pat,
-          ))
-        } else {
-          None
-        }
-      }
-
-      _ => {
-        warn!("Unhandled pattern: {:#?}", pat);
-        None
-      }
-    }
-  }
-
+impl BlockLower<'_> {
   fn walk_pattern_params(&mut self, pat: &scalarc_syntax::ast::Pattern) {
     match pat {
       ast::Pattern::PathPattern(path) => {
