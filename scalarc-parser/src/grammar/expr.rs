@@ -284,31 +284,46 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
       }
       // test ok
       // foo.bar
-      T![.] => match postfix_dot_expr(p, lhs) {
-        Ok(it) => it,
-        Err(it) => {
-          lhs = it;
-          break;
+      T![.] => {
+        p.eat(T![.]);
+
+        // test ok
+        // foo.
+        //   bar
+        if p.at(T![nl]) && p.peek() == T![ident] {
+          p.eat(T![nl]);
         }
-      },
+
+        match postfix_dot_expr(p, lhs) {
+          Ok(it) => it,
+          Err(it) => {
+            lhs = it;
+            break;
+          }
+        }
+      }
 
       // test ok
       // foo
       //   .bar
       //   .baz
-      T![nl] => match p.peek() {
-        T![.] => {
-          p.eat(T![nl]);
-          match postfix_dot_expr(p, lhs) {
-            Ok(it) => it,
-            Err(it) => {
-              lhs = it;
-              break;
+      T![nl] if p.peek() == T![.] => {
+        p.eat(T![nl]);
+
+        match p.current() {
+          T![.] => {
+            p.eat(T![.]);
+            match postfix_dot_expr(p, lhs) {
+              Ok(it) => it,
+              Err(it) => {
+                lhs = it;
+                break;
+              }
             }
           }
+          _ => break,
         }
-        _ => break,
-      },
+      }
 
       T![match] => match_expr(p, lhs),
 
@@ -476,16 +491,14 @@ fn postfix_dot_expr(
   p: &mut Parser,
   lhs: CompletedMarker,
 ) -> Result<CompletedMarker, CompletedMarker> {
-  match p.peek() {
+  match p.current() {
     T![ident] => {
       let m = lhs.precede(p);
-      p.eat(T![.]);
       p.eat(T![ident]);
       Ok(m.complete(p, FIELD_EXPR))
     }
     _ => {
       let m = lhs.precede(p);
-      p.eat(T![.]);
       p.error(format!("expected identifier, got {:?}", p.current()));
       Err(m.complete(p, FIELD_EXPR))
     }
