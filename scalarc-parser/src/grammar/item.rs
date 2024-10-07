@@ -743,12 +743,13 @@ fn val_def(p: &mut Parser, m: Marker) {
 
 pub fn case_item(p: &mut Parser, m: Marker) {
   p.expect(T![case]);
-  super::pattern::pattern_case(p);
 
   // test ok
   // case _
   //   if true =>
-  p.eat_newlines();
+  p.brace_stack.push(crate::Brace::Pattern);
+
+  super::pattern::pattern_case(p);
 
   // test ok
   // case _ if true =>
@@ -758,6 +759,8 @@ pub fn case_item(p: &mut Parser, m: Marker) {
     super::expr::expr_no_fat_arrow(p);
     m.complete(p, CASE_GUARD);
   }
+
+  p.brace_stack.pop();
 
   p.expect(T![=>]);
 

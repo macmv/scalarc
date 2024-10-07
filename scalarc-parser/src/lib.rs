@@ -58,6 +58,8 @@ enum Brace {
   Bracket,
   /// `{` and `}` (poorly named, I know).
   Brace,
+  /// When in a pattern for a case item (manually added by the parser).
+  Pattern,
 }
 
 fn token_to_kind(token: Token, s: &str) -> SyntaxKind {
@@ -261,7 +263,7 @@ impl Parser<'_> {
 
   pub fn newlines_enabled(&self) -> bool {
     match self.brace_stack.last() {
-      Some(Brace::Paren | Brace::Bracket) => false,
+      Some(Brace::Paren | Brace::Bracket | Brace::Pattern) => false,
       Some(Brace::Brace) | None => true,
     }
   }
