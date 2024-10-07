@@ -640,16 +640,17 @@ fn fun_param(p: &mut Parser, is_class: bool) {
   let m = p.start();
 
   // test ok
-  // def foo(@unused a: Int) = 3
-  // class Foo(@volatile var x: Int) {}
-  while p.at(T![@]) {
-    annotation(p);
-  }
-
-  // test ok
   // def foo(implicit a: Int, implicit b: Int) = 3
   if p.at(T![implicit]) {
     p.eat(T![implicit]);
+  }
+
+  // test ok
+  // def foo(@unused a: Int) = 3
+  // class Foo(@volatile var x: Int) {}
+  // def foo(implicit @unused a: Int) = 3
+  while p.at(T![@]) {
+    annotation(p);
   }
 
   // test ok
