@@ -355,16 +355,9 @@ impl<'a> Infer<'a> {
       _ => return None,
     };
 
-    for target in self.db.workspace().all_dependencies(self.db.file_target(self.block_id.file_id)?)
-    {
-      let defs = self.db.definitions_for_target(target);
+    let def = self.db.definition_for_key(self.db.file_target(self.block_id.file_id)?, key)?;
 
-      if let Some(def) = defs.items.get(&key) {
-        return self.select_name_from_def(def, name);
-      }
-    }
-
-    None
+    self.select_name_from_def(&def, name)
   }
 
   fn type_pattern(&mut self, lhs: &Type, pat: PatternId) {
