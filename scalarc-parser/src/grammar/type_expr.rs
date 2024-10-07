@@ -193,6 +193,11 @@ fn type_expr_0(p: &mut Parser, is_nested_params: bool) -> Option<CompletedMarker
         let m = lhs.precede(p);
         p.eat(T!['{']);
         loop {
+          // test ok
+          // def foo: Foo {
+          //   type T = Int
+          // } = 3
+          p.eat_newlines();
           match p.current() {
             // TODO: Other defs are allowed here.
             T![type] => {
