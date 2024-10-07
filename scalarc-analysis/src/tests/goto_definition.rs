@@ -82,8 +82,8 @@ fn goto_constructor() {
       object Foo {
         def apply() = new Foo()
       }
-      @class Foo()@
-
+      @class Foo()
+      @
       class Foo {
         import Foo
         new Foo()
@@ -106,8 +106,8 @@ fn goto_case_constructor() {
     "#,
     expect![@r#"
       object Foo {}
-      @case class Foo()@
-
+      @case class Foo()
+      @
       class Foo {
         import Foo
         Foo()
