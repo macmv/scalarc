@@ -243,6 +243,12 @@ fn type_expr_0(p: &mut Parser, is_nested_params: bool) -> Option<CompletedMarker
 
 // A type parameter on a definition, like `A <: B: C`.
 pub fn type_param(p: &mut Parser) -> Option<CompletedMarker> {
+  // test ok
+  // def foo[@foo +A] = 3
+  while p.at(T![@]) {
+    super::item::annotation(p);
+  }
+
   let mut c = if p.at(T![ident]) && p.slice() == "+" {
     // test ok
     // def foo[+A] = 3
