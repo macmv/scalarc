@@ -935,11 +935,14 @@ fn if_expr(p: &mut Parser) {
   // test ok
   // if (true)
   //   println("hi")
-  if p.at(T![nl]) {
-    p.eat(T![nl]);
-  }
+  p.eat_newlines();
 
   expr(p);
+
+  // Eat enough newlines so we can check for an `else`.
+  while p.at(T![nl]) && p.peek() == T![nl] {
+    p.eat(T![nl]);
+  }
 
   // test ok
   // if (true) 3
