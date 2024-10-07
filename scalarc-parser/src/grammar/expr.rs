@@ -495,11 +495,11 @@ fn postfix_dot_expr(
 fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
   match p.current() {
     // test ok
-    // 2 == 2L
+    // 2 == 2L == 3l
     INT_LIT_KW => {
       p.eat(INT_LIT_KW);
       // TODO: No whitespace here.
-      if p.at(T![ident]) && p.slice() == "L" {
+      if p.at(T![ident]) && (p.slice() == "l" || p.slice() == "L") {
         p.eat(T![ident]);
       }
 
@@ -507,11 +507,11 @@ fn atom_expr(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
     }
 
     // test ok
-    // 2 == 2.0D
+    // 2 == 2.0D == 3d
     FLOAT_LIT_KW => {
       p.bump();
       // TODO: No whitespace here.
-      if p.at(T![ident]) && p.slice() == "D" {
+      if p.at(T![ident]) && (p.slice() == "d" || p.slice() == "D") {
         p.eat(T![ident]);
       }
 
