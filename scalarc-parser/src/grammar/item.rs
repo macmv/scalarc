@@ -594,19 +594,6 @@ fn fun_params(p: &mut Parser, is_class: bool) {
   p.eat_newlines();
 
   // test ok
-  // def foo(implicit a: Int) = 3
-  if p.at(T![implicit]) {
-    p.eat(T![implicit]);
-  }
-
-  // test ok
-  // def foo(
-  //   implicit
-  //   a: Int
-  // ) = 3
-  p.eat_newlines();
-
-  // test ok
   // def foo() = 3
   if p.at(T![')']) {
     p.eat(T![')']);
@@ -659,6 +646,19 @@ fn fun_param(p: &mut Parser, is_class: bool) {
   while p.at(T![@]) {
     annotation(p);
   }
+
+  // test ok
+  // def foo(implicit a: Int, implicit b: Int) = 3
+  if p.at(T![implicit]) {
+    p.eat(T![implicit]);
+  }
+
+  // test ok
+  // def foo(
+  //   implicit
+  //   a: Int
+  // ) = 3
+  p.eat_newlines();
 
   // test ok
   // class Foo(val a: Int, val b: Int) {}
