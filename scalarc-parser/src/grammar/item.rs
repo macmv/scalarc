@@ -740,8 +740,8 @@ pub fn val_def(p: &mut Parser, m: Marker) {
   };
   p.bump();
 
-  // TODO: Need gramamr for this.
-  if p.at(T![ident]) && p.peek() == T![,] {
+  // TODO: Need grammar for this.
+  if p.at(T![ident]) && (p.peek() == T![,] || p.peek() == T![:]) {
     // test ok
     // val foo, bar = 3
     p.eat(T![ident]);
@@ -760,8 +760,9 @@ pub fn val_def(p: &mut Parser, m: Marker) {
     // test ok
     // val foo, bar: Int = 3
     // val (foo, bar): Int = 3
+    // val foo: Int { type bar = Int } = 3
     p.eat(T![:]);
-    super::type_expr::simple_type_expr_is_case(p, false);
+    super::type_expr::type_expr(p);
   }
 
   if p.at(T![=]) {

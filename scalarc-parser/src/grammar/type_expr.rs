@@ -178,12 +178,13 @@ fn simple_type_expr_0(
 }
 
 // A type parameter on a definition, like `A <: B`.
-pub fn type_expr(p: &mut Parser) -> Option<CompletedMarker> { type_expr_0(p, false) }
+pub fn type_expr(p: &mut Parser) -> Option<CompletedMarker> { type_expr_0(p, false, false) }
+pub fn type_expr_is_case(p: &mut Parser) -> Option<CompletedMarker> { type_expr_0(p, true, false) }
 
-fn type_expr_0(p: &mut Parser, is_nested_params: bool) -> Option<CompletedMarker> {
+fn type_expr_0(p: &mut Parser, is_case: bool, is_nested_params: bool) -> Option<CompletedMarker> {
   // test ok
   // type Foo = Bar with Seq[Int]
-  let mut lhs = simple_type_expr_0(p, false, true, is_nested_params)?;
+  let mut lhs = simple_type_expr_0(p, is_case, true, is_nested_params)?;
 
   loop {
     match p.current() {
@@ -239,7 +240,7 @@ fn type_expr_0(p: &mut Parser, is_nested_params: bool) -> Option<CompletedMarker
         lhs = m.complete(p, REFINED_TYPE)
       }
 
-      T![ident] => {
+      T![ident] if !is_case => {
         // test ok
         // def foo[T](implicit ev: V#T <:< T): T = 3
         let m = lhs.precede(p);
@@ -266,19 +267,19 @@ pub fn type_param(p: &mut Parser) -> Option<CompletedMarker> {
     // def foo[+A] = 3
     let m = p.start();
     p.eat(T![ident]);
-    type_expr_0(p, true);
+    type_expr_0(p, false, true);
     m.complete(p, COVARIANT_PARAM)
   } else if p.at(T![ident]) && p.slice() == "-" {
     // test ok
     // def foo[-A] = 3
     let m = p.start();
     p.eat(T![ident]);
-    type_expr_0(p, true);
+    type_expr_0(p, false, true);
     m.complete(p, CONTRAVARIANT_PARAM)
   } else {
     // test ok
     // def foo[A] = 3
-    type_expr_0(p, true)?
+    type_expr_0(p, false, true)?
   };
 
   while p.at(T![:]) {
