@@ -343,6 +343,17 @@ fn import_list(p: &mut Parser, m: Marker) {
       //   blah
       // }
       p.eat_newlines();
+
+      // test ok
+      // import foo.bar.{
+      //   baz,
+      //   qux,
+      // }
+      if p.at(T!['}']) {
+        p.eat(T!['}']);
+        m.complete(p, IMPORT_SELECTORS);
+        return;
+      }
     } else {
       p.expect(T!['}']);
       m.complete(p, IMPORT_SELECTORS);
