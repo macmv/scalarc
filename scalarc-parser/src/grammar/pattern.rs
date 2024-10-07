@@ -50,8 +50,8 @@ fn atom_pattern(p: &mut Parser, is_case: bool) -> Option<CompletedMarker> {
 
   match p.current() {
     // test ok
-    // case 2 | 5 | true | false =>
-    INT_LIT_KW | T![true] | T![false] => {
+    // case 2 | 5 | 3.0 | true | false =>
+    INT_LIT_KW | FLOAT_LIT_KW | T![true] | T![false] => {
       p.bump();
       Some(m.complete(p, LIT_PATTERN))
     }
