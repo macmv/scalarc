@@ -69,9 +69,18 @@ impl Highlight {
 
     let ast = db.parse(file);
 
-    for item in ast.tree().items() {
-      hl.visit(item);
+    let syntax = ast.syntax_node();
+    for node in syntax.descendants() {
+      if let Some(node) = ast::Expr::cast(node.clone()) {
+        hl.visit(node);
+      } else if let Some(node) = ast::Pattern::cast(node.clone()) {
+        hl.visit(node);
+      } else if let Some(node) = ast::Item::cast(node) {
+        hl.visit(node);
+      }
     }
+
+    hl.hl.tokens.sort_by_key(|t| t.range.start());
 
     hl.hl
   }
@@ -136,9 +145,6 @@ where
 impl Highlightable for ast::Item {
   fn highlight(&self, h: &mut Highlighter) {
     match self {
-      ast::Item::ExprItem(e) => {
-        h.visit(e.expr());
-      }
       ast::Item::ClassDef(o) => {
         for modifier in o.modifiers() {
           h.highlight_opt(modifier.final_token(), HighlightKind::Keyword);
@@ -147,15 +153,11 @@ impl Highlightable for ast::Item {
         h.highlight_opt(o.case_token(), HighlightKind::Keyword);
         h.highlight_opt(o.class_token(), HighlightKind::Keyword);
         h.highlight_opt(o.id_token(), HighlightKind::Class);
-
-        h.visit(o.body());
       }
       ast::Item::ObjectDef(o) => {
         h.highlight_opt(o.case_token(), HighlightKind::Keyword);
         h.highlight_opt(o.object_token(), HighlightKind::Keyword);
         h.highlight_opt(o.id_token(), HighlightKind::Object);
-
-        h.visit(o.body());
       }
       ast::Item::TraitDef(t) => {
         for modifier in t.modifiers() {
@@ -163,8 +165,6 @@ impl Highlightable for ast::Item {
         }
         h.highlight_opt(t.trait_token(), HighlightKind::Keyword);
         h.highlight_opt(t.id_token(), HighlightKind::Trait);
-
-        h.visit(t.body());
       }
 
       ast::Item::ValDef(d) => {
@@ -175,8 +175,6 @@ impl Highlightable for ast::Item {
         h.highlight_opt(d.val_token(), HighlightKind::Keyword);
         h.highlight_opt(d.id_token(), HighlightKind::Variable);
         h.highlight_opt(d.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
-
-        h.visit(d.expr());
       }
 
       ast::Item::FunDef(d) => {
@@ -194,8 +192,6 @@ impl Highlightable for ast::Item {
 
           h.highlight_opt(sig.ty().map(|v| v.syntax().text_range()), HighlightKind::Type);
         }
-
-        h.visit(d.expr());
       }
 
       ast::Item::Import(i) => {
@@ -401,14 +397,6 @@ impl Highlightable for ast::Pattern {
       }
 
       _ => {}
-    }
-  }
-}
-
-impl Highlightable for ast::ItemBody {
-  fn highlight(&self, h: &mut Highlighter) {
-    for item in self.items() {
-      h.visit(item);
     }
   }
 }
