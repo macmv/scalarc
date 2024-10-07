@@ -255,47 +255,77 @@ fn package_item(p: &mut Parser, m: Marker) {
 fn import_item(p: &mut Parser, m: Marker) {
   p.eat(T![import]);
 
-  let mut path = p.start();
+  let mut found_list = false;
+  let mut path = None;
 
   loop {
     match p.current() {
       T![ident] => {
-        p.bump();
+        if path.is_none() {
+          path = Some(p.start());
+        }
+        p.eat(T![ident]);
       }
 
       T![.] => {
-        p.bump();
+        // test err
+        // import .baz
+        if path.is_none() {
+          p.error("expected ident");
+          p.recover_until(T![nl]);
+          m.abandon(p);
+          return;
+        }
+
+        p.eat(T![.]);
         continue;
       }
 
       T!['{'] => {
-        let path = path.complete(p, PATH);
-        let selector = path.precede(p);
+        let Some(path) = path.take() else {
+          p.error("expected ident");
+          p.recover_until(T![nl]);
+          m.abandon(p);
+          return;
+        };
+
+        let selector = path.complete(p, PATH).precede(p);
         import_list(p, selector);
-        m.complete(p, IMPORT);
-        return;
+        found_list = true;
       }
 
       T![nl] | EOF => {
-        path.complete(p, PATH);
+        if path.is_none() && !found_list {
+          p.error("expected ident");
+          p.recover_until(T![nl]);
+          m.abandon(p);
+          return;
+        }
+
+        if let Some(path) = path {
+          path.complete(p, PATH);
+        }
         m.complete(p, IMPORT);
         return;
       }
 
       // test ok
       // import foo.bar, baz.qux
+      // import foo.{ bar, baz }, qux
       T![,] => {
-        path.complete(p, PATH);
+        if let Some(path) = path.take() {
+          path.complete(p, PATH);
+        }
 
         p.eat(T![,]);
-
-        path = p.start();
       }
 
       // test err
       // import 3
       _ => {
-        path.abandon(p);
+        if let Some(path) = path {
+          path.abandon(p);
+        }
         p.error(format!("expected ident, got {:?}", p.current()));
         p.recover_until(T![nl]);
         m.abandon(p);
