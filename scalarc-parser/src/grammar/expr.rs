@@ -852,11 +852,10 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
 
           // test ok
           // val x = s"${
-          //   3 + 4
+          //   val foo = 3
+          //   foo + 4
           // }"
-          p.eat_newlines();
-          expr(p);
-          p.eat_newlines();
+          super::item::lambda_items(p);
 
           // HACK: We set this back to `in_string`, so that `p.expect()` can parse the
           // next token as being inside a string. Then, we also pop the `}`

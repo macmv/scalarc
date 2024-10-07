@@ -1654,16 +1654,17 @@ fn interpolated_string() {
             INTERPOLATION
               IDENT '$'
               OPEN_CURLY '{'
-              INFIX_EXPR
-                DOUBLE_QUOTED_STRING
-                  DOUBLE_QUOTE '"'
+              EXPR_ITEM
+                INFIX_EXPR
+                  DOUBLE_QUOTED_STRING
+                    DOUBLE_QUOTE '"'
+                    WHITESPACE ' '
+                    DOUBLE_QUOTE '"'
                   WHITESPACE ' '
-                  DOUBLE_QUOTE '"'
-                WHITESPACE ' '
-                IDENT '*'
-                WHITESPACE ' '
-                LIT_EXPR
-                  INT_LIT_KW '3'
+                  IDENT '*'
+                  WHITESPACE ' '
+                  LIT_EXPR
+                    INT_LIT_KW '3'
               CLOSE_CURLY '}'
             WHITESPACE ' '
             IDENT '$'
@@ -1758,8 +1759,9 @@ fn tripple_quoted_strings() {
             INTERPOLATION
               IDENT '$'
               OPEN_CURLY '{'
-              IDENT_EXPR
-                IDENT 'foo'
+              EXPR_ITEM
+                IDENT_EXPR
+                  IDENT 'foo'
               CLOSE_CURLY '}'
             IDENT '\'
             DOUBLE_QUOTE '"'
