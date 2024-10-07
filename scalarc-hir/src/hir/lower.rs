@@ -346,9 +346,19 @@ impl BlockLower<'_> {
         Some(self.alloc_expr(Expr::Name(UnresolvedPath { segments: vec![ident] }), expr))
       }
 
-      ast::Expr::LitExpr(lit) => lit
-        .int_lit_token()
-        .map(|int| self.alloc_expr(Expr::Literal(Literal::Int(int.text().parse().unwrap())), expr)),
+      ast::Expr::LitExpr(lit) => {
+        if let Some(int) = lit.int_lit_token() {
+          Some(self.alloc_expr(Expr::Literal(Literal::Int(int.text().parse().unwrap())), expr))
+        } else {
+          None
+        }
+      }
+
+      ast::Expr::DoubleQuotedString(string) => {
+        let string = string.syntax().text().to_string();
+
+        Some(self.alloc_expr(Expr::Literal(Literal::String(string)), expr))
+      }
 
       ast::Expr::InfixExpr(infix) => {
         let lhs = self.walk_expr(&infix.lhs()?)?;

@@ -302,8 +302,11 @@ impl Highlightable for ast::Expr {
           );
         }
       }
-      hir::Expr::Literal(_) => {
+      hir::Expr::Literal(hir::Literal::Int(_) | hir::Literal::Long(_) | hir::Literal::Float(_)) => {
         h.highlight(self.syntax().text_range(), HighlightKind::Number);
+      }
+      hir::Expr::Literal(hir::Literal::Char(_) | hir::Literal::String(_)) => {
+        h.highlight(self.syntax().text_range(), HighlightKind::String);
       }
 
       /*
