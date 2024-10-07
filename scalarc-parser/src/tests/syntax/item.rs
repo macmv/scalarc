@@ -236,9 +236,7 @@ fn val_def() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          PATH_PATTERN
-            PATH
-              IDENT 'foo'
+          IDENT 'foo'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -277,9 +275,7 @@ fn var_def() {
         VAR_DEF
           VAR_KW 'var'
           WHITESPACE ' '
-          PATH_PATTERN
-            PATH
-              IDENT 'foo'
+          IDENT 'foo'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '

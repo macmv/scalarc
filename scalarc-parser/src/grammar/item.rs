@@ -745,7 +745,7 @@ pub fn val_def(p: &mut Parser, m: Marker) {
   p.bump();
 
   // TODO: Need grammar for this.
-  if p.at(T![ident]) && (p.peek() == T![,] || p.peek() == T![:]) {
+  if p.at(T![ident]) && (p.peek() == T![,] || p.peek() == T![:] || p.peek() == T![=]) {
     // test ok
     // val foo, bar = 3
     p.eat(T![ident]);

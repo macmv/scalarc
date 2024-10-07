@@ -377,9 +377,7 @@ fn lambda_expr() {
                 VAL_DEF
                   VAL_KW 'val'
                   WHITESPACE ' '
-                  PATH_PATTERN
-                    PATH
-                      IDENT 'foo'
+                  IDENT 'foo'
                   WHITESPACE ' '
                   EQ '='
                   WHITESPACE ' '
@@ -424,9 +422,7 @@ fn lambda_expr() {
               VAL_DEF
                 VAL_KW 'val'
                 WHITESPACE ' '
-                PATH_PATTERN
-                  PATH
-                    IDENT 'foo'
+                IDENT 'foo'
                 WHITESPACE ' '
                 EQ '='
                 WHITESPACE ' '
@@ -503,9 +499,7 @@ fn postfix_terminators() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          PATH_PATTERN
-            PATH
-              IDENT 'foo'
+          IDENT 'foo'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -523,9 +517,7 @@ fn postfix_terminators() {
         VAL_DEF
           VAL_KW 'val'
           WHITESPACE ' '
-          PATH_PATTERN
-            PATH
-              IDENT 'bar'
+          IDENT 'bar'
           WHITESPACE ' '
           EQ '='
           WHITESPACE ' '
@@ -1712,9 +1704,7 @@ fn while_in_lambda_works() {
                   VAL_DEF
                     VAL_KW 'val'
                     WHITESPACE ' '
-                    PATH_PATTERN
-                      PATH
-                        IDENT 'x'
+                    IDENT 'x'
                     WHITESPACE ' '
                     EQ '='
                     WHITESPACE ' '
