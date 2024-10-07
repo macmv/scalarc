@@ -1155,7 +1155,8 @@ fn try_expr(p: &mut Parser) {
   // try file.read() catch {
   //   file.close()
   // }
-  if p.at(T![catch]) {
+  if p.at(T![catch]) || (p.at(T![nl]) && p.peek() == T![finally]) {
+    p.eat_newlines();
     p.eat(T![catch]);
 
     expr(p);
@@ -1165,7 +1166,10 @@ fn try_expr(p: &mut Parser) {
   // try file.read() finally {
   //   file.close()
   // }
-  if p.at(T![finally]) {
+  // try file.read()
+  // finally file.close()
+  if p.at(T![finally]) || (p.at(T![nl]) && p.peek() == T![finally]) {
+    p.eat_newlines();
     p.eat(T![finally]);
 
     expr(p);
