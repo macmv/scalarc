@@ -147,9 +147,9 @@ impl fmt::Display for Signature {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Inference {
-  exprs:    HashMap<ExprId, Type>,
-  stmts:    HashMap<StmtId, Type>,
-  patterns: HashMap<PatternId, Type>,
+  pub exprs:    HashMap<ExprId, Type>,
+  pub stmts:    HashMap<StmtId, Type>,
+  pub patterns: HashMap<PatternId, Type>,
 }
 
 struct Infer<'a> {

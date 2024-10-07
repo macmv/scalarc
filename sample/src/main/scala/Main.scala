@@ -10,10 +10,9 @@ class Bar(a: String) {
 
   def foo(c: Int) = {
     a + b + c
-
-    for (i <- 0 to 10) {
-      a + b + c + i
-      println(i)
-    }
   }
+}
+
+object Bar {
+  new Bar("foo").foo(3)
 }

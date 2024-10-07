@@ -1,5 +1,7 @@
 use scalarc_hir::{
-  hir, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinitionKind, InFileExt, Path,
+  hir::{self, AstId, BindingKind, BlockId},
+  DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinitionKind, InFileExt,
+  Path, Type,
 };
 use scalarc_source::{FileId, TargetId};
 use scalarc_syntax::{
@@ -340,6 +342,19 @@ impl Highlightable for ast::Expr {
         }
       }
 
+      hir::Expr::FieldAccess(lhs, ref name) => {
+        let ast::Expr::FieldExpr(f) = self else { return };
+
+        let Some(lhs_ty) = h.db.type_of_expr(block, lhs) else { return };
+        let Some(target) = h.db.file_target(block.file_id) else { return };
+        let Some(def) = def_for_ty(h.db, target, lhs_ty) else { return };
+
+        let field_ty = select_name_from_def(h.db, def, name);
+        if field_ty.is_some() {
+          h.highlight(f.id_token().unwrap().text_range(), HighlightKind::Function);
+        }
+      }
+
       /*
       (ast::Expr::DoubleQuotedString(d), _) => {
         h.highlight(d.syntax().text_range(), HighlightKind::String);
@@ -431,6 +446,76 @@ impl Highlightable for ast::Pattern {
       }
 
       _ => {}
+    }
+  }
+}
+
+// FIXME: Dedupe from the HIR typer.
+fn def_for_ty(db: &dyn HirDatabase, target: TargetId, ty: Type) -> Option<GlobalDefinition> {
+  // TODO: Remove all this copy-pasta between here and HIR.
+  let key = match ty {
+    Type::Object(ref path) => DefinitionKey::Object(path.clone()),
+    Type::Instance(ref path) => DefinitionKey::Instance(path.clone()),
+    _ => return None,
+  };
+
+  warn!("key is {key:?}");
+
+  for target in db.workspace().all_dependencies(target) {
+    let defs = db.definitions_for_target(target);
+
+    if let Some(def) = defs.items.get(&key) {
+      return Some(def.clone());
+    }
+  }
+
+  None
+}
+
+fn select_name_from_def(db: &dyn HirDatabase, def: GlobalDefinition, name: &str) -> Option<Type> {
+  let block = match def.kind {
+    GlobalDefinitionKind::Class(Some(_), _) => {
+      BlockId::Class(AstId::new(def.ast_id)).in_file(def.file_id)
+    }
+    GlobalDefinitionKind::Trait(Some(_)) => {
+      BlockId::Trait(AstId::new(def.ast_id)).in_file(def.file_id)
+    }
+    GlobalDefinitionKind::Object(Some(_)) => {
+      BlockId::Object(AstId::new(def.ast_id)).in_file(def.file_id)
+    }
+    _ => return None,
+  };
+
+  let hir_ast = db.hir_ast_for_block(block);
+  let inferred = db.infer(block, None);
+
+  // Find all the `def` and `val`s in the block.
+  let decls: Vec<_> = hir_ast
+    .items
+    .iter()
+    .filter_map(|&it| match hir_ast.stmts[it] {
+      hir::Stmt::Binding(ref b) => match b.kind {
+        BindingKind::Def(_) | BindingKind::Val => {
+          if b.name == *name {
+            Some(it)
+          } else {
+            None
+          }
+        }
+        _ => None,
+      },
+      _ => None,
+    })
+    .collect();
+
+  match decls[..] {
+    [] => None,
+    [stmt_id] => inferred.stmts.get(&stmt_id).cloned(),
+    _ => {
+      // TODO: Resolve overloads.
+      let stmt_id = decls.first().unwrap();
+
+      inferred.stmts.get(&stmt_id).cloned()
     }
   }
 }
