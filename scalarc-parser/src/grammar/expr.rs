@@ -834,7 +834,14 @@ pub fn parse_string(p: &mut Parser, interpolations: bool) {
         } else if p.at(T!['{']) {
           p.set_in_string(false);
           p.eat(T!['{']);
+
+          // test ok
+          // val x = s"${
+          //   3 + 4
+          // }"
+          p.eat_newlines();
           expr(p);
+          p.eat_newlines();
 
           // HACK: We set this back to `in_string`, so that `p.expect()` can parse the
           // next token as being inside a string. Then, we also pop the `}`
