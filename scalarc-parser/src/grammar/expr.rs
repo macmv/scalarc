@@ -91,7 +91,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
 
         // `val` and `var` declare the next statement, but in the case of a lambda, `val` and `var`
         // are just part of the block.
-        T![val] | T![var] | T![def] if op_tok != T![=>] => true,
+        T![val] | T![var] | T![def] | T![override] if op_tok != T![=>] => true,
 
         _ => false,
       };
