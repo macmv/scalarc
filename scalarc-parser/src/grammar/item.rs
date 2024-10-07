@@ -599,6 +599,10 @@ fn fun_sig(p: &mut Parser) {
   if p.at(T![:]) || (p.at(T![nl]) && p.peek() == T![:]) {
     p.eat_newlines();
     p.eat(T![:]);
+    // test ok
+    // def foo:
+    //   Int = 3
+    p.eat_newlines();
     super::type_expr::type_expr(p);
   }
 
