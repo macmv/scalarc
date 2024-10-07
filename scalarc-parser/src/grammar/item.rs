@@ -267,7 +267,7 @@ fn package_item(p: &mut Parser, m: Marker) {
 fn import_item(p: &mut Parser, m: Marker) {
   p.eat(T![import]);
 
-  let path = p.start();
+  let mut path = p.start();
 
   loop {
     match p.current() {
@@ -292,6 +292,16 @@ fn import_item(p: &mut Parser, m: Marker) {
         path.complete(p, PATH);
         m.complete(p, IMPORT);
         return;
+      }
+
+      // test ok
+      // import foo.bar, baz.qux
+      T![,] => {
+        path.complete(p, PATH);
+
+        p.eat(T![,]);
+
+        path = p.start();
       }
 
       // test err
