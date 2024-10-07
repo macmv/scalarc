@@ -66,6 +66,17 @@ fn literals() {
         SINGLE_QUOTE '''
     "#],
   );
+
+  check_expr(
+    "1e9.toLong",
+    expect![@r#"
+      FIELD_EXPR
+        LIT_EXPR
+          FLOAT_LIT_KW '1e9'
+        DOT '.'
+        IDENT 'toLong'
+    "#],
+  );
 }
 
 #[test]

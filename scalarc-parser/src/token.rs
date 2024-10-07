@@ -377,7 +377,8 @@ impl<'a> Lexer<'a> {
                 }
               }
 
-              Some('e' | 'E') if is_float => {
+              Some('e' | 'E') => {
+                is_float = true;
                 if is_exponent {
                   break;
                 } else {
@@ -643,6 +644,11 @@ mod tests {
     let mut lexer = Lexer::new(".5e+5");
     assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
     assert_eq!(lexer.slice(), ".5e+5");
+    assert_eq!(lexer.next(), Err(LexError::EOF));
+
+    let mut lexer = Lexer::new("1e9");
+    assert_eq!(lexer.next(), Ok(Token::Literal(Literal::Float)));
+    assert_eq!(lexer.slice(), "1e9");
     assert_eq!(lexer.next(), Err(LexError::EOF));
   }
 
