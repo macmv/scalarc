@@ -1,11 +1,11 @@
 use scalarc_hir::{
-  AnyDefinition, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinitionKind, Path,
+  hir, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinitionKind, InFileExt, Path,
 };
 use scalarc_source::{FileId, TargetId};
 use scalarc_syntax::{
   ast::{self, AstNode},
   node::SyntaxToken,
-  TextRange,
+  AstPtr, SyntaxNodePtr, TextRange,
 };
 
 #[derive(Debug, Clone)]
@@ -281,42 +281,40 @@ impl Highlightable for ast::ImportExpr {
 
 impl Highlightable for ast::Expr {
   fn highlight(&self, h: &mut Highlighter) {
-    match self {
-      ast::Expr::IdentExpr(id) => {
-        if let Some(id) = id.id_token() {
-          // FIXME: This isn't particularly efficient. However, the scopes for the whole
-          // file will get cached, so its not all that bad.
-          let def = h.db.def_at_index(h.file, id.text_range().start());
+    let block = h.db.block_for_node(SyntaxNodePtr::new(self.syntax()).in_file(h.file));
+    let (hir, source_map) = h.db.hir_ast_with_source_for_block(block);
 
-          if let Some(def) = def {
-            h.highlight(
-              id.text_range(),
-              match def {
-                AnyDefinition::Global(def) => match def.kind {
-                  GlobalDefinitionKind::Class(_, _) => HighlightKind::Class,
-                  GlobalDefinitionKind::Trait(_) => HighlightKind::Trait,
-                  GlobalDefinitionKind::Object(_) => HighlightKind::Object,
-                },
-                AnyDefinition::Hir(def) => match def.kind {
-                  HirDefinitionKind::Val(_) => HighlightKind::Variable,
-                  HirDefinitionKind::Var(_) => HighlightKind::Variable,
-                  HirDefinitionKind::Def(_) => HighlightKind::Function,
-                  HirDefinitionKind::Parameter(_) => HighlightKind::Parameter,
-                  HirDefinitionKind::Pattern => HighlightKind::Variable,
-                  HirDefinitionKind::Import => HighlightKind::Class,
-                },
-              },
-            );
-          }
+    let Some(id) = source_map.expr(AstPtr::new(self)) else { return };
+
+    match hir.exprs[id] {
+      hir::Expr::Name(_) => {
+        let ast::Expr::IdentExpr(e) = self else { return };
+
+        let def = h.db.def_for_expr(block, id);
+
+        if let Some(def) = def {
+          h.highlight(
+            e.id_token().unwrap().text_range(),
+            match def.kind {
+              HirDefinitionKind::Val(_) => HighlightKind::Variable,
+              HirDefinitionKind::Var(_) => HighlightKind::Variable,
+              HirDefinitionKind::Def(_) => HighlightKind::Function,
+              HirDefinitionKind::Parameter(_) => HighlightKind::Parameter,
+              HirDefinitionKind::Pattern => HighlightKind::Variable,
+              HirDefinitionKind::Import => HighlightKind::Class,
+            },
+          );
         }
       }
-      ast::Expr::LitExpr(lit) => {
-        h.highlight(lit.syntax().text_range(), HighlightKind::Number);
+      hir::Expr::Literal(_) => {
+        h.highlight(self.syntax().text_range(), HighlightKind::Number);
       }
-      ast::Expr::DoubleQuotedString(d) => {
+
+      /*
+      (ast::Expr::DoubleQuotedString(d), _) => {
         h.highlight(d.syntax().text_range(), HighlightKind::String);
       }
-      ast::Expr::BlockExpr(b) => {
+      (ast::Expr::BlockExpr(b), _) => {
         for item in b.items() {
           h.visit(item);
         }
@@ -382,6 +380,7 @@ impl Highlightable for ast::Expr {
           }
         }
       }
+      */
       _ => {}
     }
   }
