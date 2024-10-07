@@ -77,10 +77,10 @@ fn items(p: &mut Parser, terminator: BlockTerminator) {
     }
 
     if p.at(T![case]) && terminator == BlockTerminator::Case {
+      // test ok
+      // x match { case 0 => 1 case 2 => 3 }
       if is_first {
         p.error("expected case expression");
-      } else if !found_newline {
-        p.error("expected newline");
       }
       break 'items;
     }
