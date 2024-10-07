@@ -146,6 +146,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8, fat_arrow: bool) {
         | T![')']
         | T!['}']
         | T![case]
+        | T![if]
         | T![else]
         | T![catch]
         | T![finally]
@@ -1110,6 +1111,9 @@ fn generator(p: &mut Parser) {
   // for {
   //   x <- 1 to 10
   //   if x % 2 == 2
+  // } yield x
+  // for {
+  //   x <- 1 to 10 if x % 2 == 2
   // } yield x
   if p.at(T![if]) || (p.at(T![nl]) && p.peek() == T![if]) {
     let m = p.start();
