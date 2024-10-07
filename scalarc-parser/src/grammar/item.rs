@@ -655,52 +655,47 @@ fn fun_params(p: &mut Parser, is_class: bool) {
 fn fun_param(p: &mut Parser, is_class: bool) {
   let m = p.start();
 
-  // test ok
-  // def foo(implicit a: Int, implicit b: Int) = 3
-  if p.at(T![implicit]) {
-    p.eat(T![implicit]);
-  }
-
-  // test ok
-  // def foo(@unused a: Int) = 3
-  // class Foo(@volatile var x: Int) {}
-  // def foo(implicit @unused a: Int) = 3
-  while p.at(T![@]) {
-    annotation(p);
-  }
-
-  // test ok
-  // def foo(
-  //   implicit
-  //   a: Int
-  // ) = 3
-
-  // test ok
-  // class Foo(val a: Int, val b: Int) {}
-  if is_class {
-    loop {
-      match p.current() {
-        // test ok
-        // class Foo(protected val a: Int) {}
-        // class Foo(private[this] val a: Int) {}
-        _ if access_modifier(p).is_some() => {}
-
-        // test ok
-        // class Foo(override val a: Int) {}
-        // class Foo(final val a: Int) {}
-        T![override] | T![final] => {
-          p.bump();
-        }
-
-        // test ok
-        // class Foo(var a: Int) {}
-        T![val] | T![var] => {
-          p.bump();
-          break;
-        }
-
-        _ => break,
+  loop {
+    match p.current() {
+      // test ok
+      // def foo(implicit a: Int, implicit b: Int) = 3
+      // def foo(
+      //   implicit
+      //   a: Int
+      // ) = 3
+      T![implicit] => {
+        p.eat(T![implicit]);
       }
+
+      // test ok
+      // def foo(@unused a: Int) = 3
+      // class Foo(@volatile var x: Int) {}
+      // def foo(implicit @unused a: Int) = 3
+      T![@] => {
+        annotation(p);
+      }
+
+      // test ok
+      // class Foo(protected val a: Int) {}
+      // class Foo(private[this] val a: Int) {}
+      _ if access_modifier(p).is_some() && is_class => {}
+
+      // test ok
+      // class Foo(override val a: Int) {}
+      // class Foo(final val a: Int) {}
+      T![override] | T![final] if is_class => {
+        p.bump();
+      }
+
+      // test ok
+      // class Foo(var a: Int) {}
+      // class Foo(val a: Int, val b: Int) {}
+      T![val] | T![var] if is_class => {
+        p.bump();
+        break;
+      }
+
+      _ => break,
     }
   }
 
