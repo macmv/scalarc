@@ -327,6 +327,15 @@ fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
 
       T![match] => match_expr(p, lhs),
 
+      // test ok
+      // val foo = myLambda _
+      T![ident] if p.slice() == "_" => {
+        let m = lhs.precede(p);
+        p.eat(T![ident]);
+        // TODO: This name is too long, it needs a better name.
+        m.complete(p, POSTFIX_UNDERSCORE_EXPR)
+      }
+
       _ => break,
     };
   }
