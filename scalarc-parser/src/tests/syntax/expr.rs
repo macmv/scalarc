@@ -789,7 +789,7 @@ fn newline_magic() {
         EXPR_ITEM
           IDENT_EXPR
             IDENT 'println'
-        NL_KW '\n'
+          NL_KW '\n'
         NL_KW '\n'
         WHITESPACE '     '
         EXPR_ITEM

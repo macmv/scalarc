@@ -244,6 +244,11 @@ fn prefix_expr(p: &mut Parser) -> Option<Marker> {
 
 fn postfix_expr(p: &mut Parser, mut lhs: CompletedMarker) -> CompletedMarker {
   loop {
+    // Eat enough newlines to see the next real token.
+    while p.at(T![nl]) && p.peek() == T![nl] {
+      p.eat(T![nl]);
+    }
+
     lhs = match p.current() {
       // test ok
       // hi(3)
