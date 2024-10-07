@@ -438,7 +438,7 @@ fn class_def(p: &mut Parser, m: Marker) {
   loop {
     if p.at(T![with]) {
       p.eat(T![with]);
-      super::type_expr::type_expr(p);
+      super::type_expr::simple_type_expr(p);
     } else if p.at(T![nl]) && p.peek() == T![with] {
       // test ok
       // class Foo
@@ -447,7 +447,7 @@ fn class_def(p: &mut Parser, m: Marker) {
       //   with Baz
       p.eat(T![nl]);
       p.eat(T![with]);
-      super::type_expr::type_expr(p);
+      super::type_expr::simple_type_expr(p);
     } else {
       break;
     }

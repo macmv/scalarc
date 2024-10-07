@@ -93,6 +93,7 @@ Type = LambdaType
      | WithType
      | SpreadType
      | GenericType
+     | RefinedType
      | TupleType
      | BlockType
      | PathType
@@ -110,8 +111,9 @@ LowerBoundType = Type '<:' Type
 UpperBoundType = Type '>:' Type
 InfixType      = Type id Type
 WithType       = Type 'with' Type
-SpreadType     =  Type '*'
+SpreadType     = Type '*'
 GenericType    = Type TypeArgs
+RefinedType    = Type '{' TypeDef* '}'
 PathType       = Type '.' id
 NestedType     = Type '#' id
 TupleType      = '(' (Type (',' Type)*)? ')'

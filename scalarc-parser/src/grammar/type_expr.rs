@@ -187,6 +187,32 @@ fn type_expr_0(p: &mut Parser, is_nested_params: bool) -> Option<CompletedMarker
         lhs = m.complete(p, UPPER_BOUND_TYPE);
       }
 
+      // test ok
+      // def foo: Foo { type T = Int } = 3
+      T!['{'] => {
+        let m = lhs.precede(p);
+        p.eat(T!['{']);
+        loop {
+          match p.current() {
+            // TODO: Other defs are allowed here.
+            T![type] => {
+              let m = p.start();
+              super::item::type_def(p, m);
+            }
+            T!['}'] => {
+              p.eat(T!['}']);
+              break;
+            }
+            _ => {
+              p.error("expected type definition");
+              p.recover_until(T!['}']);
+            }
+          }
+        }
+
+        lhs = m.complete(p, REFINED_TYPE)
+      }
+
       T![ident] => {
         // test ok
         // def foo[T](implicit ev: V#T <:< T): T = 3
