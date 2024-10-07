@@ -309,6 +309,37 @@ impl Highlightable for ast::Expr {
         h.highlight(self.syntax().text_range(), HighlightKind::String);
       }
 
+      hir::Expr::InterpolatedString(_) => {
+        let ast::Expr::InterpolatedString(string) = self else { return };
+
+        let start = string.syntax().text_range().start();
+        let mut prev = start;
+
+        for intp in string.block_exprs() {
+          if intp.syntax().text_range().start() != prev {
+            h.highlight(
+              TextRange::new(prev, intp.syntax().text_range().start()),
+              HighlightKind::String,
+            );
+          }
+
+          if let Some(tok) = intp.syntax().first_token() {
+            if tok.text() == "$" {
+              h.highlight(tok.text_range(), HighlightKind::Keyword);
+            }
+          }
+
+          prev = intp.syntax().text_range().end();
+        }
+
+        if prev != string.syntax().text_range().end() {
+          h.highlight(
+            TextRange::new(prev, string.syntax().text_range().end()),
+            HighlightKind::String,
+          );
+        }
+      }
+
       /*
       (ast::Expr::DoubleQuotedString(d), _) => {
         h.highlight(d.syntax().text_range(), HighlightKind::String);
