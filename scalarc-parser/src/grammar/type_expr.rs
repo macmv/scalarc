@@ -63,16 +63,21 @@ fn simple_type_expr_0(
     T!['{'] => {
       p.eat(T!['{']);
       loop {
+        let m = p.start();
         match p.current() {
-          T![type] => {
-            let m = p.start();
-            super::item::type_def(p, m);
-          }
+          // test ok
+          // foo.asInstanceOf[{ def bar(): Int }]
+          T![def] => super::item::fun_def(p, m),
+          T![val] | T![var] => super::item::val_def(p, m),
+          T![type] => super::item::type_def(p, m),
+
           T!['}'] => {
+            m.abandon(p);
             p.eat(T!['}']);
             break;
           }
           _ => {
+            m.abandon(p);
             p.error("expected type definition");
             p.recover_until(T!['}']);
           }
