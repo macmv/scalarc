@@ -460,6 +460,24 @@ fn walk_references(
   block: InFile<BlockId>,
   refs: &mut Vec<Reference>,
 ) {
+  fn walk_block(
+    db: &dyn HirDatabase,
+    def: &HirDefinition,
+    name: &str,
+    block: InFile<BlockId>,
+    refs: &mut Vec<Reference>,
+  ) {
+    let inner_block = db.hir_ast_for_block(block);
+
+    // This might seem wrong, but scala doesn't allow redeclaring values in the same
+    // block. So this actually handles all the cases we care about.
+    let redeclared = inner_block.bindings().any(|b| b.name == name);
+
+    if !redeclared {
+      walk_references(db, def, block, refs);
+    }
+  }
+
   for (expr_id, expr) in db.hir_ast_for_block(block).exprs.iter() {
     match &expr {
       hir::Expr::Name(ref path) => {
@@ -479,14 +497,17 @@ fn walk_references(
       }
 
       hir::Expr::Block(b) => {
-        let inner_block = db.hir_ast_for_block((*b).in_file(block.file_id));
+        walk_block(db, def, def.name.as_str(), (*b).in_file(block.file_id), refs);
+      }
 
-        // This might seem wrong, but scala doesn't allow redeclaring values in the same
-        // block. So this actually handles all the cases we care about.
-        let redeclared = inner_block.bindings().any(|b| b.name == def.name.as_str());
-
-        if !redeclared {
-          walk_references(db, def, (*b).in_file(block.file_id), refs);
+      hir::Expr::InterpolatedString(s) => {
+        for intp in s.iter() {
+          match intp {
+            hir::Interpolation::Block(b) => {
+              walk_block(db, def, def.name.as_str(), (*b).in_file(block.file_id), refs);
+            }
+            _ => {}
+          }
         }
       }
 
