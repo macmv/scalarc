@@ -245,6 +245,38 @@ fn import_renames() {
   );
 }
 
+// TODO
+fn import_all() {
+  def_at(
+    r#"
+    package foo.bar
+
+    class Bar {
+      def x = 3
+    }
+
+    class Foo {
+      import foo.bar._
+
+      Bar|
+    }
+    "#,
+    expect![@r#"
+      package foo.bar
+
+      @class Bar {
+        def x = 3
+      }@
+
+      class Foo {
+        import foo.bar._
+
+        Bar
+      }
+    "#],
+  );
+}
+
 #[test]
 fn pattern_bindings() {
   def_at(

@@ -72,8 +72,9 @@ pub struct Binding {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Import {
-  pub path:   Path,
-  pub rename: Option<Name>,
+  pub path:     Path,
+  pub rename:   Option<Name>,
+  pub wildcard: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]

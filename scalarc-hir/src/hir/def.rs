@@ -104,13 +104,24 @@ pub fn resolve_path_in_block(
   let name = path.segments.first().unwrap();
 
   for import in ast.imports.values() {
-    let matches = match import.rename {
-      Some(ref n) => n.as_str() == name,
-      None => import.path.elems.last().unwrap().as_str() == name,
-    };
+    if import.wildcard {
+      let mut p = import.path.clone();
+      p.elems.extend(path.segments.clone().into_iter().map(|s| s.into()));
 
-    if matches {
-      return Some(import.path.clone());
+      if let Some(target) = db.file_target(block.file_id) {
+        if db.definition_for_key(target, kind.make_key(p.clone())).is_some() {
+          return Some(p);
+        }
+      }
+    } else {
+      let matches = match import.rename {
+        Some(ref n) => n.as_str() == name,
+        None => import.path.elems.last().unwrap().as_str() == name,
+      };
+
+      if matches {
+        return Some(import.path.clone());
+      }
     }
   }
 
