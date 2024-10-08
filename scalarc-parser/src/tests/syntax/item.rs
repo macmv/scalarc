@@ -41,6 +41,41 @@ fn imports() {
             CLOSE_CURLY '}'
     "#],
   );
+
+  // Not ideal, but works well enough.
+  check(
+    "import foo._",
+    expect![@r#"
+      SOURCE_FILE
+        IMPORT
+          IMPORT_KW 'import'
+          WHITESPACE ' '
+          PATH
+            IDENT 'foo'
+            DOT '.'
+            IDENT '_'
+    "#],
+  );
+
+  check(
+    "import foo.{ _ }",
+    expect![@r#"
+      SOURCE_FILE
+        IMPORT
+          IMPORT_KW 'import'
+          WHITESPACE ' '
+          IMPORT_SELECTORS
+            PATH
+              IDENT 'foo'
+              DOT '.'
+            OPEN_CURLY '{'
+            WHITESPACE ' '
+            IMPORT_SELECTOR_ALL
+              IDENT '_'
+            WHITESPACE ' '
+            CLOSE_CURLY '}'
+    "#],
+  );
 }
 
 #[test]

@@ -348,6 +348,7 @@ fn import_list(p: &mut Parser, m: Marker) {
   loop {
     {
       let m = p.start();
+      let is_wildcard = p.slice() == "_";
       p.expect(T![ident]);
 
       // test ok
@@ -357,6 +358,8 @@ fn import_list(p: &mut Parser, m: Marker) {
         p.expect(T![ident]);
 
         m.complete(p, IMPORT_SELECTOR_RENAME);
+      } else if is_wildcard {
+        m.complete(p, IMPORT_SELECTOR_ALL);
       } else {
         m.complete(p, IMPORT_SELECTOR_ID);
       }
