@@ -245,13 +245,13 @@ fn import_renames() {
   );
 }
 
-// TODO
+#[test]
 fn import_all() {
   def_at(
     r#"
     package foo.bar
 
-    class Bar {
+    object Bar {
       def x = 3
     }
 

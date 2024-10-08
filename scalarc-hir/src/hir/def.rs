@@ -2,8 +2,8 @@ use scalarc_syntax::SyntaxNodePtr;
 
 use super::{BlockId, ExprId, UnresolvedPath};
 use crate::{
-  hir, DefinitionKey, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile,
-  InFileExt, Path,
+  hir, DefinitionKey, GlobalDefinitionKind, HirDatabase, HirDefinition, HirDefinitionId,
+  HirDefinitionKind, InFile, InFileExt, Name, Path,
 };
 
 pub fn def_for_expr(
@@ -59,18 +59,34 @@ pub fn lookup_name_in_block(
   }
 
   for (import_id, import) in ast.imports.iter() {
-    let matches = match import.rename {
-      Some(ref n) => n.as_str() == name,
-      None => import.path.elems.last().unwrap().as_str() == name,
-    };
+    if import.wildcard {
+      let mut p = import.path.clone();
+      p.elems.push(Name::new(name.clone()));
 
-    if matches {
-      return Some(HirDefinition {
-        name:     import.path.elems.last().unwrap().clone(),
-        id:       HirDefinitionId::Import(import_id),
-        block_id: block,
-        kind:     HirDefinitionKind::Import,
-      });
+      if let Some(target) = db.file_target(block.file_id) {
+        if db.definition_for_key(target, DefinitionKey::Object(p.clone())).is_some() {
+          return Some(HirDefinition {
+            name:     Name::new(name),
+            id:       HirDefinitionId::Import(import_id),
+            block_id: block,
+            kind:     HirDefinitionKind::Import,
+          });
+        }
+      }
+    } else {
+      let matches = match import.rename {
+        Some(ref n) => n.as_str() == name,
+        None => import.path.elems.last().unwrap().as_str() == name,
+      };
+
+      if matches {
+        return Some(HirDefinition {
+          name:     import.path.elems.last().unwrap().clone(),
+          id:       HirDefinitionId::Import(import_id),
+          block_id: block,
+          kind:     HirDefinitionKind::Import,
+        });
+      }
     }
   }
 
