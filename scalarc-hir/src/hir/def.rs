@@ -2,7 +2,7 @@ use scalarc_syntax::SyntaxNodePtr;
 
 use super::{BlockId, ExprId, UnresolvedPath};
 use crate::{
-  hir, DefinitionKey, GlobalDefinitionKind, HirDatabase, HirDefinition, HirDefinitionId,
+  hir, AnyDefinition, DefinitionKey, HirDatabase, HirDefinition, HirDefinitionId,
   HirDefinitionKind, InFile, InFileExt, Name, Path,
 };
 
@@ -10,7 +10,7 @@ pub fn def_for_expr(
   db: &dyn HirDatabase,
   block: InFile<BlockId>,
   expr: ExprId,
-) -> Option<HirDefinition> {
+) -> Option<AnyDefinition> {
   let ast = db.hir_ast_for_block(block);
 
   // TODO: Maybe return some info about object vs class, based on what HIR
@@ -37,24 +37,26 @@ pub fn def_for_expr(
   }
 }
 
+/// Looks up a `Name()` in a block. This will resolve bindings, parameters, and
+/// object imports. It will not resolve instances.
 pub fn lookup_name_in_block(
   db: &dyn HirDatabase,
   block: InFile<BlockId>,
   name: String,
-) -> Option<HirDefinition> {
+) -> Option<AnyDefinition> {
   let ast = db.hir_ast_for_block(block);
 
   for item in ast.items.iter() {
     if let hir::Stmt::Binding(ref binding) = ast.stmts[*item] {
       if binding.name == *name {
-        return Some(HirDefinition::new_local(binding, block, HirDefinitionId::Stmt(*item)));
+        return Some(HirDefinition::new_local(binding, block, HirDefinitionId::Stmt(*item)).into());
       }
     }
   }
 
   for (param, binding) in ast.params.iter() {
     if binding.name == *name {
-      return Some(HirDefinition::new_param(binding, block, HirDefinitionId::Param(param)));
+      return Some(HirDefinition::new_param(binding, block, HirDefinitionId::Param(param)).into());
     }
   }
 
@@ -64,13 +66,8 @@ pub fn lookup_name_in_block(
       p.elems.push(Name::new(name.clone()));
 
       if let Some(target) = db.file_target(block.file_id) {
-        if db.definition_for_key(target, DefinitionKey::Object(p.clone())).is_some() {
-          return Some(HirDefinition {
-            name:     Name::new(name),
-            id:       HirDefinitionId::Import(import_id),
-            block_id: block,
-            kind:     HirDefinitionKind::Import,
-          });
+        if let Some(def) = db.definition_for_key(target, DefinitionKey::Object(p.clone())) {
+          return Some(def.into());
         }
       }
     } else {
@@ -80,12 +77,15 @@ pub fn lookup_name_in_block(
       };
 
       if matches {
-        return Some(HirDefinition {
-          name:     import.path.elems.last().unwrap().clone(),
-          id:       HirDefinitionId::Import(import_id),
-          block_id: block,
-          kind:     HirDefinitionKind::Import,
-        });
+        return Some(
+          HirDefinition {
+            name:     import.path.elems.last().unwrap().clone(),
+            id:       HirDefinitionId::Import(import_id),
+            block_id: block,
+            kind:     HirDefinitionKind::Import,
+          }
+          .into(),
+        );
       }
     }
   }

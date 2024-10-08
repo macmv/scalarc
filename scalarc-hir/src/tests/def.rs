@@ -264,7 +264,7 @@ fn import_all() {
     expect![@r#"
       package foo.bar
 
-      @class Bar {
+      @object Bar {
         def x = 3
       }@
 

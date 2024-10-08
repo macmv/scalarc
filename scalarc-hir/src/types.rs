@@ -9,7 +9,7 @@ use crate::{
     self, AstId, BindingKind, Block, BlockId, ErasedAstId, Expr, ExprId, Literal, Pattern,
     PatternId, ResolutionKind, Stmt, StmtId,
   },
-  DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
+  AnyDefinition, DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinition,
   HirDefinitionId, HirDefinitionKind, InFile, InFileExt, InferQuery, Name, Path,
 };
 use salsa::{Query, QueryDb};
@@ -194,7 +194,7 @@ impl<'a> Infer<'a> {
         } else {
           let name = &path.segments[0];
           match self.db.lookup_name_in_block(self.block_id, name.clone()) {
-            Some(def) => self.type_of_hir_def(def),
+            Some(def) => self.type_of_any_def(def),
             None => {
               let path = Path { elems: vec![name.clone().into()] };
 
@@ -312,6 +312,13 @@ impl<'a> Infer<'a> {
         // `Int` object.
         Some(Type::Instance(def.path))
       }
+    }
+  }
+
+  fn type_of_any_def(&self, def: AnyDefinition) -> Option<Type> {
+    match def {
+      AnyDefinition::Hir(h) => self.type_of_hir_def(h),
+      AnyDefinition::Global(g) => Some(Type::Object(g.path)),
     }
   }
 
