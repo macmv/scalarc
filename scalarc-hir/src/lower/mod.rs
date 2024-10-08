@@ -298,7 +298,12 @@ impl Lower for ast::Item {
                 path.elems.push(Name::new(id.text().to_string()));
               }
 
-              lower.block.imports.alloc(Import { path, rename: None, wildcard: false });
+              if path.elems.last().is_some_and(|n| n.as_str() == "_") {
+                path.elems.pop();
+                lower.block.imports.alloc(Import { path, rename: None, wildcard: true });
+              } else {
+                lower.block.imports.alloc(Import { path, rename: None, wildcard: false });
+              }
             }
             ast::ImportExpr::ImportSelectors(p) => {
               let mut path = Path::new();
