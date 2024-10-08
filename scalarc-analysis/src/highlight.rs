@@ -1,7 +1,7 @@
 use scalarc_hir::{
   hir::{self, AstId, BindingKind, BlockId},
-  DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase, HirDefinitionKind, InFileExt,
-  Path, Type,
+  AnyDefinition, DefinitionKey, GlobalDefinition, GlobalDefinitionKind, HirDatabase,
+  HirDefinitionKind, InFileExt, Path, Type,
 };
 use scalarc_source::{FileId, TargetId};
 use scalarc_syntax::{
@@ -293,13 +293,20 @@ impl Highlightable for ast::Expr {
         if let Some(def) = def {
           h.highlight(
             e.id_token().unwrap().text_range(),
-            match def.kind {
-              HirDefinitionKind::Val(_) => HighlightKind::Variable,
-              HirDefinitionKind::Var(_) => HighlightKind::Variable,
-              HirDefinitionKind::Def(_) => HighlightKind::Function,
-              HirDefinitionKind::Parameter(_) => HighlightKind::Parameter,
-              HirDefinitionKind::Pattern => HighlightKind::Variable,
-              HirDefinitionKind::Import => HighlightKind::Class,
+            match def {
+              AnyDefinition::Hir(hir) => match hir.kind {
+                HirDefinitionKind::Val(_) => HighlightKind::Variable,
+                HirDefinitionKind::Var(_) => HighlightKind::Variable,
+                HirDefinitionKind::Def(_) => HighlightKind::Function,
+                HirDefinitionKind::Parameter(_) => HighlightKind::Parameter,
+                HirDefinitionKind::Pattern => HighlightKind::Variable,
+                HirDefinitionKind::Import => HighlightKind::Class,
+              },
+              AnyDefinition::Global(def) => match def.kind {
+                GlobalDefinitionKind::Class(_, _) => HighlightKind::Class,
+                GlobalDefinitionKind::Trait(_) => HighlightKind::Trait,
+                GlobalDefinitionKind::Object(_) => HighlightKind::Object,
+              },
             },
           );
         }

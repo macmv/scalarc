@@ -77,6 +77,16 @@ pub fn lookup_name_in_block(
       };
 
       if matches {
+        // Attempt to find the actual definition.
+        if let Some(target) = db.file_target(block.file_id) {
+          if let Some(def) =
+            db.definition_for_key(target, DefinitionKey::Object(import.path.clone()))
+          {
+            return Some(def.into());
+          }
+        }
+
+        // If not, just point at the import.
         return Some(
           HirDefinition {
             name:     import.path.elems.last().unwrap().clone(),
