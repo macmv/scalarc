@@ -78,7 +78,9 @@ pub fn hir_ast_with_source_for_block(
       // Defs are a bit special: they only contain a single expression, but we still
       // need to track it, to go from the CST to the HIR expr. Additionally,
       // defs are the only block with params, so we walk those here.
-      lower.walk(&def.expr().unwrap());
+      if let Some(expr) = def.expr() {
+        lower.walk(&expr);
+      }
       if let Some(sig) = def.fun_sig() {
         for params in sig.fun_paramss() {
           lower.walk_params(params);
