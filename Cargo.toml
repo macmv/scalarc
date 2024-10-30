@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-  "scalarc-ast",
   "scalarc-build",
+  "scalarc-parser-base",
   "scalarc-parser",
   "scalarc-syntax",
   "scalarc-source",

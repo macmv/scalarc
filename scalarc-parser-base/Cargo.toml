@@ -1,5 +1,5 @@
 [package]
-name = "scalarc-ast"
+name = "scalarc-parser-base"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,3 +8,10 @@ edition = "2021"
 [lib]
 
 [dependencies]
+drop_bomb = "0.1.5"
+rowan = "0.15.15"
+thiserror = "1.0.56"
+
+[dev-dependencies]
+scalarc-test.workspace = true
+pretty_assertions = "1.4.0"

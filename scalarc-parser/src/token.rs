@@ -1,6 +1,5 @@
 use std::ops::Range;
 
-use scalarc_ast::Span;
 use thiserror::Error;
 use unicode_categories::UnicodeCategories;
 
@@ -491,7 +490,6 @@ impl<'a> Lexer<'a> {
     }
   }
 
-  pub fn span(&self) -> Span { self.span.clone().into() }
   pub fn slice(&self) -> &'a str { &self.tok.source[self.span.clone()] }
 
   pub fn range(&self) -> Range<usize> { self.span.clone() }
