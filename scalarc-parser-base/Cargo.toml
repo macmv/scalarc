@@ -1,5 +1,5 @@
 [package]
-name = "scalarc-parser"
+name = "scalarc-parser-base"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,19 +7,10 @@ edition = "2021"
 
 [lib]
 
-[[bin]]
-name = "scalarc-parser"
-
 [dependencies]
 drop_bomb = "0.1.5"
 rowan = "0.15.15"
-scalarc-ast = { path = "../scalarc-ast" }
-scalarc-parser-base = { path = "../scalarc-parser-base" }
 thiserror = "1.0.56"
-unicode_categories = "0.1.1"
-
-[build-dependencies]
-scalarc-build.workspace = true
 
 [dev-dependencies]
 scalarc-test.workspace = true

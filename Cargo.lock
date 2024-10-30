@@ -506,9 +506,21 @@ dependencies = [
  "rowan",
  "scalarc-ast",
  "scalarc-build",
+ "scalarc-parser-base",
  "scalarc-test",
  "thiserror",
  "unicode_categories",
+]
+
+[[package]]
+name = "scalarc-parser-base"
+version = "0.1.0"
+dependencies = [
+ "drop_bomb",
+ "pretty_assertions",
+ "rowan",
+ "scalarc-test",
+ "thiserror",
 ]
 
 [[package]]
