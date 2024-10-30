@@ -125,8 +125,8 @@ impl Analysis {
       let def = db.def_at_index(pos.file, pos.index)?;
       match def {
         scalarc_hir::AnyDefinition::Hir(ref d) => {
-          let ast = db.parse(pos.file);
           let file = d.block_id.file_id;
+          let ast = db.parse(file);
           let source_map = db.hir_source_map_for_block(d.block_id);
           match d.id {
             HirDefinitionId::Stmt(s) => {
