@@ -1,9 +1,9 @@
 use scalarc_syntax::SyntaxNodePtr;
 
-use super::{BlockId, ExprId, UnresolvedPath};
+use super::{AstId, BindingKind, BlockId, ExprId, UnresolvedPath};
 use crate::{
-  hir, AnyDefinition, DefinitionKey, HirDatabase, HirDefinition, HirDefinitionId,
-  HirDefinitionKind, InFile, InFileExt, Name, Path,
+  hir, AnyDefinition, DefinitionKey, GlobalDefinitionKind, HirDatabase, HirDefinition,
+  HirDefinitionId, HirDefinitionKind, InFile, InFileExt, Name, Path,
 };
 
 pub fn def_for_expr(
@@ -31,6 +31,79 @@ pub fn def_for_expr(
       let name = path.segments.last().unwrap();
 
       db.lookup_name_in_block(block, name.into())
+    }
+
+    hir::Expr::FieldAccess(lhs, ref field) => {
+      let def = db.def_for_expr(block, lhs)?;
+
+      // FIXME: This is copied from the typer. Need to dedupe.
+      let block = match def {
+        AnyDefinition::Hir(d) => {
+          let parent_ast = db.hir_ast_for_block(d.block_id);
+          match d.id {
+            HirDefinitionId::Stmt(stmt) => {
+              let hir::Stmt::Binding(ref binding) = parent_ast.stmts[stmt] else { return None };
+
+              match binding.kind {
+                BindingKind::Object(id) => BlockId::Object(id).in_file(d.block_id.file_id),
+                _ => return None,
+              }
+            }
+            _ => return None,
+          }
+        }
+        AnyDefinition::Global(d) => match d.kind {
+          GlobalDefinitionKind::Class(Some(_), _) => {
+            BlockId::Class(AstId::new(d.ast_id)).in_file(d.file_id)
+          }
+          GlobalDefinitionKind::Trait(Some(_)) => {
+            BlockId::Trait(AstId::new(d.ast_id)).in_file(d.file_id)
+          }
+          GlobalDefinitionKind::Object(Some(_)) => {
+            BlockId::Object(AstId::new(d.ast_id)).in_file(d.file_id)
+          }
+          _ => return None,
+        },
+      };
+
+      let hir_ast = db.hir_ast_for_block(block);
+
+      // Find all the `def` and `val`s in the block.
+      let decls: Vec<_> = hir_ast
+        .items
+        .iter()
+        .filter_map(|&it| match hir_ast.stmts[it] {
+          hir::Stmt::Binding(ref b) => {
+            if b.name == *field {
+              Some(it)
+            } else {
+              None
+            }
+          }
+          _ => None,
+        })
+        .collect();
+
+      match decls[..] {
+        [] => None,
+        [stmt_id] => Some(AnyDefinition::Hir(HirDefinition {
+          name:     Name::new(field.clone()),
+          id:       HirDefinitionId::Stmt(stmt_id),
+          block_id: block,
+          kind:     HirDefinitionKind::Val(None),
+        })),
+        _ => {
+          // TODO: Resolve overloads.
+          let stmt_id = decls.first().unwrap();
+
+          Some(AnyDefinition::Hir(HirDefinition {
+            name:     Name::new(field.clone()),
+            id:       HirDefinitionId::Stmt(*stmt_id),
+            block_id: block,
+            kind:     HirDefinitionKind::Val(None),
+          }))
+        }
+      }
     }
 
     _ => None,

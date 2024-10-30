@@ -292,3 +292,73 @@ fn pattern_bindings() {
     "#],
   );
 }
+
+#[test]
+fn object_fields() {
+  // FIXME: Remove that `Foo` import.
+  def_at(
+    r#"
+    object Foo {
+      val x = 3
+    }
+
+    import Foo
+
+    Foo.x|
+    "#,
+    expect![@r#"
+      object Foo {
+        @val x = 3@
+      }
+
+      import Foo
+
+      Foo.x
+    "#],
+  );
+}
+
+#[test]
+fn nested_objects() {
+  def_at(
+    r#"
+    object Foo {
+      object Bar {
+        val x = 3
+      }
+    }
+
+    Foo.Bar|
+    "#,
+    expect![@r#"
+      object Foo {
+        @object Bar {
+          val x = 3
+        }@
+      }
+
+      Foo.Bar
+    "#],
+  );
+
+  def_at(
+    r#"
+    object Foo {
+      object Bar {
+        val x = 3
+      }
+    }
+
+    Foo.Bar.x|
+    "#,
+    expect![@r#"
+      object Foo {
+        object Bar {
+          @val x = 3@
+        }
+      }
+
+      Foo.Bar.x
+    "#],
+  );
+}

@@ -4,7 +4,7 @@ use hir::{
 };
 use scalarc_source::{FileId, SourceDatabase, TargetId};
 use scalarc_syntax::{
-  ast::{self, ItemBody},
+  ast::{self, ItemBody, ObjectDef},
   SyntaxNodePtr, TextRange, TextSize,
 };
 use scope::FileScopes;
@@ -120,6 +120,7 @@ impl HirDefinition {
         BindingKind::Var => HirDefinitionKind::Val(binding.ty.clone()),
         BindingKind::Def(_) => HirDefinitionKind::Def(Signature::empty()),
         BindingKind::Pattern => HirDefinitionKind::Pattern,
+        BindingKind::Object(id) => HirDefinitionKind::Object(id),
       },
     }
   }
@@ -179,6 +180,8 @@ pub enum HirDefinitionKind {
   Pattern,
   Def(Signature),
   Import,
+
+  Object(AstId<ObjectDef>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

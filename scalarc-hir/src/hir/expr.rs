@@ -83,6 +83,8 @@ pub enum BindingKind {
   Var,
   Def(Signature),
   Pattern,
+
+  Object(AstId<ast::ObjectDef>),
 }
 
 #[derive(Debug, PartialEq, Eq)]

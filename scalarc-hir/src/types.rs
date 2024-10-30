@@ -471,6 +471,7 @@ pub fn infer(
                 BindingKind::Var => body_ty,
                 BindingKind::Def(_) => unreachable!(),
                 BindingKind::Pattern => todo!(),
+                BindingKind::Object(_) => todo!(),
               };
 
               infer.result.stmts.insert(stmt, ty.clone());

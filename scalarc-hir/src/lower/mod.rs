@@ -290,6 +290,23 @@ impl Lower for ast::Item {
         Some(stmt_id)
       }
 
+      ast::Item::ObjectDef(def) => {
+        let name = def.id_token()?.text().to_string();
+
+        let stmt_id = lower.alloc(
+          self,
+          Stmt::Binding(Binding {
+            implicit: false,
+            kind: BindingKind::Object(lower.id_map.ast_id(def).into()),
+            name,
+            ty: None,
+            expr: None,
+          }),
+        );
+
+        Some(stmt_id)
+      }
+
       ast::Item::Import(i) => {
         for import_expr in i.import_exprs() {
           match import_expr {
