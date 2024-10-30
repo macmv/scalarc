@@ -430,10 +430,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "scalarc-ast"
-version = "0.1.0"
-
-[[package]]
 name = "scalarc-bsp"
 version = "0.1.0"
 dependencies = [
@@ -504,7 +500,6 @@ dependencies = [
  "drop_bomb",
  "pretty_assertions",
  "rowan",
- "scalarc-ast",
  "scalarc-build",
  "scalarc-parser-base",
  "scalarc-test",
