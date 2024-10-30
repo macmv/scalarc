@@ -463,6 +463,13 @@ pub fn infer(
           infer.result.stmts.insert(stmt, result.clone());
           infer.locals.insert(b.name.clone(), result);
         }
+        BindingKind::Object(_) => {
+          let mut path = db.package_for_file(block.file_id).unwrap_or_default();
+          path.elems.push(b.name.clone().into());
+          let ty = Type::Object(path);
+          infer.result.stmts.insert(stmt, ty.clone());
+          infer.locals.insert(b.name.clone(), ty);
+        }
         _ => {
           if let Some(expr) = b.expr {
             if let Some(body_ty) = infer.type_expr(expr) {

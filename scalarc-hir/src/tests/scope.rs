@@ -651,11 +651,11 @@ fn refs_to_object() {
     "#,
     expect![@r#"
       object A {}
-      A
-      A + b
-      println(A)
+      @A@
+      @A@ + b
+      println(@A@)
 
-      if (A > 3) {
+      if (@A@ > 3) {
         val A = 4
         A
       }
