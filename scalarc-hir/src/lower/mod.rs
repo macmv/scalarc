@@ -298,7 +298,12 @@ impl Lower for ast::Item {
                 path.elems.push(Name::new(id.text().to_string()));
               }
 
-              lower.block.imports.alloc(Import { path, rename: None });
+              if path.elems.last().is_some_and(|n| n.as_str() == "_") {
+                path.elems.pop();
+                lower.block.imports.alloc(Import { path, rename: None, wildcard: true });
+              } else {
+                lower.block.imports.alloc(Import { path, rename: None, wildcard: false });
+              }
             }
             ast::ImportExpr::ImportSelectors(p) => {
               let mut path = Path::new();
@@ -315,16 +320,21 @@ impl Lower for ast::Item {
                   ast::ImportSelector::ImportSelectorId(sel) => {
                     let id = sel.id_token()?.text().to_string();
                     path.elems.push(Name::new(id));
-                    lower.block.imports.alloc(Import { path, rename: None });
+                    lower.block.imports.alloc(Import { path, rename: None, wildcard: false });
                   }
                   ast::ImportSelector::ImportSelectorRename(sel) => {
                     let from = sel.from()?.text().to_string();
                     let to = sel.to()?.text().to_string();
                     path.elems.push(Name::new(from));
-                    lower.block.imports.alloc(Import { path, rename: Some(Name::new(to)) });
+                    lower.block.imports.alloc(Import {
+                      path,
+                      rename: Some(Name::new(to)),
+                      wildcard: false,
+                    });
                   }
-                  // FIXME: Import all in package is hard.
-                  _ => {}
+                  ast::ImportSelector::ImportSelectorAll(_) => {
+                    lower.block.imports.alloc(Import { path, rename: None, wildcard: true });
+                  }
                 }
               }
             }

@@ -2,15 +2,15 @@ use scalarc_syntax::SyntaxNodePtr;
 
 use super::{BlockId, ExprId, UnresolvedPath};
 use crate::{
-  hir, DefinitionKey, HirDatabase, HirDefinition, HirDefinitionId, HirDefinitionKind, InFile,
-  InFileExt, Path,
+  hir, AnyDefinition, DefinitionKey, HirDatabase, HirDefinition, HirDefinitionId,
+  HirDefinitionKind, InFile, InFileExt, Name, Path,
 };
 
 pub fn def_for_expr(
   db: &dyn HirDatabase,
   block: InFile<BlockId>,
   expr: ExprId,
-) -> Option<HirDefinition> {
+) -> Option<AnyDefinition> {
   let ast = db.hir_ast_for_block(block);
 
   // TODO: Maybe return some info about object vs class, based on what HIR
@@ -37,40 +37,66 @@ pub fn def_for_expr(
   }
 }
 
+/// Looks up a `Name()` in a block. This will resolve bindings, parameters, and
+/// object imports. It will not resolve instances.
 pub fn lookup_name_in_block(
   db: &dyn HirDatabase,
   block: InFile<BlockId>,
   name: String,
-) -> Option<HirDefinition> {
+) -> Option<AnyDefinition> {
   let ast = db.hir_ast_for_block(block);
 
   for item in ast.items.iter() {
     if let hir::Stmt::Binding(ref binding) = ast.stmts[*item] {
       if binding.name == *name {
-        return Some(HirDefinition::new_local(binding, block, HirDefinitionId::Stmt(*item)));
+        return Some(HirDefinition::new_local(binding, block, HirDefinitionId::Stmt(*item)).into());
       }
     }
   }
 
   for (param, binding) in ast.params.iter() {
     if binding.name == *name {
-      return Some(HirDefinition::new_param(binding, block, HirDefinitionId::Param(param)));
+      return Some(HirDefinition::new_param(binding, block, HirDefinitionId::Param(param)).into());
     }
   }
 
   for (import_id, import) in ast.imports.iter() {
-    let matches = match import.rename {
-      Some(ref n) => n.as_str() == name,
-      None => import.path.elems.last().unwrap().as_str() == name,
-    };
+    if import.wildcard {
+      let mut p = import.path.clone();
+      p.elems.push(Name::new(name.clone()));
 
-    if matches {
-      return Some(HirDefinition {
-        name:     import.path.elems.last().unwrap().clone(),
-        id:       HirDefinitionId::Import(import_id),
-        block_id: block,
-        kind:     HirDefinitionKind::Import,
-      });
+      if let Some(target) = db.file_target(block.file_id) {
+        if let Some(def) = db.definition_for_key(target, DefinitionKey::Object(p.clone())) {
+          return Some(def.into());
+        }
+      }
+    } else {
+      let matches = match import.rename {
+        Some(ref n) => n.as_str() == name,
+        None => import.path.elems.last().unwrap().as_str() == name,
+      };
+
+      if matches {
+        // Attempt to find the actual definition.
+        if let Some(target) = db.file_target(block.file_id) {
+          if let Some(def) =
+            db.definition_for_key(target, DefinitionKey::Object(import.path.clone()))
+          {
+            return Some(def.into());
+          }
+        }
+
+        // If not, just point at the import.
+        return Some(
+          HirDefinition {
+            name:     import.path.elems.last().unwrap().clone(),
+            id:       HirDefinitionId::Import(import_id),
+            block_id: block,
+            kind:     HirDefinitionKind::Import,
+          }
+          .into(),
+        );
+      }
     }
   }
 
@@ -104,13 +130,24 @@ pub fn resolve_path_in_block(
   let name = path.segments.first().unwrap();
 
   for import in ast.imports.values() {
-    let matches = match import.rename {
-      Some(ref n) => n.as_str() == name,
-      None => import.path.elems.last().unwrap().as_str() == name,
-    };
+    if import.wildcard {
+      let mut p = import.path.clone();
+      p.elems.extend(path.segments.clone().into_iter().map(|s| s.into()));
 
-    if matches {
-      return Some(import.path.clone());
+      if let Some(target) = db.file_target(block.file_id) {
+        if db.definition_for_key(target, kind.make_key(p.clone())).is_some() {
+          return Some(p);
+        }
+      }
+    } else {
+      let matches = match import.rename {
+        Some(ref n) => n.as_str() == name,
+        None => import.path.elems.last().unwrap().as_str() == name,
+      };
+
+      if matches {
+        return Some(import.path.clone());
+      }
     }
   }
 

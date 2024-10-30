@@ -65,7 +65,8 @@ fn goto_constructor() {
     "#],
   );
 
-  println!("======");
+  // FIXME: This uses `lookup_name`, which is wrong! `new` should have its own
+  // lookup.
   goto_definition(
     r#"
     object Foo {
@@ -79,11 +80,11 @@ fn goto_constructor() {
     }
     "#,
     expect![@r#"
-      object Foo {
+      @object Foo {
         def apply() = new Foo()
-      }
-      @class Foo()
-      @
+      }@
+      class Foo()
+
       class Foo {
         import Foo
         new Foo()
@@ -94,6 +95,7 @@ fn goto_constructor() {
 
 #[test]
 fn goto_case_constructor() {
+  // FIXME: Not sure how to fix this.
   goto_definition(
     r#"
     object Foo {}
@@ -105,9 +107,9 @@ fn goto_case_constructor() {
     }
     "#,
     expect![@r#"
-      object Foo {}
-      @case class Foo()
-      @
+      @object Foo {}@
+      case class Foo()
+
       class Foo {
         import Foo
         Foo()

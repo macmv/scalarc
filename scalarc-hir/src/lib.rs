@@ -82,6 +82,13 @@ pub enum AnyDefinition {
   Hir(HirDefinition),
 }
 
+impl From<GlobalDefinition> for AnyDefinition {
+  fn from(d: GlobalDefinition) -> Self { AnyDefinition::Global(d) }
+}
+impl From<HirDefinition> for AnyDefinition {
+  fn from(d: HirDefinition) -> Self { AnyDefinition::Hir(d) }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GlobalDefinition {
   pub path:    Path,
@@ -196,7 +203,7 @@ pub trait HirDatabase: SourceDatabase {
   fn def_at_index(&self, file: FileId, index: TextSize) -> Option<AnyDefinition>;
 
   #[salsa::invoke(hir::def_for_expr)]
-  fn def_for_expr(&self, block: InFile<BlockId>, expr: hir::ExprId) -> Option<HirDefinition>;
+  fn def_for_expr(&self, block: InFile<BlockId>, expr: hir::ExprId) -> Option<AnyDefinition>;
 
   #[salsa::invoke(scope::defs_at_index)]
   fn defs_at_index(&self, file: FileId, index: TextSize) -> Vec<GlobalDefinition>;
@@ -238,7 +245,7 @@ pub trait HirDatabase: SourceDatabase {
   fn parent_block(&self, block: InFile<BlockId>) -> Option<BlockId>;
 
   #[salsa::invoke(hir::lookup_name_in_block)]
-  fn lookup_name_in_block(&self, block: InFile<BlockId>, name: String) -> Option<HirDefinition>;
+  fn lookup_name_in_block(&self, block: InFile<BlockId>, name: String) -> Option<AnyDefinition>;
 
   #[salsa::invoke(hir::resolve_path_in_block)]
   fn resolve_path_in_block(
