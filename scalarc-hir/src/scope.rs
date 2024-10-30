@@ -45,53 +45,6 @@ impl FileScopes {
   }
 }
 
-/// Returns the definitions at the given scope. The innermost declarations (ie,
-/// closest to the cursor) show up first in the list.
-pub fn defs_at_index(
-  db: &dyn HirDatabase,
-  file_id: FileId,
-  pos: TextSize,
-) -> Vec<GlobalDefinition> {
-  let file_scopes = db.scopes_of(file_id);
-  let ast_id_map = db.ast_id_map(file_id);
-
-  let mut defs = vec![];
-
-  // Find the last (ie, smallest) scope that contains the given span.
-  let Some(innermost) = file_scopes.scopes.iter().rev().find(|(_, scope)| {
-    let item = ast_id_map.get_erased(scope.ast_id);
-    item.text_range().contains_inclusive(pos)
-  }) else {
-    return vec![];
-  };
-
-  // Now collect all the parents of that scope.
-  let mut scope = innermost.1;
-  defs.extend(scope.declarations.iter().rev().filter_map(|(_, def)| {
-    let item = ast_id_map.get_erased(def.ast_id);
-
-    if item.text_range().end() <= pos {
-      Some(def.clone())
-    } else {
-      None
-    }
-  }));
-  while let Some(parent) = scope.parent {
-    scope = &file_scopes.scopes[parent];
-    defs.extend(scope.declarations.iter().rev().filter_map(|(_, def)| {
-      let item = ast_id_map.get_erased(def.ast_id);
-
-      if item.text_range().end() <= pos {
-        Some(def.clone())
-      } else {
-        None
-      }
-    }));
-  }
-
-  defs
-}
-
 pub fn def_at_index(db: &dyn HirDatabase, file_id: FileId, pos: TextSize) -> Option<AnyDefinition> {
   let ast = db.parse(file_id);
 
