@@ -76,6 +76,9 @@ pub fn handle_completion(
               // TODO
               unreachable!()
             }
+            CompletionKind::Hir(HirDefinitionKind::Object(_)) => {
+              (lsp_types::CompletionItemKind::CLASS, None)
+            }
             CompletionKind::Global(GlobalDefinitionKind::Class(_, _)) => {
               (lsp_types::CompletionItemKind::CLASS, None)
             }

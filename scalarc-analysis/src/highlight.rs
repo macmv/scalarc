@@ -301,6 +301,7 @@ impl Highlightable for ast::Expr {
                 HirDefinitionKind::Parameter(_) => HighlightKind::Parameter,
                 HirDefinitionKind::Pattern => HighlightKind::Variable,
                 HirDefinitionKind::Import => HighlightKind::Class,
+                HirDefinitionKind::Object(_) => HighlightKind::Object,
               },
               AnyDefinition::Global(def) => match def.kind {
                 GlobalDefinitionKind::Class(_, _) => HighlightKind::Class,
