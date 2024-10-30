@@ -143,7 +143,7 @@ fn lhs_of_dot_access() {
 
       F|oo.foo
     "#,
-    expect![@"[Foo, Int]"],
+    expect![@"[Foo, Int, Foo]"],
   );
 }
 
