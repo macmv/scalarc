@@ -143,7 +143,35 @@ fn lhs_of_dot_access() {
 
       F|oo.foo
     "#,
-    expect![@"[Foo, Int, Foo]"],
+    expect![@"[Foo, Int]"],
+  );
+}
+
+#[test]
+fn nested_objects() {
+  // This is an intentional design choice. We don't want to show nested objects in
+  // completions, they only show up as field accesses.
+  completions_for(
+    r#"
+      object Foo {
+        object Bar {}
+      }
+
+      F|
+    "#,
+    expect![@"[Foo, Int]"],
+  );
+
+  // Local objects will also show up when they're defined in the same scope.
+  completions_for(
+    r#"
+      object Foo {
+        object Bar {}
+
+        F|
+      }
+    "#,
+    expect![@"[Foo, Int, Bar]"],
   );
 }
 

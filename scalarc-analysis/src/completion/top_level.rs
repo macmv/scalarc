@@ -55,22 +55,22 @@ impl Completer<'_> {
 
     let Some(mut n) = token.parent() else { return completions };
     loop {
+      // NB: Don't grab block completions from the top-level, as we use the global
+      // defmap for that.
+      //
+      // FIXME: Remove copy-pasta from `lower/mod.rs`
       match_ast! {
         match n {
-          ast::Expr(_) => {
-            self.collect_block_completions(&n, &mut completions);
-            break;
-          },
-          ast::ItemBody(_) => {
-            self.collect_block_completions( &n, &mut completions);
-            break;
-          },
-          _ => n = match n.parent() {
-            Some(p) => p,
-            None => break,
-          },
+          ast::BlockExpr(_) => self.collect_block_completions(&n, &mut completions),
+          ast::ItemBody(_) => self.collect_block_completions(&n, &mut completions),
+          _ => {},
         }
       }
+
+      n = match n.parent() {
+        Some(p) => p,
+        None => break,
+      };
     }
 
     completions
@@ -86,6 +86,7 @@ impl Completer<'_> {
     for item in &block.items {
       match block.stmts[*item] {
         hir::Stmt::Binding(ref binding) => {
+          dbg!(&binding);
           let node = source_map.stmt_syntax(*item).unwrap();
           // Recursive vals and defs exist, so we check if the start is greater than
           // the cursor.
