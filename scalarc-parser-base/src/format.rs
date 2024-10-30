@@ -1,14 +1,18 @@
 //! Debug formatting helpers for events.
 
 use crate::Event;
-use std::fmt;
+use std::fmt::{self, Debug};
 
-pub fn format_events(events: &[Event], text: &str) -> String { Events(events, text).to_string() }
-pub fn print_events(events: &[Event], text: &str) { println!("{}", Events(events, text)) }
+pub fn format_events<K: Debug>(events: &[Event<K>], text: &str) -> String {
+  Events(events, text).to_string()
+}
+pub fn print_events<K: Debug>(events: &[Event<K>], text: &str) {
+  println!("{}", Events(events, text))
+}
 
-struct Events<'a>(&'a [Event], &'a str);
+struct Events<'a, K>(&'a [Event<K>], &'a str);
 
-impl fmt::Display for Events<'_> {
+impl<K: Debug> fmt::Display for Events<'_, K> {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let mut indent = 0;
     let mut index = 0;

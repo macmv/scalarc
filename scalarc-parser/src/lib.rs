@@ -1,5 +1,3 @@
-pub mod format;
-
 mod grammar;
 mod syntax_kind;
 #[cfg(test)]
@@ -151,7 +149,7 @@ impl scalarc_parser_base::SyntaxKind for SyntaxKind {
   const TOMBSTONE: Self = SyntaxKind::TOMBSTONE;
 }
 
-pub use scalarc_parser_base::process_events;
+pub use scalarc_parser_base::{format, process_events};
 
 impl EntryPoint {
   pub fn parse<'a>(&'a self, lexer: &'a mut Lexer<'a>) -> Vec<Event> {
